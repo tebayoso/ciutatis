@@ -37,6 +37,7 @@ Before making changes, read in this order:
 - `scripts/`: build, dev, and release scripts
 - `evals/`: promptfoo evaluation suites
 - `releases/`: release notes
+- `patches/`: pnpm dependency patches
 - `docker/`: Docker configuration
 
 ## 4. Dev Setup (Auto DB)

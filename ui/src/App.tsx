@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { authApi } from "./api/auth";
 import { healthApi } from "./api/health";
+import { Landing } from "./pages/Landing";
 import { Dashboard } from "./pages/Dashboard";
 import { Institutions } from "./pages/Institutions";
 import { Agents } from "./pages/Agents";
@@ -41,6 +42,45 @@ import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
 import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
 
+function RootPage() {
+  const healthQuery = useQuery({
+    queryKey: queryKeys.health,
+    queryFn: () => healthApi.get(),
+    retry: false,
+  });
+
+  const isAuthenticatedMode = healthQuery.data?.deploymentMode === "authenticated";
+
+  const sessionQuery = useQuery({
+    queryKey: queryKeys.auth.session,
+    queryFn: () => authApi.getSession(),
+    enabled: isAuthenticatedMode,
+    retry: false,
+  });
+
+  if (healthQuery.isLoading || (isAuthenticatedMode && sessionQuery.isLoading)) {
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (healthQuery.error) {
+    return (
+      <div className="mx-auto max-w-xl py-10 text-sm text-destructive">
+        {healthQuery.error instanceof Error ? healthQuery.error.message : "Failed to load app state"}
+      </div>
+    );
+  }
+
+  if (isAuthenticatedMode && healthQuery.data?.bootstrapStatus === "bootstrap_pending") {
+    return <BootstrapPendingPage hasActiveInvite={healthQuery.data.bootstrapInviteActive} />;
+  }
+
+  if (isAuthenticatedMode && !sessionQuery.data) {
+    return <Landing />;
+  }
+
+  return <CompanyRootRedirect />;
+}
+
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
   return (
     <div className="mx-auto max-w-xl py-10">
@@ -60,7 +100,6 @@ function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: b
 }
 
 function CloudAccessGate() {
-  const location = useLocation();
   const healthQuery = useQuery({
     queryKey: queryKeys.health,
     queryFn: () => healthApi.get(),
@@ -101,8 +140,7 @@ function CloudAccessGate() {
   }
 
   if (isAuthenticatedMode && !sessionQuery.data) {
-    const next = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`/auth?next=${next}`} replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
@@ -178,9 +216,30 @@ function OnboardingRoutePage() {
   const { companies } = useCompany();
   const { openOnboarding } = useDialog();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const { data: session } = useQuery({
+    queryKey: queryKeys.auth.session,
+    queryFn: () => authApi.getSession(),
+    retry: false,
+  });
+  const isAdmin = session?.user?.isInstanceAdmin === true;
   const matchedCompany = companyPrefix
     ? companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null
     : null;
+
+  const needsNewCompany = !matchedCompany;
+
+  if (needsNewCompany && !isAdmin) {
+    return (
+      <div className="mx-auto max-w-xl py-10">
+        <div className="rounded-lg border border-border bg-card p-6">
+          <h1 className="text-xl font-semibold">Admin access required</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Please contact your administrator to set up the instance.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const title = matchedCompany
     ? `Add another agent to ${matchedCompany.name}`
@@ -269,17 +328,34 @@ function UnprefixedBoardRedirect() {
 
 function NoCompaniesStartPage() {
   const { openOnboarding } = useDialog();
+  const { data: session } = useQuery({
+    queryKey: queryKeys.auth.session,
+    queryFn: () => authApi.getSession(),
+    retry: false,
+  });
+  const isAdmin = session?.user?.isInstanceAdmin === true;
 
   return (
     <div className="mx-auto max-w-xl py-10">
       <div className="rounded-lg border border-border bg-card p-6">
-        <h1 className="text-xl font-semibold">Create your first institution</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Get started by creating an institution.
-        </p>
-        <div className="mt-4">
-          <Button onClick={() => openOnboarding()}>New Institution</Button>
-        </div>
+        {isAdmin ? (
+          <>
+            <h1 className="text-xl font-semibold">Create your first institution</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Get started by creating an institution.
+            </p>
+            <div className="mt-4">
+              <Button onClick={() => openOnboarding()}>New Institution</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl font-semibold">No institutions available</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Please contact your administrator to set up the instance.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -289,12 +365,12 @@ export function App() {
   return (
     <>
       <Routes>
+        <Route path="/" element={<RootPage />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
 
         <Route element={<CloudAccessGate />}>
-          <Route index element={<CompanyRootRedirect />} />
           <Route path="onboarding" element={<OnboardingRoutePage />} />
           <Route path="instance" element={<Navigate to="/instance/settings/heartbeats" replace />} />
           <Route path="instance/settings" element={<Layout />}>

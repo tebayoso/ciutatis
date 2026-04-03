@@ -13,10 +13,6 @@
 -->
 
 <p align="center">
-  <img src="doc/assets/header.png" alt="Ciutatis — civic operations platform" width="720" />
-</p>
-
-<p align="center">
   <a href="#quickstart"><strong>Quickstart</strong></a> &middot;
   <a href="https://ciutatis.com/docs"><strong>Docs</strong></a> &middot;
   <a href="https://github.com/tebayoso/ciutatis"><strong>GitHub</strong></a> &middot;

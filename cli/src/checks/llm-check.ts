@@ -42,7 +42,7 @@ export async function llmCheck(config: CiutatisConfig): Promise<CheckResult> {
           status: "fail",
           message: "Claude API key is invalid (401)",
           canRepair: false,
-          repairHint: "Run `paperclipai configure --section llm`",
+          repairHint: "Run `ciutatis configure --section llm`",
         };
       }
       return {
@@ -63,7 +63,7 @@ export async function llmCheck(config: CiutatisConfig): Promise<CheckResult> {
           status: "fail",
           message: "OpenAI API key is invalid (401)",
           canRepair: false,
-          repairHint: "Run `paperclipai configure --section llm`",
+          repairHint: "Run `ciutatis configure --section llm`",
         };
       }
       return {

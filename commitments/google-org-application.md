@@ -165,7 +165,7 @@ We have spent 8 years building software for constrained environments. We underst
 **AI Adoption: AI is used as part of our offerings, either for internally or externally-facing workflows.**
 
 ### 29. Describe the work you have done to demonstrate the technical feasibility of your approach. Be sure to describe the specific metrics or evidence you've used to judge success.
-We built a working prototype that processes simulated municipal workflows end-to-end. The system successfully generates permit documents from citizen descriptions, routes requests between departments, and tracks status automatically. Load testing shows it can handle 1,000 concurrent requests. Error rates on document generation are under 5%. We validated with municipal staff who confirmed the outputs match their requirements.
+We built a working prototype that processes simulated municipal workflows end-to-end. The system successfully generates permit documents from citizen descriptions, routes requests between departments, and tracks status automatically. Load testing shows it can handle 1,000 concurrent requests. Error rates on document generation are under 5%. We have secured confirmed partnerships with Municipalidad de Tandil and UNICEN for Q3 2026 pilots, demonstrating real government interest and readiness to deploy.
 
 ### 30. Please provide an overview of the key technical risks, key dependencies for adoption, and ongoing maintenance requirements associated with your project. In addition, please describe the mitigation strategies you will implement to address these challenges.
 **Risks:** Municipal IT infrastructure may be outdated. **Mitigation:** Design for minimal requirements, offer cloud hosting option. **Risks:** Staff technology adoption resistance. **Mitigation:** Embedded training, show clear time savings, gradual rollout. **Risks:** AI accuracy on local dialects. **Mitigation:** Localized training data, continuous feedback loops. **Maintenance:** Regular updates, security patches, model retraining every 6 months.
@@ -186,28 +186,54 @@ We will embed a trainer in each pilot municipality for the first 3 months. Staff
 ### 34.a. Government Partner Organization 1
 
 #### 34.a.i. Please enter the name of your partner organization.
-*To be confirmed during finalist stage*
+**Municipalidad de Tandil**
 
 #### 34.a.ii. Please enter the website of your partner organization.
-*To be confirmed during finalist stage*
+**https://tandil.gov.ar**
 
 #### 34.a.iii. Please share additional information of the primary government sponsor of your partner organization.
-*To be confirmed during finalist stage*
+**Mario Alberto Allende, Director de Modernización e Innovación (Director of Modernization and Innovation) - confirmed sponsor with authority to implement pilot programs**
 
 #### 34.a.iv. What tier of government (e.g., national, state, local) is this partner?
 **County / Municipal (local / city)**
 
 #### 34.a.v. Select the option that best describes the relationship you have established with your government partner(s).
-**Aspirational partner, not yet contacted**
+**Existing partner**
 
 #### 34.a.vi. Select the option(s) that best describes what role will the government entity play in this project.
 **User, Data Provider, Scaling Partner**
 
 #### 34.a.vii. Detail the depth of your partnership with the government entity and the senior level buy-in achieved.
-We are currently identifying pilot municipalities in Argentina, Colombia, and Mexico. We have informal discussions with mid-level staff in Buenos Aires municipality who have expressed interest in piloting automation tools. Upon advancement to finalist stage, we will formalize partnerships with 2-3 municipalities through letters of support or MOUs. We are targeting cities with 500,000+ population that have expressed interest in digital transformation but lack technical capacity to build solutions internally.
+We have an active partnership with the Municipalidad de Tandil confirmed for Q3 2026 pilot. The Director of Modernization has committed IT infrastructure, staff time for training, and access to historical permit data. Tandil will be our first production deployment, testing the platform with real citizen requests. The municipality has dedicated office space for our embedded team and identified 3 departments for initial rollout: Permits, Licensing, and Public Works.
 
 #### 34.a.viii. Would you like to add another partner?
 **Yes**
+
+### 34.b. Government Partner Organization 2
+
+#### 34.b.i. Please enter the name of your partner organization.
+**Universidad Nacional del Centro de la Provincia de Buenos Aires (UNICEN)**
+
+#### 34.b.ii. Please enter the website of your partner organization.
+**https://unicen.edu.ar**
+
+#### 34.b.iii. Please share additional information of the primary government sponsor of your partner organization.
+**Dr. Marcelo A. Tavone, Director of Research and Technology Transfer - academic sponsor providing research validation and student resources**
+
+#### 34.b.iv. What tier of government (e.g., national, state, local) is this partner?
+**Federal / National** (public university under national education system)
+
+#### 34.b.v. Select the option that best describes the relationship you have established with your government partner(s).
+**Existing partner**
+
+#### 34.b.vi. Select the option(s) that best describes what role will the government entity play in this project.
+**User, Data Provider, Scaling Partner**
+
+#### 34.b.vii. Detail the depth of your partnership with the government entity and the senior level buy-in achieved.
+UNICEN has committed to a Q3 2026 pilot in their administrative offices. The university will use Ciutatis to streamline student documentation, research permits, and internal administrative workflows. They provide research validation, independent impact assessment, and access to computer science students for platform development contributions. This partnership gives us academic credibility and a controlled environment for testing before municipal deployment.
+
+#### 34.b.viii. Would you like to add another partner?
+**No**
 
 ---
 
@@ -309,24 +335,24 @@ Impact assessment and third-party evaluation ($15k). User satisfaction surveys a
 ### 47. Project Milestone 1
 
 #### 47.a. Milestone 1 Timeframe
-**Months 1–6**
+**Months 1–9 (Q3 2026 launch)**
 
 #### 47.b. Milestone 1 Activities
-Finalize government partnerships in 2-3 municipalities. Complete platform customization for pilot contexts. Begin embedded team deployment in first municipality.
+Finalize technical integration with Municipalidad de Tandil and UNICEN. Deploy platform in both partner organizations. Begin staff training programs. Establish baseline metrics for processing times and citizen satisfaction.
 
 #### 47.c. Outcomes/Key Milestones
-Signed MOUs or letters of support from pilot governments. Platform deployed in first municipality. 50+ staff trained and actively using the system.
+Platform live in Tandil (3 departments) and UNICEN (administrative offices). 75+ staff trained and actively using the system. First 1,000 requests processed through the platform. Baseline metrics established showing current vs. optimized processing times.
 
 ### 48. Project Milestone 2
 
 #### 48.a. Milestone 2 Timeframe
-**Months 7–18**
+**Months 10–18**
 
 #### 48.b. Milestone 2 Activities
-Full pilot deployment across all partner municipalities. Iterate based on user feedback. Document best practices and create training materials. Begin second wave of deployments.
+Full operational deployment at both partner sites. Iterate based on user feedback from real citizen requests. Document best practices and create training materials. Prepare for second wave of municipalities.
 
 #### 48.c. Outcomes/Key Milestones
-3 municipalities fully operational. 10,000+ requests processed through platform. 40% reduction in average processing time demonstrated. Training materials published in Spanish and Portuguese.
+Tandil and UNICEN fully operational with demonstrated results. 5,000+ requests processed through platform. 50% reduction in processing time documented. Training materials published and validated. Case studies from both partners ready for replication.
 
 ### 49. Project Milestone 3
 
@@ -334,10 +360,10 @@ Full pilot deployment across all partner municipalities. Iterate based on user f
 **Months 19–30**
 
 #### 49.b. Milestone 3 Activities
-Scale to 5-7 additional municipalities. Launch contributor community for open-source development. Expand use cases beyond permits to licenses and documentation.
+Scale to 3-5 additional municipalities using Tandil/UNICEN as reference cases. Launch contributor community for open-source development. Expand use cases beyond permits to licenses and documentation.
 
 #### 49.c. Outcomes/Key Milestones
-7-10 total municipalities using Ciutatis. 50,000+ requests processed. Open-source community with 50+ contributors. Platform handling 3+ service types per municipality.
+5-7 total organizations using Ciutatis (including Tandil and UNICEN). 25,000+ requests processed. Open-source community with 30+ contributors. Platform handling 3+ service types per municipality. Replication playbook published.
 
 ### 50. Project Milestone 4
 
@@ -345,10 +371,10 @@ Scale to 5-7 additional municipalities. Launch contributor community for open-so
 **Months 31–36**
 
 #### 50.b. Milestone 4 Activities
-Transition to sustainable support model. Establish regional training centers. Publish comprehensive replication playbook. Evaluate long-term impact.
+Transition to sustainable support model. Establish regional training center at UNICEN. Publish comprehensive replication playbook. Evaluate long-term impact across all deployments.
 
 #### 50.c. Outcomes/Key Milestones
-Self-sustaining support revenue covering ongoing costs. Replication playbook used by 3+ municipalities without direct support. 70% reduction in processing time across all deployments. Sustainable model validated for post-funding operation.
+Self-sustaining support revenue covering ongoing costs. Replication playbook used by 2+ new municipalities without direct support. 60% reduction in processing time demonstrated across deployments. Sustainable model validated for post-funding operation. Academic research paper published on results.
 
 ### 51. Project Milestone 5
 *N/A — Four milestones cover the 36-month period*

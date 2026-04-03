@@ -1,5 +1,7 @@
 # Cloudflare Routing Decision Checklist for Ciudatis
 
+> Current-state note (April 2026): this checklist describes routing options for the planned multi-app topology. The live bilingual public site on `ciutatis.com` is currently served from the main `ui` app rather than a separate landing worker.
+
 ## Quick Reference: MVP vs Production
 
 ### ✅ Choose **PATH-BASED** (`/ar/tandil-abc`) if:

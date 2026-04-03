@@ -1,5 +1,7 @@
 # Cloudflare Multi-App Routing Architecture Research
 
+> Current-state note (April 2026): this document is architecture research for the multi-app direction. The live public site at `ciutatis.com` is currently served from the main `ui` app, not from a separate landing worker.
+
 **Date**: April 3, 2026  
 **Scope**: Path-based vs subdomain-based routing for Ciudatis (public landing, admin, tenant instances)  
 **Status**: Implementation-ready guidance

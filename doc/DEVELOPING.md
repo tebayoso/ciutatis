@@ -44,6 +44,11 @@ pnpm dev:admin
 pnpm dev:landing
 ```
 
+Current public-site note:
+
+- the live bilingual public site on `ciutatis.com` is currently served from the main `ui` app
+- `pnpm dev:landing` runs the standalone landing workspace, but it is not the current production source for `ciutatis.com`
+
 Default ports:
 
 - standalone admin UI (Vite): `http://localhost:4173`

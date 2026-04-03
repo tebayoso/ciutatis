@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tebayoso/ciutatis/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
+  <a href="https://github.com/tebayoso/ciutatis/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
   <a href="https://github.com/tebayoso/ciutatis/stargazers"><img src="https://img.shields.io/github/stars/tebayoso/ciutatis?style=flat" alt="Stars" /></a>
   <a href="https://discord.gg/m4HZY7xNG3"><img src="https://img.shields.io/discord/000000000?label=discord" alt="Discord" /></a>
 </p>
@@ -176,6 +176,24 @@ Ciutatis handles the hard orchestration details correctly.
 
 <br/>
 
+## Public site status
+
+The production public site is bilingual and currently ships from the main `ui` application.
+
+- English routes: `/en`, `/en/platform`, `/en/about`, `/en/partners`
+- Spanish routes: `/es`, `/es/plataforma`, `/es/nosotros`, `/es/alianzas`
+- `ciutatis.com/` redirects to `/en`
+
+The standalone `landing/` workspace still exists for dedicated landing-page work, but the live `ciutatis.com` public experience is currently served from `ui`.
+
+Recent public-site fixes included:
+
+- stabilizing full-height public page scrolling and layout behavior
+- improving English and Spanish copy, hierarchy, colors, and section structure
+- isolating public routes from authenticated shell providers so public pages do not initialize company session and live-update traffic
+
+<br/>
+
 ## Quickstart
 
 Open source. Self-hosted. No account required.
@@ -229,7 +247,7 @@ pnpm dev              # Full dev (API + UI, watch mode)
 pnpm dev:once         # Full dev without file watching
 pnpm dev:server       # Server only
 pnpm dev:admin        # Standalone admin shell UI on localhost:4173
-pnpm dev:landing      # Public landing app on localhost:3000
+pnpm dev:landing      # Standalone landing workspace on localhost:3000 (not the current production source for ciutatis.com)
 pnpm build            # Build all
 pnpm typecheck        # Type checking
 pnpm test:run         # Run tests

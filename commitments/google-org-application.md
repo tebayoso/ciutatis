@@ -192,7 +192,7 @@ We will embed a trainer in each pilot municipality for the first 3 months. Staff
 **https://tandil.gov.ar**
 
 #### 34.a.iii. Please share additional information of the primary government sponsor of your partner organization.
-**Mario Alberto Allende, Director de Modernización e Innovación (Director of Modernization and Innovation) - confirmed sponsor with authority to implement pilot programs**
+*Contact information for primary sponsor to be provided upon finalist selection*
 
 #### 34.a.iv. What tier of government (e.g., national, state, local) is this partner?
 **County / Municipal (local / city)**
@@ -218,7 +218,7 @@ We have an active partnership with the Municipalidad de Tandil confirmed for Q3 
 **https://unicen.edu.ar**
 
 #### 34.b.iii. Please share additional information of the primary government sponsor of your partner organization.
-**Dr. Marcelo A. Tavone, Director of Research and Technology Transfer - academic sponsor providing research validation and student resources**
+*Contact information for primary sponsor to be provided upon finalist selection*
 
 #### 34.b.iv. What tier of government (e.g., national, state, local) is this partner?
 **Federal / National** (public university under national education system)
@@ -233,6 +233,32 @@ We have an active partnership with the Municipalidad de Tandil confirmed for Q3 
 UNICEN has committed to a Q3 2026 pilot in their administrative offices. The university will use Ciutatis to streamline student documentation, research permits, and internal administrative workflows. They provide research validation, independent impact assessment, and access to computer science students for platform development contributions. This partnership gives us academic credibility and a controlled environment for testing before municipal deployment.
 
 #### 34.b.viii. Would you like to add another partner?
+**Yes**
+
+### 34.c. Government Partner Organization 3
+
+#### 34.c.i. Please enter the name of your partner organization.
+**Cluster Tecnológico de Tandil**
+
+#### 34.c.ii. Please enter the website of your partner organization.
+**https://clustertecnologicotandil.org.ar**
+
+#### 34.c.iii. Please share additional information of the primary government sponsor of your partner organization.
+*Contact information for primary sponsor to be provided upon finalist selection*
+
+#### 34.c.iv. What tier of government (e.g., national, state, local) is this partner?
+**County / Municipal (local / city)** (industry association serving Tandil region)
+
+#### 34.c.v. Select the option that best describes the relationship you have established with your government partner(s).
+**Existing partner**
+
+#### 34.c.vi. Select the option(s) that best describes what role will the government entity play in this project.
+**Scaling Partner, Data Provider**
+
+#### 34.c.vii. Detail the depth of your partnership with the government entity and the senior level buy-in achieved.
+The Cluster Tecnológico de Tandil represents 40+ local tech companies and startups. They will provide technical talent, testing environments, and advocate for platform adoption across their member organizations. The Cluster connection strengthens our ability to hire local developers and creates a support network for long-term sustainability. Their endorsement adds credibility with the local business community who interact with municipal permits and licensing.
+
+#### 34.c.viii. Would you like to add another partner?
 **No**
 
 ---

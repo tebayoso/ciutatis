@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Kill all local Paperclip dev server processes (across all worktrees).
+# Kill all local Ciutatis dev server processes (across all worktrees).
 #
 # Usage:
 #   scripts/kill-dev.sh        # kill all paperclip dev processes
@@ -30,11 +30,11 @@ while IFS= read -r line; do
 done < <(ps aux | grep -E '/paperclip(-[^/]+)?/' | grep node | grep -v grep || true)
 
 if [[ ${#pids[@]} -eq 0 ]]; then
-  echo "No Paperclip dev processes found."
+  echo "No Ciutatis dev processes found."
   exit 0
 fi
 
-echo "Found ${#pids[@]} Paperclip dev process(es):"
+echo "Found ${#pids[@]} Ciutatis dev process(es):"
 echo ""
 
 for i in "${!pids[@]}"; do

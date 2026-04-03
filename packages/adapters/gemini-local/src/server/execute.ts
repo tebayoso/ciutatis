@@ -9,13 +9,13 @@ import {
   asNumber,
   asString,
   asStringArray,
-  buildPaperclipEnv,
+  buildCiutatisEnv,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
-  ensurePaperclipSkillSymlink,
+  ensureCiutatisSkillSymlink,
   joinPromptSections,
   ensurePathInEnv,
-  listPaperclipSkillEntries,
+  listCiutatisSkillEntries,
   removeMaintainerOnlySkillSymlinks,
   parseObject,
   redactEnvForLogs,
@@ -45,13 +45,13 @@ function resolveGeminiBillingType(env: Record<string, string>): "api" | "subscri
     : "subscription";
 }
 
-function renderPaperclipEnvNote(env: Record<string, string>): string {
+function renderCiutatisEnvNote(env: Record<string, string>): string {
   const paperclipKeys = Object.keys(env)
     .filter((key) => key.startsWith("PAPERCLIP_"))
     .sort();
   if (paperclipKeys.length === 0) return "";
   return [
-    "Paperclip runtime note:",
+    "Ciutatis runtime note:",
     `The following PAPERCLIP_* environment variables are available in this run: ${paperclipKeys.join(", ")}`,
     "Do not assume these variables are missing without checking your shell environment.",
     "",
@@ -62,12 +62,12 @@ function renderPaperclipEnvNote(env: Record<string, string>): string {
 function renderApiAccessNote(env: Record<string, string>): string {
   if (!hasNonEmptyEnvValue(env, "PAPERCLIP_API_URL") || !hasNonEmptyEnvValue(env, "PAPERCLIP_API_KEY")) return "";
   return [
-    "Paperclip API access note:",
-    "Use run_shell_command with curl to make Paperclip API requests.",
+    "Ciutatis API access note:",
+    "Use run_shell_command with curl to make Ciutatis API requests.",
     "GET example:",
     `  run_shell_command({ command: "curl -s -H \\"Authorization: Bearer $PAPERCLIP_API_KEY\\" \\"$PAPERCLIP_API_URL/api/agents/me\\"" })`,
     "POST/PATCH example:",
-    `  run_shell_command({ command: "curl -s -X POST -H \\"Authorization: Bearer $PAPERCLIP_API_KEY\\" -H 'Content-Type: application/json' -H \\"X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID\\" -d '{...}' \\"$PAPERCLIP_API_URL/api/issues/{id}/checkout\\"" })`,
+    `  run_shell_command({ command: "curl -s -X POST -H \\"Authorization: Bearer $PAPERCLIP_API_KEY\\" -H 'Content-Type: application/json' -H \\"X-Ciutatis-Run-Id: $PAPERCLIP_RUN_ID\\" -d '{...}' \\"$PAPERCLIP_API_URL/api/issues/{id}/checkout\\"" })`,
     "",
     "",
   ].join("\n");
@@ -78,14 +78,14 @@ function geminiSkillsHome(): string {
 }
 
 /**
- * Inject Paperclip skills directly into `~/.gemini/skills/` via symlinks.
+ * Inject Ciutatis skills directly into `~/.gemini/skills/` via symlinks.
  * This avoids needing GEMINI_CLI_HOME overrides, so the CLI naturally finds
  * both its auth credentials and the injected skills in the real home directory.
  */
 async function ensureGeminiSkillsInjected(
   onLog: AdapterExecutionContext["onLog"],
 ): Promise<void> {
-  const skillsEntries = await listPaperclipSkillEntries(__moduleDir);
+  const skillsEntries = await listCiutatisSkillEntries(__moduleDir);
   if (skillsEntries.length === 0) return;
 
   const skillsHome = geminiSkillsHome();
@@ -113,7 +113,7 @@ async function ensureGeminiSkillsInjected(
     const target = path.join(skillsHome, entry.name);
 
     try {
-      const result = await ensurePaperclipSkillSymlink(entry.source, target);
+      const result = await ensureCiutatisSkillSymlink(entry.source, target);
       if (result === "skipped") continue;
       await onLog(
         "stderr",
@@ -133,7 +133,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const promptTemplate = asString(
     config.promptTemplate,
-    "You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.",
+    "You are agent {{agent.id}} ({{agent.name}}). Continue your Ciutatis work.",
   );
   const command = asString(config.command, "gemini");
   const model = asString(config.model, DEFAULT_GEMINI_LOCAL_MODEL).trim();
@@ -161,7 +161,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const envConfig = parseObject(config.env);
   const hasExplicitApiKey =
     typeof envConfig.PAPERCLIP_API_KEY === "string" && envConfig.PAPERCLIP_API_KEY.trim().length > 0;
-  const env: Record<string, string> = { ...buildPaperclipEnv(agent) };
+  const env: Record<string, string> = { ...buildCiutatisEnv(agent) };
   env.PAPERCLIP_RUN_ID = runId;
   const wakeTaskId =
     (typeof context.taskId === "string" && context.taskId.trim().length > 0 && context.taskId.trim()) ||
@@ -292,7 +292,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       ? renderTemplate(bootstrapPromptTemplate, templateData).trim()
       : "";
   const sessionHandoffNote = asString(context.paperclipSessionHandoffMarkdown, "").trim();
-  const paperclipEnvNote = renderPaperclipEnvNote(env);
+  const paperclipEnvNote = renderCiutatisEnvNote(env);
   const apiAccessNote = renderApiAccessNote(env);
   const prompt = joinPromptSections([
     instructionsPrefix,

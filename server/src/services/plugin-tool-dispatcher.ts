@@ -24,7 +24,7 @@
 
 import type { Db } from "@ciutatis/db";
 import type {
-  PaperclipPluginManifestV1,
+  CiutatisPluginManifestV1,
   PluginRecord,
 } from "@ciutatis/shared";
 import type { ToolRunContext, ToolResult } from "@ciutatis/plugin-sdk";
@@ -155,7 +155,7 @@ export interface PluginToolDispatcher {
    */
   registerPluginTools(
     pluginId: string,
-    manifest: PaperclipPluginManifestV1,
+    manifest: CiutatisPluginManifestV1,
   ): void;
 
   /**
@@ -428,7 +428,7 @@ export function createPluginToolDispatcher(
 
     registerPluginTools(
       pluginId: string,
-      manifest: PaperclipPluginManifestV1,
+      manifest: CiutatisPluginManifestV1,
     ): void {
       registry.registerPlugin(pluginId, manifest);
     },

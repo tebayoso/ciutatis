@@ -1,11 +1,11 @@
-import type { PaperclipPluginManifestV1 } from "@ciutatis/plugin-sdk";
+import type { CiutatisPluginManifestV1 } from "@ciutatis/plugin-sdk";
 
-const manifest: PaperclipPluginManifestV1 = {
+const manifest: CiutatisPluginManifestV1 = {
   id: "paperclipai.plugin-authoring-smoke-example",
   apiVersion: 1,
   version: "0.1.0",
   displayName: "Plugin Authoring Smoke Example",
-  description: "A Paperclip plugin",
+  description: "A Ciutatis plugin",
   author: "Plugin Author",
   categories: ["connector"],
   capabilities: [

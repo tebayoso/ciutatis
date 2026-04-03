@@ -266,7 +266,7 @@ Model:
   ${OPENCLAW_MODEL_PRIMARY} (fallback: ${OPENCLAW_MODEL_FALLBACK})
 State:
   OPENCLAW_RESET_STATE=$OPENCLAW_RESET_STATE
-Paperclip URL for OpenClaw container:
+Ciutatis URL for OpenClaw container:
 EOF
   if [[ -n "$paperclip_base_url" ]]; then
     cat <<EOF
@@ -277,9 +277,9 @@ EOF
     cat <<EOF
   Auto-detect failed. Try: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
   (Do not use http://127.0.0.1:${PAPERCLIP_HOST_PORT} inside the container.)
-  If Paperclip rejects the host, run on host machine:
+  If Ciutatis rejects the host, run on host machine:
     pnpm paperclipai allowed-hostname host.docker.internal
-  Then restart Paperclip and re-run this script.
+  Then restart Ciutatis and re-run this script.
 EOF
   fi
   cat <<EOF
@@ -299,7 +299,7 @@ Model:
   ${OPENCLAW_MODEL_PRIMARY} (fallback: ${OPENCLAW_MODEL_FALLBACK})
 State:
   OPENCLAW_RESET_STATE=$OPENCLAW_RESET_STATE
-Paperclip URL for OpenClaw container:
+Ciutatis URL for OpenClaw container:
 EOF
   if [[ -n "$paperclip_base_url" ]]; then
     cat <<EOF
@@ -310,9 +310,9 @@ EOF
     cat <<EOF
   Auto-detect failed. Try: http://host.docker.internal:${PAPERCLIP_HOST_PORT}
   (Do not use http://127.0.0.1:${PAPERCLIP_HOST_PORT} inside the container.)
-  If Paperclip rejects the host, run on host machine:
+  If Ciutatis rejects the host, run on host machine:
     pnpm paperclipai allowed-hostname host.docker.internal
-  Then restart Paperclip and re-run this script.
+  Then restart Ciutatis and re-run this script.
 EOF
   fi
   cat <<EOF

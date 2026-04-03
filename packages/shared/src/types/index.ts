@@ -169,7 +169,7 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
-  PaperclipPluginManifestV1,
+  CiutatisPluginManifestV1,
   PluginRecord,
   PluginStateRecord,
   PluginConfig,

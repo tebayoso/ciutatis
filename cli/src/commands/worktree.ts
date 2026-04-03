@@ -28,9 +28,9 @@ import {
   runDatabaseRestore,
 } from "@ciutatis/db";
 import type { Command } from "commander";
-import { ensureAgentJwtSecret, loadPaperclipEnvFile, mergePaperclipEnvEntries, readPaperclipEnvEntries, resolvePaperclipEnvFile } from "../config/env.js";
+import { ensureAgentJwtSecret, loadCiutatisEnvFile, mergeCiutatisEnvEntries, readCiutatisEnvEntries, resolveCiutatisEnvFile } from "../config/env.js";
 import { expandHomePrefix } from "../config/home.js";
-import type { PaperclipConfig } from "../config/schema.js";
+import type { CiutatisConfig } from "../config/schema.js";
 import { readConfig, resolveConfigPath, writeConfig } from "../config/store.js";
 import { printCiutatisCliBanner } from "../utils/banner.js";
 import { resolveRuntimeLikePath } from "../utils/path-resolver.js";
@@ -438,7 +438,7 @@ export function resolveSourceConfigPath(opts: WorktreeInitOptions): string {
   return path.resolve(sourceHome, "instances", sourceInstanceId, "config.json");
 }
 
-function resolveSourceConnectionString(config: PaperclipConfig, envEntries: Record<string, string>, portOverride?: number): string {
+function resolveSourceConnectionString(config: CiutatisConfig, envEntries: Record<string, string>, portOverride?: number): string {
   if (config.database.mode === "postgres") {
     const connectionString = nonEmpty(envEntries.DATABASE_URL) ?? nonEmpty(config.database.connectionString);
     if (!connectionString) {
@@ -455,7 +455,7 @@ function resolveSourceConnectionString(config: PaperclipConfig, envEntries: Reco
 
 export function copySeededSecretsKey(input: {
   sourceConfigPath: string;
-  sourceConfig: PaperclipConfig;
+  sourceConfig: CiutatisConfig;
   sourceEnvEntries: Record<string, string>;
   targetKeyFilePath: string;
 }): void {
@@ -555,15 +555,15 @@ async function ensureEmbeddedPostgres(dataDir: string, preferredPort: number): P
 
 async function seedWorktreeDatabase(input: {
   sourceConfigPath: string;
-  sourceConfig: PaperclipConfig;
-  targetConfig: PaperclipConfig;
+  sourceConfig: CiutatisConfig;
+  targetConfig: CiutatisConfig;
   targetPaths: WorktreeLocalPaths;
   instanceId: string;
   seedMode: WorktreeSeedMode;
 }): Promise<SeedWorktreeDatabaseResult> {
   const seedPlan = resolveWorktreeSeedPlan(input.seedMode);
-  const sourceEnvFile = resolvePaperclipEnvFile(input.sourceConfigPath);
-  const sourceEnvEntries = readPaperclipEnvEntries(sourceEnvFile);
+  const sourceEnvFile = resolveCiutatisEnvFile(input.sourceConfigPath);
+  const sourceEnvEntries = readCiutatisEnvEntries(sourceEnvFile);
   copySeededSecretsKey({
     sourceConfigPath: input.sourceConfigPath,
     sourceConfig: input.sourceConfig,
@@ -673,11 +673,11 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
   });
 
   writeConfig(targetConfig, paths.configPath);
-  const sourceEnvEntries = readPaperclipEnvEntries(resolvePaperclipEnvFile(sourceConfigPath));
+  const sourceEnvEntries = readCiutatisEnvEntries(resolveCiutatisEnvFile(sourceConfigPath));
   const existingAgentJwtSecret =
     nonEmpty(sourceEnvEntries.PAPERCLIP_AGENT_JWT_SECRET) ??
     nonEmpty(process.env.PAPERCLIP_AGENT_JWT_SECRET);
-  mergePaperclipEnvEntries(
+  mergeCiutatisEnvEntries(
     {
       ...buildWorktreeEnvEntries(paths, branding),
       ...(existingAgentJwtSecret ? { PAPERCLIP_AGENT_JWT_SECRET: existingAgentJwtSecret } : {}),
@@ -685,7 +685,7 @@ async function runWorktreeInit(opts: WorktreeInitOptions): Promise<void> {
     paths.envPath,
   );
   ensureAgentJwtSecret(paths.configPath);
-  loadPaperclipEnvFile(paths.configPath);
+  loadCiutatisEnvFile(paths.configPath);
   const copiedGitHooks = copyGitHooksToWorktreeGitDir(cwd);
 
   let seedSummary: string | null = null;
@@ -1053,8 +1053,8 @@ export async function worktreeCleanupCommand(nameArg: string, opts: WorktreeClea
 
 export async function worktreeEnvCommand(opts: WorktreeEnvOptions): Promise<void> {
   const configPath = resolveConfigPath(opts.config);
-  const envPath = resolvePaperclipEnvFile(configPath);
-  const envEntries = readPaperclipEnvEntries(envPath);
+  const envPath = resolveCiutatisEnvFile(configPath);
+  const envEntries = readCiutatisEnvEntries(envPath);
   const out = {
     PAPERCLIP_CONFIG: configPath,
     ...(envEntries.PAPERCLIP_HOME ? { PAPERCLIP_HOME: envEntries.PAPERCLIP_HOME } : {}),
@@ -1072,11 +1072,11 @@ export async function worktreeEnvCommand(opts: WorktreeEnvOptions): Promise<void
 }
 
 export function registerWorktreeCommands(program: Command): void {
-  const worktree = program.command("worktree").description("Worktree-local Paperclip instance helpers");
+  const worktree = program.command("worktree").description("Worktree-local Ciutatis instance helpers");
 
   program
     .command("worktree:make")
-    .description("Create ~/NAME as a git worktree, then initialize an isolated Paperclip instance inside it")
+    .description("Create ~/NAME as a git worktree, then initialize an isolated Ciutatis instance inside it")
     .argument("<name>", "Worktree name — auto-prefixed with paperclip- if needed (created at ~/paperclip-NAME)")
     .option("--start-point <ref>", "Remote ref to base the new branch on (env: PAPERCLIP_WORKTREE_START_POINT)")
     .option("--instance <id>", "Explicit isolated instance id")
@@ -1109,7 +1109,7 @@ export function registerWorktreeCommands(program: Command): void {
 
   worktree
     .command("env")
-    .description("Print shell exports for the current worktree-local Paperclip instance")
+    .description("Print shell exports for the current worktree-local Ciutatis instance")
     .option("-c, --config <path>", "Path to config file")
     .option("--json", "Print JSON instead of shell exports")
     .action(worktreeEnvCommand);

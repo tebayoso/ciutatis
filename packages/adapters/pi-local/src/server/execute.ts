@@ -8,14 +8,14 @@ import {
   asNumber,
   asStringArray,
   parseObject,
-  buildPaperclipEnv,
+  buildCiutatisEnv,
   joinPromptSections,
   redactEnvForLogs,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
-  ensurePaperclipSkillSymlink,
+  ensureCiutatisSkillSymlink,
   ensurePathInEnv,
-  listPaperclipSkillEntries,
+  listCiutatisSkillEntries,
   removeMaintainerOnlySkillSymlinks,
   renderTemplate,
   runChildProcess,
@@ -55,7 +55,7 @@ function resolvePiBiller(env: Record<string, string>, provider: string | null): 
 }
 
 async function ensurePiSkillsInjected(onLog: AdapterExecutionContext["onLog"]) {
-  const skillsEntries = await listPaperclipSkillEntries(__moduleDir);
+  const skillsEntries = await listCiutatisSkillEntries(__moduleDir);
   if (skillsEntries.length === 0) return;
 
   const piSkillsHome = path.join(os.homedir(), ".pi", "agent", "skills");
@@ -75,7 +75,7 @@ async function ensurePiSkillsInjected(onLog: AdapterExecutionContext["onLog"]) {
     const target = path.join(piSkillsHome, entry.name);
 
     try {
-      const result = await ensurePaperclipSkillSymlink(entry.source, target);
+      const result = await ensureCiutatisSkillSymlink(entry.source, target);
       if (result === "skipped") continue;
       await onLog(
         "stderr",
@@ -105,7 +105,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const promptTemplate = asString(
     config.promptTemplate,
-    "You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.",
+    "You are agent {{agent.id}} ({{agent.name}}). Continue your Ciutatis work.",
   );
   const command = asString(config.command, "pi");
   const model = asString(config.model, "").trim();
@@ -143,7 +143,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const envConfig = parseObject(config.env);
   const hasExplicitApiKey =
     typeof envConfig.PAPERCLIP_API_KEY === "string" && envConfig.PAPERCLIP_API_KEY.trim().length > 0;
-  const env: Record<string, string> = { ...buildPaperclipEnv(agent) };
+  const env: Record<string, string> = { ...buildCiutatisEnv(agent) };
   env.PAPERCLIP_RUN_ID = runId;
   
   const wakeTaskId =
@@ -258,7 +258,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         `${instructionsContents}\n\n` +
         `The above agent instructions were loaded from ${resolvedInstructionsFilePath}. ` +
         `Resolve any relative file references from ${instructionsFileDir}.\n\n` +
-        `You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.`;
+        `You are agent {{agent.id}} ({{agent.name}}). Continue your Ciutatis work.`;
       await onLog(
         "stderr",
         `[paperclip] Loaded agent instructions file: ${resolvedInstructionsFilePath}\n`,

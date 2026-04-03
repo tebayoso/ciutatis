@@ -6,14 +6,14 @@ import pc from "picocolors";
 import { bootstrapCeoInvite } from "./auth-bootstrap-ceo.js";
 import { onboard } from "./onboard.js";
 import { doctor } from "./doctor.js";
-import { loadPaperclipEnvFile } from "../config/env.js";
+import { loadCiutatisEnvFile } from "../config/env.js";
 import { configExists, resolveConfigPath } from "../config/store.js";
-import type { PaperclipConfig } from "../config/schema.js";
+import type { CiutatisConfig } from "../config/schema.js";
 import { readConfig } from "../config/store.js";
 import {
   describeLocalInstancePaths,
-  resolvePaperclipHomeDir,
-  resolvePaperclipInstanceId,
+  resolveCiutatisHomeDir,
+  resolveCiutatisInstanceId,
 } from "../config/home.js";
 
 interface RunOptions {
@@ -31,10 +31,10 @@ interface StartedServer {
 }
 
 export async function runCommand(opts: RunOptions): Promise<void> {
-  const instanceId = resolvePaperclipInstanceId(opts.instance);
+  const instanceId = resolveCiutatisInstanceId(opts.instance);
   process.env.PAPERCLIP_INSTANCE_ID = instanceId;
 
-  const homeDir = resolvePaperclipHomeDir();
+  const homeDir = resolveCiutatisHomeDir();
   fs.mkdirSync(homeDir, { recursive: true });
 
   const paths = describeLocalInstancePaths(instanceId);
@@ -42,7 +42,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
 
   const configPath = resolveConfigPath(opts.config);
   process.env.PAPERCLIP_CONFIG = configPath;
-  loadPaperclipEnvFile(configPath);
+  loadCiutatisEnvFile(configPath);
 
   p.intro(pc.bgCyan(pc.black(" paperclipai run ")));
   p.log.message(pc.dim(`Home: ${paths.homeDir}`));
@@ -78,7 +78,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
     process.exit(1);
   }
 
-  p.log.step("Starting Paperclip server...");
+  p.log.step("Starting Ciutatis server...");
   const startedServer = await importServerEntry();
 
   if (shouldGenerateBootstrapInviteAfterStart(config)) {
@@ -92,7 +92,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
 }
 
 function resolveBootstrapInviteBaseUrl(
-  config: PaperclipConfig,
+  config: CiutatisConfig,
   startedServer: StartedServer,
 ): string {
   const explicitBaseUrl =
@@ -171,20 +171,20 @@ async function importServerEntry(): Promise<StartedServer> {
       );
     }
     throw new Error(
-      `Paperclip server failed to start.\n` +
+      `Ciutatis server failed to start.\n` +
         `${formatError(err)}`,
     );
   }
 }
 
-function shouldGenerateBootstrapInviteAfterStart(config: PaperclipConfig): boolean {
+function shouldGenerateBootstrapInviteAfterStart(config: CiutatisConfig): boolean {
   return config.server.deploymentMode === "authenticated" && config.database.mode === "embedded-postgres";
 }
 
 async function startServerFromModule(mod: unknown, label: string): Promise<StartedServer> {
   const startServer = (mod as { startServer?: () => Promise<StartedServer> }).startServer;
   if (typeof startServer !== "function") {
-    throw new Error(`Paperclip server entrypoint did not export startServer(): ${label}`);
+    throw new Error(`Ciutatis server entrypoint did not export startServer(): ${label}`);
   }
   return await startServer();
 }

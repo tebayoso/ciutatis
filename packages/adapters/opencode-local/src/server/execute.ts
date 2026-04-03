@@ -8,7 +8,7 @@ import {
   asNumber,
   asStringArray,
   parseObject,
-  buildPaperclipEnv,
+  buildCiutatisEnv,
   joinPromptSections,
   redactEnvForLogs,
   ensureAbsoluteDirectory,
@@ -50,7 +50,7 @@ function claudeSkillsHome(): string {
   return path.join(os.homedir(), ".claude", "skills");
 }
 
-async function resolvePaperclipSkillsDir(): Promise<string | null> {
+async function resolveCiutatisSkillsDir(): Promise<string | null> {
   for (const candidate of PAPERCLIP_SKILLS_CANDIDATES) {
     const isDir = await fs.stat(candidate).then((s) => s.isDirectory()).catch(() => false);
     if (isDir) return candidate;
@@ -59,7 +59,7 @@ async function resolvePaperclipSkillsDir(): Promise<string | null> {
 }
 
 async function ensureOpenCodeSkillsInjected(onLog: AdapterExecutionContext["onLog"]) {
-  const skillsDir = await resolvePaperclipSkillsDir();
+  const skillsDir = await resolveCiutatisSkillsDir();
   if (!skillsDir) return;
 
   const skillsHome = claudeSkillsHome();
@@ -92,7 +92,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const promptTemplate = asString(
     config.promptTemplate,
-    "You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.",
+    "You are agent {{agent.id}} ({{agent.name}}). Continue your Ciutatis work.",
   );
   const command = asString(config.command, "opencode");
   const model = asString(config.model, "").trim();
@@ -120,7 +120,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const envConfig = parseObject(config.env);
   const hasExplicitApiKey =
     typeof envConfig.PAPERCLIP_API_KEY === "string" && envConfig.PAPERCLIP_API_KEY.trim().length > 0;
-  const env: Record<string, string> = { ...buildPaperclipEnv(agent) };
+  const env: Record<string, string> = { ...buildCiutatisEnv(agent) };
   env.PAPERCLIP_RUN_ID = runId;
   const wakeTaskId =
     (typeof context.taskId === "string" && context.taskId.trim().length > 0 && context.taskId.trim()) ||

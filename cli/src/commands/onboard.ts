@@ -14,7 +14,7 @@ import {
   type StorageProvider,
 } from "@ciutatis/shared";
 import { configExists, readConfig, resolveConfigPath, writeConfig } from "../config/store.js";
-import type { PaperclipConfig } from "../config/schema.js";
+import type { CiutatisConfig } from "../config/schema.js";
 import { ensureAgentJwtSecret, resolveAgentJwtEnvFile } from "../config/env.js";
 import { ensureLocalSecretsKeyFile } from "../config/secrets-key.js";
 import { promptDatabase } from "../prompts/database.js";
@@ -29,7 +29,7 @@ import {
   resolveDefaultBackupDir,
   resolveDefaultEmbeddedPostgresDir,
   resolveDefaultLogsDir,
-  resolvePaperclipInstanceId,
+  resolveCiutatisInstanceId,
 } from "../config/home.js";
 import { bootstrapCeoInvite } from "./auth-bootstrap-ceo.js";
 import { printCiutatisCliBanner } from "../utils/banner.js";
@@ -43,7 +43,7 @@ type OnboardOptions = {
   invokedByRun?: boolean;
 };
 
-type OnboardDefaults = Pick<PaperclipConfig, "database" | "logging" | "server" | "auth" | "storage" | "secrets">;
+type OnboardDefaults = Pick<CiutatisConfig, "database" | "logging" | "server" | "auth" | "storage" | "secrets">;
 
 const ONBOARD_ENV_KEYS = [
   "PAPERCLIP_PUBLIC_URL",
@@ -104,7 +104,7 @@ function quickstartDefaultsFromEnv(): {
   usedEnvKeys: string[];
   ignoredEnvKeys: Array<{ key: string; reason: string }>;
 } {
-  const instanceId = resolvePaperclipInstanceId();
+  const instanceId = resolveCiutatisInstanceId();
   const defaultStorage = defaultStorageConfig();
   const defaultSecrets = defaultSecretsConfig();
   const databaseUrl = process.env.DATABASE_URL?.trim() || undefined;
@@ -229,7 +229,7 @@ function quickstartDefaultsFromEnv(): {
   return { defaults, usedEnvKeys, ignoredEnvKeys };
 }
 
-function canCreateBootstrapInviteImmediately(config: Pick<PaperclipConfig, "database" | "server">): boolean {
+function canCreateBootstrapInviteImmediately(config: Pick<CiutatisConfig, "database" | "server">): boolean {
   return config.server.deploymentMode === "authenticated" && config.database.mode !== "embedded-postgres";
 }
 
@@ -237,7 +237,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
   printCiutatisCliBanner();
   p.intro(pc.bgCyan(pc.black(" ciutatis onboard ")));
   const configPath = resolveConfigPath(opts.config);
-  const instance = describeLocalInstancePaths(resolvePaperclipInstanceId());
+  const instance = describeLocalInstancePaths(resolveCiutatisInstanceId());
   p.log.message(
     pc.dim(
       `Local home: ${instance.homeDir} | instance: ${instance.instanceId} | config: ${configPath}`,
@@ -285,7 +285,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
     setupMode = setupModeChoice as SetupMode;
   }
 
-  let llm: PaperclipConfig["llm"] | undefined;
+  let llm: CiutatisConfig["llm"] | undefined;
   const { defaults: derivedDefaults, usedEnvKeys, ignoredEnvKeys } = quickstartDefaultsFromEnv();
   let {
     database,
@@ -383,7 +383,7 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
     p.log.info(`Using existing ${pc.cyan("PAPERCLIP_AGENT_JWT_SECRET")} in ${pc.dim(envFilePath)}`);
   }
 
-  const config: PaperclipConfig = {
+  const config: CiutatisConfig = {
     $meta: {
       version: 1,
       updatedAt: new Date().toISOString(),

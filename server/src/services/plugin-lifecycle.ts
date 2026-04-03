@@ -40,7 +40,7 @@ import type { Db } from "@ciutatis/db";
 import type {
   PluginStatus,
   PluginRecord,
-  PaperclipPluginManifestV1,
+  CiutatisPluginManifestV1,
 } from "@ciutatis/shared";
 import { pluginRegistryService } from "./plugin-registry.js";
 import { pluginLoader, type PluginLoader } from "./plugin-loader.js";

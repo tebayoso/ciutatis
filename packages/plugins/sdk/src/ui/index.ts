@@ -1,5 +1,5 @@
 /**
- * `@ciutatis/plugin-sdk/ui` — Paperclip plugin UI SDK.
+ * `@ciutatis/plugin-sdk/ui` — Ciutatis plugin UI SDK.
  *
  * Import this subpath from plugin UI bundles (React components that run in
  * the host frontend).  Do **not** import this from plugin worker code.

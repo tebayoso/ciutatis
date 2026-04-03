@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import { paperclipConfigSchema, type PaperclipConfig } from "@ciutatis/shared";
-import { resolvePaperclipConfigPath } from "./paths.js";
+import { paperclipConfigSchema, type CiutatisConfig } from "@ciutatis/shared";
+import { resolveCiutatisConfigPath } from "./paths.js";
 
-export function readConfigFile(): PaperclipConfig | null {
-  const configPath = resolvePaperclipConfigPath();
+export function readConfigFile(): CiutatisConfig | null {
+  const configPath = resolveCiutatisConfigPath();
 
   if (!fs.existsSync(configPath)) return null;
 

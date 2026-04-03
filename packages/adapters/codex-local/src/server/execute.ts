@@ -8,13 +8,13 @@ import {
   asBoolean,
   asStringArray,
   parseObject,
-  buildPaperclipEnv,
+  buildCiutatisEnv,
   redactEnvForLogs,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
-  ensurePaperclipSkillSymlink,
+  ensureCiutatisSkillSymlink,
   ensurePathInEnv,
-  listPaperclipSkillEntries,
+  listCiutatisSkillEntries,
   removeMaintainerOnlySkillSymlinks,
   renderTemplate,
   joinPromptSections,
@@ -67,7 +67,7 @@ function resolveCodexBiller(env: Record<string, string>, billingType: "api" | "s
   return billingType === "subscription" ? "chatgpt" : openAiCompatibleBiller ?? "openai";
 }
 
-async function isLikelyPaperclipRepoRoot(candidate: string): Promise<boolean> {
+async function isLikelyCiutatisRepoRoot(candidate: string): Promise<boolean> {
   const [hasWorkspace, hasPackageJson, hasServerDir, hasAdapterUtilsDir] = await Promise.all([
     pathExists(path.join(candidate, "pnpm-workspace.yaml")),
     pathExists(path.join(candidate, "package.json")),
@@ -78,7 +78,7 @@ async function isLikelyPaperclipRepoRoot(candidate: string): Promise<boolean> {
   return hasWorkspace && hasPackageJson && hasServerDir && hasAdapterUtilsDir;
 }
 
-async function isLikelyPaperclipRuntimeSkillSource(candidate: string, skillName: string): Promise<boolean> {
+async function isLikelyCiutatisRuntimeSkillSource(candidate: string, skillName: string): Promise<boolean> {
   if (path.basename(candidate) !== skillName) return false;
   const skillsRoot = path.dirname(candidate);
   if (path.basename(skillsRoot) !== "skills") return false;
@@ -86,7 +86,7 @@ async function isLikelyPaperclipRuntimeSkillSource(candidate: string, skillName:
 
   let cursor = path.dirname(skillsRoot);
   for (let depth = 0; depth < 6; depth += 1) {
-    if (await isLikelyPaperclipRepoRoot(cursor)) return true;
+    if (await isLikelyCiutatisRepoRoot(cursor)) return true;
     const parent = path.dirname(cursor);
     if (parent === cursor) break;
     cursor = parent;
@@ -97,7 +97,7 @@ async function isLikelyPaperclipRuntimeSkillSource(candidate: string, skillName:
 
 type EnsureCodexSkillsInjectedOptions = {
   skillsHome?: string;
-  skillsEntries?: Awaited<ReturnType<typeof listPaperclipSkillEntries>>;
+  skillsEntries?: Awaited<ReturnType<typeof listCiutatisSkillEntries>>;
   linkSkill?: (source: string, target: string) => Promise<void>;
 };
 
@@ -105,7 +105,7 @@ export async function ensureCodexSkillsInjected(
   onLog: AdapterExecutionContext["onLog"],
   options: EnsureCodexSkillsInjectedOptions = {},
 ) {
-  const skillsEntries = options.skillsEntries ?? await listPaperclipSkillEntries(__moduleDir);
+  const skillsEntries = options.skillsEntries ?? await listCiutatisSkillEntries(__moduleDir);
   if (skillsEntries.length === 0) return;
 
   const skillsHome = options.skillsHome ?? path.join(resolveCodexHomeDir(process.env), "skills");
@@ -134,7 +134,7 @@ export async function ensureCodexSkillsInjected(
         if (
           resolvedLinkedPath &&
           resolvedLinkedPath !== entry.source &&
-          (await isLikelyPaperclipRuntimeSkillSource(resolvedLinkedPath, entry.name))
+          (await isLikelyCiutatisRuntimeSkillSource(resolvedLinkedPath, entry.name))
         ) {
           await fs.unlink(target);
           if (linkSkill) {
@@ -150,7 +150,7 @@ export async function ensureCodexSkillsInjected(
         }
       }
 
-      const result = await ensurePaperclipSkillSymlink(entry.source, target, linkSkill);
+      const result = await ensureCiutatisSkillSymlink(entry.source, target, linkSkill);
       if (result === "skipped") continue;
 
       await onLog(
@@ -171,7 +171,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const promptTemplate = asString(
     config.promptTemplate,
-    "You are agent {{agent.id}} ({{agent.name}}). Continue your Paperclip work.",
+    "You are agent {{agent.id}} ({{agent.name}}). Continue your Ciutatis work.",
   );
   const command = asString(config.command, "codex");
   const model = asString(config.model, "");
@@ -230,7 +230,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   );
   const hasExplicitApiKey =
     typeof envConfig.PAPERCLIP_API_KEY === "string" && envConfig.PAPERCLIP_API_KEY.trim().length > 0;
-  const env: Record<string, string> = { ...buildPaperclipEnv(agent) };
+  const env: Record<string, string> = { ...buildCiutatisEnv(agent) };
   if (effectiveCodexHome) {
     env.CODEX_HOME = effectiveCodexHome;
   }

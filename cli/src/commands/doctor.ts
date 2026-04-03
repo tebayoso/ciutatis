@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import type { PaperclipConfig } from "../config/schema.js";
+import type { CiutatisConfig } from "../config/schema.js";
 import { readConfig, resolveConfigPath } from "../config/store.js";
 import {
   agentJwtSecretCheck,
@@ -14,7 +14,7 @@ import {
   storageCheck,
   type CheckResult,
 } from "../checks/index.js";
-import { loadPaperclipEnvFile } from "../config/env.js";
+import { loadCiutatisEnvFile } from "../config/env.js";
 import { printCiutatisCliBanner } from "../utils/banner.js";
 
 const STATUS_ICON = {
@@ -32,7 +32,7 @@ export async function doctor(opts: {
   p.intro(pc.bgCyan(pc.black(" ciutatis doctor ")));
 
   const configPath = resolveConfigPath(opts.config);
-  loadPaperclipEnvFile(configPath);
+  loadCiutatisEnvFile(configPath);
   const results: CheckResult[] = [];
 
   // 1. Config check (must pass before others)
@@ -44,7 +44,7 @@ export async function doctor(opts: {
     return printSummary(results);
   }
 
-  let config: PaperclipConfig;
+  let config: CiutatisConfig;
   try {
     config = readConfig(opts.config)!;
   } catch (err) {
@@ -173,7 +173,7 @@ async function runRepairableCheck(input: {
   if (!repaired) return result;
 
   // Repairs may create/update the adjacent .env file or other local resources.
-  loadPaperclipEnvFile(input.configPath);
+  loadCiutatisEnvFile(input.configPath);
   result = await input.run();
   printResult(result);
   return result;

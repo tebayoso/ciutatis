@@ -25,10 +25,10 @@ Fix: Rewrote 5 test cases to assert empty arrays for unregistered adapter types
 (codex_local, cursor, opencode) since `listAdapterModels()` returns `[]` for
 unknown types.
 
-## UI index.html still has "Paperclip" title
+## UI index.html still has "Ciutatis" title
 
-The `ui/index.html` file has `<title>Paperclip</title>` and
-`<meta name="apple-mobile-web-app-title" content="Paperclip">`. Runtime
+The `ui/index.html` file has `<title>Ciutatis</title>` and
+`<meta name="apple-mobile-web-app-title" content="Ciutatis">`. Runtime
 branding markers suggest server-side injection may override this. Non-blocking
 for release but should be addressed in a follow-up to fully rebrand the HTML shell.
 
@@ -40,7 +40,7 @@ remove in a cleanup pass.
 
 ## Ciutatis branding cleanup
 
-Updated remaining user-facing UI strings from Paperclip to Ciutatis in the
+Updated remaining user-facing UI strings from Ciutatis to Ciutatis in the
 theme storage key, auth page labels, breadcrumb document title, dashboard empty
 state copy, and invite landing bootstrap labels. Kept internal CSS/env names
 unchanged.
@@ -58,7 +58,7 @@ Passes:
 
 Failures:
 - Gemini-only is not enforced across the UI/shared layer: ui/src/pages/InviteLanding.tsx still defaults to claude_local and enables claude/codex/opencode/cursor; ui/src/components/AgentConfigForm.tsx still enables those adapters; ui/src/components/agent-config-defaults.tsx still defaults to claude_local; ui/src/components/NewAgentDialog.tsx still presents multiple non-Gemini adapters.
-- User-facing Paperclip strings remain in UI: ui/src/components/OnboardingWizard.tsx, ui/src/components/agent-config-primitives.tsx, ui/src/components/JsonSchemaForm.tsx, ui/src/components/ProjectProperties.tsx, ui/src/components/AccountingModelCard.tsx, and ui/src/adapters/openclaw-gateway/config-fields.tsx. ui/index.html also still uses the paperclip.theme storage key.
+- User-facing Ciutatis strings remain in UI: ui/src/components/OnboardingWizard.tsx, ui/src/components/agent-config-primitives.tsx, ui/src/components/JsonSchemaForm.tsx, ui/src/components/ProjectProperties.tsx, ui/src/components/AccountingModelCard.tsx, and ui/src/adapters/openclaw-gateway/config-fields.tsx. ui/index.html also still uses the paperclip.theme storage key.
 - Civic terminology is only partially migrated in schema/shared: institutions, objectives, and requests are canonical, but council/channel are not clearly represented there.
 - Full T1-T12 completion cannot be approved while the above Gemini-only and UI-branding gaps remain.
 
@@ -69,7 +69,7 @@ Verdict: REJECT
 
 Verified passes:
 - GitHub fork exists at https://github.com/tebayoso/ciutatis and is marked as a fork of paperclipai/paperclip.
-- LICENSE preserves the MIT license and original Paperclip AI copyright.
+- LICENSE preserves the MIT license and original Ciutatis AI copyright.
 - README lines 1-13 contain the required civic-fork/origin disclaimer.
 - agent-config-defaults.ts defaults to gemini_local with DEFAULT_GEMINI_LOCAL_MODEL.
 - NewAgent.tsx forces gemini_local in initial state and mount-time enforcement.
@@ -80,7 +80,7 @@ Verified passes:
 Blocking failures:
 - OnboardingWizard.tsx does not meet Gemini-only enforcement. It still renders non-Gemini adapter options (claude_local, codex_local, process, opencode_local, pi_local, cursor, openclaw_gateway), contains branch logic for those adapters, and reset() sets adapterType back to claude_local.
 - NewAgentDialog.tsx still presents multiple non-Gemini adapter cards to the user. Even though navigation is forced to gemini_local, this does not satisfy a strict verify-all-entry-points Gemini-only UI requirement.
-- User-facing "Paperclip" strings remain in ui/src outside the accepted internal-only set, including AgentDetail.tsx (badge label and API key help text) and DesignGuide.tsx (visible guide copy). Those are user-visible and therefore still fail branding compliance.
+- User-facing "Ciutatis" strings remain in ui/src outside the accepted internal-only set, including AgentDetail.tsx (badge label and API key help text) and DesignGuide.tsx (visible guide copy). Those are user-visible and therefore still fail branding compliance.
 - T1-T12 completion cannot be fully approved from the repo because the sacred plan file .sisyphus/plans/ciutatis-civic-fork.md is not present at the expected path, so checklist completion is not independently verifiable here.
 
 
@@ -94,7 +94,7 @@ Passing checks:
 - InviteLanding.tsx no longer exposes adapter selection and keeps agent joins on gemini_local.
 - OnboardingWizard.tsx user-facing adapter section shows only “Gemini CLI” with a Required badge.
 - agent-config-defaults.ts defaults to gemini_local with DEFAULT_GEMINI_LOCAL_MODEL.
-- Checked user-facing branding targets (Auth.tsx, Dashboard.tsx, InviteLanding.tsx, AgentDetail.tsx, DesignGuide.tsx) and found no visible “Paperclip” strings.
+- Checked user-facing branding targets (Auth.tsx, Dashboard.tsx, InviteLanding.tsx, AgentDetail.tsx, DesignGuide.tsx) and found no visible “Ciutatis” strings.
 
 Blocking user-facing failures:
 - NewAgent.tsx still renders AgentConfigForm, and AgentConfigForm still exposes an “Adapter type” dropdown with non-Gemini options (claude_local, codex_local, opencode_local, cursor). This means users can still see/select non-Gemini adapters from the new-agent UI.
@@ -111,9 +111,9 @@ VERDICT: REJECT
 - F1.1 FAIL — Gemini is not the only provider exposed in the UI. `ui/src/components/AgentConfigForm.tsx:513-565` still renders the Adapter type dropdown in edit mode, and `ui/src/components/AgentConfigForm.tsx:945-999` still builds that dropdown from all `AGENT_ADAPTER_TYPES`.
 - F1.2 PASS (initialization only) — Gemini is forced at all requested entry points: `ui/src/pages/NewAgent.tsx:34-38,76-87`, `ui/src/pages/InviteLanding.tsx:33-40`, `ui/src/components/OnboardingWizard.tsx:115-118,186-189,280`, `ui/src/components/NewAgentDialog.tsx:40-42`.
 - Residual non-Gemini dead code remains in UI and should be removed before approval: `ui/src/components/OnboardingWizard.tsx:57-67,203-208,304-327,736-742,925-1026`.
-- F1.3 FAIL — user-facing Paperclip strings remain in UI surfaces: `ui/src/pages/RunTranscriptUxLab.tsx:213`, `ui/src/components/AgentConfigForm.tsx:1247`, `ui/src/components/OnboardingWizard.tsx:71`.
+- F1.3 FAIL — user-facing Ciutatis strings remain in UI surfaces: `ui/src/pages/RunTranscriptUxLab.tsx:213`, `ui/src/components/AgentConfigForm.tsx:1247`, `ui/src/components/OnboardingWizard.tsx:71`.
 - F1.4 PASS — README origin notice is preserved at `README.md:1-13`.
-- README still contains Paperclip-linked branding outside the origin notice at `README.md:21-22,27-28`.
+- README still contains Ciutatis-linked branding outside the origin notice at `README.md:21-22,27-28`.
 - F1.5 PASS — rename verified in `package.json:2,19`, `cli/package.json:2,6-8`, and `server/package.json:2`.
 - LSP diagnostics on `ui/src` report 0 TSX errors (2 hints only).
 
@@ -149,7 +149,7 @@ Fixed remaining F1 compliance violations to enforce Gemini-only adapter support 
 - Line 71: Updated GitHub URL from paperclipai to tebayoso/ciutatis
 
 **3. RunTranscriptUxLab.tsx**
-- Line 213: Replaced "Paperclip" with "Ciutatis" in description text
+- Line 213: Replaced "Ciutatis" with "Ciutatis" in description text
 
 **4. README.md**
 - Lines 21-22: Updated docs link to ciutatis.com, GitHub to tebayoso/ciutatis
@@ -159,7 +159,7 @@ Fixed remaining F1 compliance violations to enforce Gemini-only adapter support 
 - All 19 packages pass `pnpm -r typecheck` with 0 errors
 - Edit mode in AgentConfigForm remains functional (adapter dropdown only shows Gemini)
 - OnboardingWizard no longer contains dead code for non-Gemini adapters
-- All Paperclip branding removed from user-facing strings
+- All Ciutatis branding removed from user-facing strings
 
 ### Notes
 - The `command`, `args`, and `url` state variables remain in OnboardingWizard as they are still passed through the adapter config (even though primarily for Gemini)
@@ -172,7 +172,7 @@ VERDICT: APPROVE
 
 - F1.1 PASS — Gemini is the only LLM provider exposed in enforced entry flows. Evidence: `ui/src/components/AgentConfigForm.tsx:908` restricts enabled adapter types to `gemini_local`; `server/src/routes/llms.ts:8` restricts LLM adapter exposure to `gemini_local`.
 - F1.2 PASS — Entry points force Gemini initialization. Evidence: `ui/src/pages/NewAgent.tsx:34-38,76-87`, `ui/src/pages/InviteLanding.tsx:33-40`, `ui/src/components/OnboardingWizard.tsx:99-102,168-171,222-225`, and `ui/src/components/NewAgentDialog.tsx:42`.
-- F1.3 PASS — No remaining user-facing `Paperclip` branding found in `README.md` outside the allowed origin notice; `ui/src` TSX diagnostics show 0 errors and grep results only surfaced internal identifiers/comments/icon names, not visible branding strings.
+- F1.3 PASS — No remaining user-facing `Ciutatis` branding found in `README.md` outside the allowed origin notice; `ui/src` TSX diagnostics show 0 errors and grep results only surfaced internal identifiers/comments/icon names, not visible branding strings.
 - F1.4 PASS — README preserves the origin notice at lines 1-13, and license line is now `MIT © 2026 Ciutatis` at `README.md:274`.
 - F1.5 PASS — Rename verified in `package.json:2,19`, `cli/package.json:2,6-8`, and `server/package.json:2`.
 - Verification — `pnpm typecheck` passed across the workspace. `lsp_diagnostics` on `ui/src` returned 0 TSX errors (2 hints only).

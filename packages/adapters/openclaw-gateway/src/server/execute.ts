@@ -3,7 +3,7 @@ import type {
   AdapterExecutionResult,
   AdapterRuntimeServiceReport,
 } from "@ciutatis/adapter-utils";
-import { asNumber, asString, buildPaperclipEnv, parseObject } from "@ciutatis/adapter-utils/server-utils";
+import { asNumber, asString, buildCiutatisEnv, parseObject } from "@ciutatis/adapter-utils/server-utils";
 import crypto, { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
 
@@ -301,7 +301,7 @@ function buildWakePayload(ctx: AdapterExecutionContext): WakePayload {
   };
 }
 
-function resolvePaperclipApiUrlOverride(value: unknown): string | null {
+function resolveCiutatisApiUrlOverride(value: unknown): string | null {
   const raw = nonEmpty(value);
   if (!raw) return null;
   try {
@@ -313,10 +313,10 @@ function resolvePaperclipApiUrlOverride(value: unknown): string | null {
   }
 }
 
-function buildPaperclipEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
-  const paperclipApiUrlOverride = resolvePaperclipApiUrlOverride(ctx.config.paperclipApiUrl);
+function buildCiutatisEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
+  const paperclipApiUrlOverride = resolveCiutatisApiUrlOverride(ctx.config.paperclipApiUrl);
   const paperclipEnv: Record<string, string> = {
-    ...buildPaperclipEnv(ctx.agent),
+    ...buildCiutatisEnv(ctx.agent),
     PAPERCLIP_RUN_ID: ctx.runId,
   };
 
@@ -361,7 +361,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
   const apiBaseHint = paperclipEnv.PAPERCLIP_API_URL ?? "<set PAPERCLIP_API_URL>";
 
   const lines = [
-    "Paperclip wake event for a cloud adapter.",
+    "Ciutatis wake event for a cloud adapter.",
     "",
     "Run this procedure now. Do not guess undocumented endpoints and do not ask for additional heartbeat docs.",
     "",
@@ -382,7 +382,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     "",
     "HTTP rules:",
     "- Use Authorization: Bearer $PAPERCLIP_API_KEY on every API call.",
-    "- Use X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID on every mutating API call.",
+    "- Use X-Ciutatis-Run-Id: $PAPERCLIP_RUN_ID on every mutating API call.",
     "- Use only /api endpoints listed below.",
     "- Do NOT call guessed endpoints like /api/cloud-adapter/*, /api/cloud-adapters/*, /api/adapters/cloud/*, or /api/heartbeat.",
     "",
@@ -415,13 +415,13 @@ function appendWakeText(baseText: string, wakeText: string): string {
   return trimmedBase.length > 0 ? `${trimmedBase}\n\n${wakeText}` : wakeText;
 }
 
-function buildStandardPaperclipPayload(
+function buildStandardCiutatisPayload(
   ctx: AdapterExecutionContext,
   wakePayload: WakePayload,
   paperclipEnv: Record<string, string>,
   payloadTemplate: Record<string, unknown>,
 ): Record<string, unknown> {
-  const templatePaperclip = parseObject(payloadTemplate.paperclip);
+  const templateCiutatis = parseObject(payloadTemplate.paperclip);
   const workspace = asRecord(ctx.context.paperclipWorkspace);
   const workspaces = Array.isArray(ctx.context.paperclipWorkspaces)
     ? ctx.context.paperclipWorkspaces.filter((entry): entry is Record<string, unknown> => Boolean(asRecord(entry)))
@@ -433,7 +433,7 @@ function buildStandardPaperclipPayload(
       )
     : [];
 
-  const standardPaperclip: Record<string, unknown> = {
+  const standardCiutatis: Record<string, unknown> = {
     runId: ctx.runId,
     companyId: ctx.agent.companyId,
     agentId: ctx.agent.id,
@@ -449,21 +449,21 @@ function buildStandardPaperclipPayload(
   };
 
   if (workspace) {
-    standardPaperclip.workspace = workspace;
+    standardCiutatis.workspace = workspace;
   }
   if (workspaces.length > 0) {
-    standardPaperclip.workspaces = workspaces;
+    standardCiutatis.workspaces = workspaces;
   }
   if (runtimeServiceIntents.length > 0 || Object.keys(configuredWorkspaceRuntime).length > 0) {
-    standardPaperclip.workspaceRuntime = {
+    standardCiutatis.workspaceRuntime = {
       ...configuredWorkspaceRuntime,
       ...(runtimeServiceIntents.length > 0 ? { services: runtimeServiceIntents } : {}),
     };
   }
 
   return {
-    ...templatePaperclip,
-    ...standardPaperclip,
+    ...templateCiutatis,
+    ...standardCiutatis,
   };
 }
 
@@ -1051,7 +1051,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const disableDeviceAuth = parseBoolean(ctx.config.disableDeviceAuth, false);
 
   const wakePayload = buildWakePayload(ctx);
-  const paperclipEnv = buildPaperclipEnvForWake(ctx, wakePayload);
+  const paperclipEnv = buildCiutatisEnvForWake(ctx, wakePayload);
   const wakeText = buildWakeText(wakePayload, paperclipEnv);
 
   const sessionKeyStrategy = normalizeSessionKeyStrategy(ctx.config.sessionKeyStrategy);
@@ -1065,7 +1065,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const templateMessage = nonEmpty(payloadTemplate.message) ?? nonEmpty(payloadTemplate.text);
   const message = templateMessage ? appendWakeText(templateMessage, wakeText) : wakeText;
-  const paperclipPayload = buildStandardPaperclipPayload(ctx, wakePayload, paperclipEnv, payloadTemplate);
+  const paperclipPayload = buildStandardCiutatisPayload(ctx, wakePayload, paperclipEnv, payloadTemplate);
 
   const agentParams: Record<string, unknown> = {
     ...payloadTemplate,

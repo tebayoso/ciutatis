@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { readConfig, writeConfig, configExists, resolveConfigPath } from "../config/store.js";
-import type { PaperclipConfig } from "../config/schema.js";
+import type { CiutatisConfig } from "../config/schema.js";
 import { ensureLocalSecretsKeyFile } from "../config/secrets-key.js";
 import { promptDatabase } from "../prompts/database.js";
 import { promptLlm } from "../prompts/llm.js";
@@ -13,7 +13,7 @@ import {
   resolveDefaultBackupDir,
   resolveDefaultEmbeddedPostgresDir,
   resolveDefaultLogsDir,
-  resolvePaperclipInstanceId,
+  resolveCiutatisInstanceId,
 } from "../config/home.js";
 import { printCiutatisCliBanner } from "../utils/banner.js";
 
@@ -28,8 +28,8 @@ const SECTION_LABELS: Record<Section, string> = {
   secrets: "Secrets",
 };
 
-function defaultConfig(): PaperclipConfig {
-  const instanceId = resolvePaperclipInstanceId();
+function defaultConfig(): CiutatisConfig {
+  const instanceId = resolveCiutatisInstanceId();
   return {
     $meta: {
       version: 1,
@@ -82,7 +82,7 @@ export async function configure(opts: {
     return;
   }
 
-  let config: PaperclipConfig;
+  let config: CiutatisConfig;
   try {
     config = readConfig(opts.config) ?? defaultConfig();
   } catch (err) {

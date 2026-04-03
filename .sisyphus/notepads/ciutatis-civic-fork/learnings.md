@@ -54,38 +54,38 @@ useEffect(() => {
 - This matches the pattern in NewAgent.tsx where the UI might still show adapter options but the state is locked
 - For InviteLanding, the adapter picker was completely removed since there's no need for the UI when there's only one valid choice
 
-## 2025-01-09 - Paperclip → Ciutatis UI Rebranding
+## 2025-01-09 - Ciutatis → Ciutatis UI Rebranding
 
 ### Task Completed
-Changed all remaining user-facing "Paperclip" branding strings to "Ciutatis" in 6 UI files.
+Changed all remaining user-facing "Ciutatis" branding strings to "Ciutatis" in 6 UI files.
 
 ### Files Modified
 
 1. **ui/src/components/OnboardingWizard.tsx** (line 887)
    - Changed: Hint text for working directory
-   - "Paperclip works best..." → "Ciutatis works best..."
+   - "Ciutatis works best..." → "Ciutatis works best..."
 
 2. **ui/src/components/agent-config-primitives.tsx** (lines 28, 36, 47, 48)
-   - Line 28: cwd help text - "running Paperclip" → "running Ciutatis"
-   - Line 36: workspaceStrategy help - "How Paperclip should realize" → "How Ciutatis should realize"
-   - Line 47: bootstrapPrompt help - "Only sent when Paperclip starts" → "Only sent when Ciutatis starts"
-   - Line 48: payloadTemplateJson help - "before Paperclip adds" → "before Ciutatis adds"
+   - Line 28: cwd help text - "running Ciutatis" → "running Ciutatis"
+   - Line 36: workspaceStrategy help - "How Ciutatis should realize" → "How Ciutatis should realize"
+   - Line 47: bootstrapPrompt help - "Only sent when Ciutatis starts" → "Only sent when Ciutatis starts"
+   - Line 48: payloadTemplateJson help - "before Ciutatis adds" → "before Ciutatis adds"
 
 3. **ui/src/components/JsonSchemaForm.tsx** (line 497)
    - Changed: Secret provider description
-   - "Paperclip secret provider" → "Ciutatis secret provider"
+   - "Ciutatis secret provider" → "Ciutatis secret provider"
 
 4. **ui/src/components/ProjectProperties.tsx** (lines 690, 722)
-   - Line 690: Managed folder label - "Paperclip-managed folder" → "Ciutatis-managed folder"
-   - Line 722: Workspace usage text - "Paperclip is using" → "Ciutatis is using"
+   - Line 690: Managed folder label - "Ciutatis-managed folder" → "Ciutatis-managed folder"
+   - Line 722: Workspace usage text - "Ciutatis is using" → "Ciutatis is using"
 
 5. **ui/src/components/AccountingModelCard.tsx** (line 37)
    - Changed: Card description
-   - "Paperclip now separates" → "Ciutatis now separates"
+   - "Ciutatis now separates" → "Ciutatis now separates"
 
 6. **ui/src/adapters/openclaw-gateway/config-fields.tsx** (lines 137, 229)
-   - Line 137: Field label - "Paperclip API URL override" → "Ciutatis API URL override"
-   - Line 229: Device auth help - "Paperclip persists" → "Ciutatis persists"
+   - Line 137: Field label - "Ciutatis API URL override" → "Ciutatis API URL override"
+   - Line 229: Device auth help - "Ciutatis persists" → "Ciutatis persists"
 
 ### Verification
 - pnpm -r typecheck: ✅ 19/19 packages passed

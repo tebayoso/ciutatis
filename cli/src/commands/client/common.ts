@@ -2,7 +2,7 @@ import pc from "picocolors";
 import type { Command } from "commander";
 import { readConfig } from "../../config/store.js";
 import { readContext, resolveProfile, type ClientContextProfile } from "../../client/context.js";
-import { ApiRequestError, PaperclipApiClient } from "../../client/http.js";
+import { ApiRequestError, CiutatisApiClient } from "../../client/http.js";
 
 export interface BaseClientOptions {
   config?: string;
@@ -16,7 +16,7 @@ export interface BaseClientOptions {
 }
 
 export interface ResolvedClientContext {
-  api: PaperclipApiClient;
+  api: CiutatisApiClient;
   companyId?: string;
   profileName: string;
   profile: ClientContextProfile;
@@ -25,11 +25,11 @@ export interface ResolvedClientContext {
 
 export function addCommonClientOptions(command: Command, opts?: { includeCompany?: boolean }): Command {
   command
-    .option("-c, --config <path>", "Path to Paperclip config file")
-    .option("-d, --data-dir <path>", "Paperclip data directory root (isolates state from ~/.paperclip)")
+    .option("-c, --config <path>", "Path to Ciutatis config file")
+    .option("-d, --data-dir <path>", "Ciutatis data directory root (isolates state from ~/.paperclip)")
     .option("--context <path>", "Path to CLI context file")
     .option("--profile <name>", "CLI context profile name")
-    .option("--api-base <url>", "Base URL for the Paperclip API")
+    .option("--api-base <url>", "Base URL for the Ciutatis API")
     .option("--api-key <token>", "Bearer token for agent-authenticated calls")
     .option("--json", "Output raw JSON");
 
@@ -69,7 +69,7 @@ export function resolveCommandContext(
     );
   }
 
-  const api = new PaperclipApiClient({ apiBase, apiKey });
+  const api = new CiutatisApiClient({ apiBase, apiKey });
   return {
     api,
     companyId,

@@ -17,7 +17,7 @@ export {
   resolvePathValue,
   renderTemplate,
   redactEnvForLogs,
-  buildPaperclipEnv,
+  buildCiutatisEnv,
   defaultPathForPlatform,
   ensurePathInEnv,
   ensureAbsoluteDirectory,

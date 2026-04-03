@@ -120,8 +120,8 @@ function readSkillMarkdown(skillName: string): string | null {
   return null;
 }
 
-/** Resolve the Paperclip repo skills directory (built-in / managed skills). */
-function resolvePaperclipSkillsDir(): string | null {
+/** Resolve the Ciutatis repo skills directory (built-in / managed skills). */
+function resolveCiutatisSkillsDir(): string | null {
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
     path.resolve(moduleDir, "../../skills"),         // published
@@ -167,14 +167,14 @@ interface AvailableSkill {
 function listAvailableSkills(): AvailableSkill[] {
   const homeDir = process.env.HOME || process.env.USERPROFILE || "";
   const claudeSkillsDir = path.join(homeDir, ".claude", "skills");
-  const paperclipSkillsDir = resolvePaperclipSkillsDir();
+  const ciutatisSkillsDir = resolveCiutatisSkillsDir();
 
-  // Build set of Paperclip-managed skill names
-  const paperclipSkillNames = new Set<string>();
-  if (paperclipSkillsDir) {
+  // Build set of Ciutatis-managed skill names
+  const ciutatisSkillNames = new Set<string>();
+  if (ciutatisSkillsDir) {
     try {
-      for (const entry of fs.readdirSync(paperclipSkillsDir, { withFileTypes: true })) {
-        if (entry.isDirectory()) paperclipSkillNames.add(entry.name);
+      for (const entry of fs.readdirSync(ciutatisSkillsDir, { withFileTypes: true })) {
+        if (entry.isDirectory()) ciutatisSkillNames.add(entry.name);
       }
     } catch { /* skip */ }
   }
@@ -195,7 +195,7 @@ function listAvailableSkills(): AvailableSkill[] {
       skills.push({
         name: entry.name,
         description,
-        isPaperclipManaged: paperclipSkillNames.has(entry.name),
+        isPaperclipManaged: ciutatisSkillNames.has(entry.name),
       });
     }
   } catch { /* ~/.claude/skills/ doesn't exist */ }
@@ -904,7 +904,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
       code: "openclaw_onboarding_api_loopback",
       level: "warn",
       message:
-        "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Paperclip host.",
+        "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Ciutatis host.",
       hint: "Use a reachable hostname/IP (for example Tailscale hostname, Docker host alias, or public domain)."
     });
   }
@@ -917,7 +917,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
     diagnostics.push({
       code: "openclaw_onboarding_private_loopback_bind",
       level: "warn",
-      message: "Paperclip is bound to loopback in authenticated/private mode.",
+      message: "Ciutatis is bound to loopback in authenticated/private mode.",
       hint: "Run with a reachable bind host or use pnpm dev --tailscale-auth for private-network onboarding."
     });
   }
@@ -1054,8 +1054,8 @@ function buildInviteOnboardingManifest(
         guidance:
           opts.deploymentMode === "authenticated" &&
           opts.deploymentExposure === "private"
-            ? "If OpenClaw runs on another machine, ensure the Paperclip hostname is reachable and allowed via `pnpm paperclipai allowed-hostname <host>`."
-            : "Ensure OpenClaw can reach this Paperclip API base URL for invite, claim, and skill bootstrap calls."
+            ? "If OpenClaw runs on another machine, ensure the Ciutatis hostname is reachable and allowed via `pnpm ciutatis allowed-hostname <host>`."
+            : "Ensure OpenClaw can reach this Ciutatis API base URL for invite, claim, and skill bootstrap calls."
       },
       textInstructions: {
         path: onboardingTextPath,
@@ -1116,7 +1116,7 @@ export function buildInviteOnboardingTextDocument(
   };
 
   appendBlock(`
-    # Paperclip OpenClaw Gateway Onboarding
+    # Ciutatis OpenClaw Gateway Onboarding
 
     This document is meant to be readable by both humans and agents.
 
@@ -1181,7 +1181,7 @@ export function buildInviteOnboardingTextDocument(
     Legacy x-openclaw-auth is also accepted, but x-openclaw-token is preferred.
     Use adapterType "openclaw_gateway" and a ws:// or wss:// gateway URL.
     Pairing mode requirement:
-    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, Paperclip generates and persists one during join so pairing approvals are stable.
+    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, Ciutatis generates and persists one during join so pairing approvals are stable.
     - You may set disableDeviceAuth=true only for special environments that cannot support pairing.
     - First run may return "pairing required" once; approve the pending pairing request in OpenClaw, then retry.
     Do NOT use /v1/responses or /hooks/* in this gateway join flow.
@@ -1209,7 +1209,7 @@ export function buildInviteOnboardingTextDocument(
     - claimApiKeyPath
 
     ## Step 2: Wait for board approval
-    The board approves the join request in Paperclip before key claim is allowed.
+    The board approves the join request in Ciutatis before key claim is allowed.
 
     ## Step 3: Claim API key (one-time)
     ${
@@ -1245,7 +1245,7 @@ export function buildInviteOnboardingTextDocument(
     - claim secrets are single-use
     - claim fails before board approval
 
-    ## Step 4: Install Paperclip skill in OpenClaw
+    ## Step 4: Install Ciutatis skill in OpenClaw
     GET ${onboarding.skill.url}
     Install path: ${onboarding.skill.installPath}
 
@@ -1257,7 +1257,7 @@ export function buildInviteOnboardingTextDocument(
     ## Connectivity guidance
     ${
       onboarding.connectivity?.guidance ??
-      "Ensure Paperclip is reachable from your OpenClaw runtime."
+      "Ensure Ciutatis is reachable from your OpenClaw runtime."
     }
   `);
 
@@ -1270,7 +1270,7 @@ export function buildInviteOnboardingTextDocument(
     : [];
 
   if (connectionCandidates.length > 0) {
-    lines.push("## Suggested Paperclip base URLs to try");
+    lines.push("## Suggested Ciutatis base URLs to try");
     for (const candidate of connectionCandidates) {
       lines.push(`- ${candidate}`);
     }
@@ -1283,7 +1283,7 @@ export function buildInviteOnboardingTextDocument(
       If none are reachable: ask your human operator for a reachable hostname/address and help them update network configuration.
       For authenticated/private mode, they may need:
       - pnpm paperclipai allowed-hostname <host>
-      - then restart Paperclip and retry onboarding.
+      - then restart Ciutatis and retry onboarding.
     `);
   }
 

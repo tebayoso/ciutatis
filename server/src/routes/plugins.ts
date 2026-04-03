@@ -28,7 +28,7 @@ import type { Db } from "@ciutatis/db";
 import { companies, pluginLogs, pluginWebhookDeliveries } from "@ciutatis/db";
 import type {
   PluginStatus,
-  PaperclipPluginManifestV1,
+  CiutatisPluginManifestV1,
   PluginBridgeErrorCode,
   PluginLauncherRenderContextSnapshot,
 } from "@ciutatis/shared";
@@ -51,9 +51,9 @@ import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { validateInstanceConfig } from "../services/plugin-config-validator.js";
 
 /** UI slot declaration extracted from plugin manifest */
-type PluginUiSlotDeclaration = NonNullable<NonNullable<PaperclipPluginManifestV1["ui"]>["slots"]>[number];
+type PluginUiSlotDeclaration = NonNullable<NonNullable<CiutatisPluginManifestV1["ui"]>["slots"]>[number];
 /** Launcher declaration extracted from plugin manifest */
-type PluginLauncherDeclaration = NonNullable<PaperclipPluginManifestV1["launchers"]>[number];
+type PluginLauncherDeclaration = NonNullable<CiutatisPluginManifestV1["launchers"]>[number];
 
 /**
  * Normalized UI contribution for frontend slot host consumption.

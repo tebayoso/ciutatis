@@ -38,7 +38,7 @@ import { CouncilClaimPage } from "./pages/CouncilClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
 import { queryKeys } from "./lib/queryKeys";
-import { useCompany } from "./context/CompanyContext";
+import { useCompany, useOptionalCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
 import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
@@ -367,6 +367,8 @@ function NoCompaniesStartPage() {
 }
 
 export function App() {
+  const companyContext = useOptionalCompany();
+
   return (
     <>
       <Routes>
@@ -418,7 +420,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
-      <OnboardingWizard />
+      {companyContext ? <OnboardingWizard /> : null}
     </>
   );
 }

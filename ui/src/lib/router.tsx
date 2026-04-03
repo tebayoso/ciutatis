@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as RouterDom from "react-router-dom";
 import type { NavigateOptions, To } from "react-router-dom";
-import { useCompany } from "@/context/CompanyContext";
+import { useOptionalCompany } from "@/context/CompanyContext";
 import {
   applyCompanyPrefix,
   extractCompanyPrefixFromPath,
@@ -24,7 +24,7 @@ function resolveTo(to: To, companyPrefix: string | null): To {
 }
 
 function useActiveCompanyPrefix(): string | null {
-  const { selectedCompany } = useCompany();
+  const company = useOptionalCompany();
   const params = RouterDom.useParams<{ companyPrefix?: string }>();
   const location = RouterDom.useLocation();
 
@@ -35,7 +35,7 @@ function useActiveCompanyPrefix(): string | null {
   const pathPrefix = extractCompanyPrefixFromPath(location.pathname);
   if (pathPrefix) return pathPrefix;
 
-  return selectedCompany ? normalizeCompanyPrefix(selectedCompany.issuePrefix) : null;
+  return company?.selectedCompany ? normalizeCompanyPrefix(company.selectedCompany.issuePrefix) : null;
 }
 
 export * from "react-router-dom";

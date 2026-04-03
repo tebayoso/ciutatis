@@ -36,31 +36,69 @@ const queryClient = new QueryClient({
   },
 });
 
+function PublicProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <TooltipProvider>
+      <DialogProvider>{children}</DialogProvider>
+    </TooltipProvider>
+  );
+}
+
+function ShellProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <CompanyProvider>
+      <ToastProvider>
+        <LiveUpdatesProvider>
+          <TooltipProvider>
+            <BreadcrumbProvider>
+              <SidebarProvider>
+                <PanelProvider>
+                  <PluginLauncherProvider>
+                    <DialogProvider>{children}</DialogProvider>
+                  </PluginLauncherProvider>
+                </PanelProvider>
+              </SidebarProvider>
+            </BreadcrumbProvider>
+          </TooltipProvider>
+        </LiveUpdatesProvider>
+      </ToastProvider>
+    </CompanyProvider>
+  );
+}
+
+function AppProviders() {
+  const pathname = window.location.pathname;
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname === "/en" ||
+    pathname.startsWith("/en/") ||
+    pathname === "/es" ||
+    pathname.startsWith("/es/");
+
+  if (isPublicRoute) {
+    return (
+      <BrowserRouter>
+        <PublicProviders>
+          <App />
+        </PublicProviders>
+      </BrowserRouter>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <ShellProviders>
+        <App />
+      </ShellProviders>
+    </BrowserRouter>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <CompanyProvider>
-          <ToastProvider>
-            <LiveUpdatesProvider>
-              <BrowserRouter>
-                <TooltipProvider>
-                  <BreadcrumbProvider>
-                    <SidebarProvider>
-                      <PanelProvider>
-                        <PluginLauncherProvider>
-                          <DialogProvider>
-                            <App />
-                          </DialogProvider>
-                        </PluginLauncherProvider>
-                      </PanelProvider>
-                    </SidebarProvider>
-                  </BreadcrumbProvider>
-                </TooltipProvider>
-              </BrowserRouter>
-            </LiveUpdatesProvider>
-          </ToastProvider>
-        </CompanyProvider>
+        <AppProviders />
       </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>

@@ -375,10 +375,10 @@ Platform live in Tandil (3 departments) and UNICEN (administrative offices). 75+
 **Months 10–18**
 
 #### 48.b. Milestone 2 Activities
-Full operational deployment at both partner sites. Iterate based on user feedback from real citizen requests. Document best practices and create training materials. Prepare for second wave of municipalities.
+Full operational deployment at both partner sites. Launch plugin SDK beta for developers. Iterate based on user feedback from real citizen requests. Document best practices and create training materials. Prepare for second wave of municipalities.
 
 #### 48.c. Outcomes/Key Milestones
-Tandil and UNICEN fully operational with demonstrated results. 5,000+ requests processed through platform. 50% reduction in processing time documented. Training materials published and validated. Case studies from both partners ready for replication.
+Tandil and UNICEN fully operational with demonstrated results. 5,000+ requests processed through platform. Plugin SDK released to developers. First community plugins deployed (expense tracking, document templates). 50% reduction in processing time documented. Training materials published and validated. Case studies from both partners ready for replication.
 
 ### 49. Project Milestone 3
 
@@ -386,10 +386,10 @@ Tandil and UNICEN fully operational with demonstrated results. 5,000+ requests p
 **Months 19–30**
 
 #### 49.b. Milestone 3 Activities
-Scale to 3-5 additional municipalities using Tandil/UNICEN as reference cases. Launch contributor community for open-source development. Expand use cases beyond permits to licenses and documentation.
+Scale to 3-5 additional municipalities using Tandil/UNICEN as reference cases. Launch official plugin marketplace. Release policy-tracking plugins that monitor law changes and alert departments. Enable community-developed custom solutions for specific city needs. Expand use cases beyond permits to licenses, documentation, and expense management.
 
 #### 49.c. Outcomes/Key Milestones
-5-7 total organizations using Ciutatis (including Tandil and UNICEN). 25,000+ requests processed. Open-source community with 30+ contributors. Platform handling 3+ service types per municipality. Replication playbook published.
+5-7 total organizations using Ciutatis (including Tandil and UNICEN). 25,000+ requests processed. 15+ community plugins available (expense tracking, policy monitoring, custom forms). Plugin marketplace active with contributors from Cluster Tecnológico members. Platform handling 5+ service types per municipality. Replication playbook published.
 
 ### 50. Project Milestone 4
 
@@ -397,10 +397,10 @@ Scale to 3-5 additional municipalities using Tandil/UNICEN as reference cases. L
 **Months 31–36**
 
 #### 50.b. Milestone 4 Activities
-Transition to sustainable support model. Establish regional training center at UNICEN. Publish comprehensive replication playbook. Evaluate long-term impact across all deployments.
+Transition to sustainable support model. Establish regional training center at UNICEN with plugin development courses. Publish comprehensive replication playbook. Launch certified plugin developer program. Evaluate long-term impact across all deployments including plugin ecosystem contributions.
 
 #### 50.c. Outcomes/Key Milestones
-Self-sustaining support revenue covering ongoing costs. Replication playbook used by 2+ new municipalities without direct support. 60% reduction in processing time demonstrated across deployments. Sustainable model validated for post-funding operation. Academic research paper published on results.
+Self-sustaining support revenue covering ongoing costs. Replication playbook used by 2+ new municipalities without direct support. 60% reduction in processing time demonstrated across deployments. 30+ community plugins in marketplace covering expenses, laws, permits, and custom solutions. Municipal developer community trained and contributing. Sustainable model validated for post-funding operation. Academic research paper published on results.
 
 ### 51. Project Milestone 5
 *N/A — Four milestones cover the 36-month period*

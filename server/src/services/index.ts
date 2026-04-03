@@ -18,6 +18,7 @@ export { dashboardService } from "./dashboard.js";
 export { sidebarBadgeService } from "./sidebar-badges.js";
 export { accessService } from "./access.js";
 export { instanceSettingsService } from "./instance-settings.js";
+export { tenantInstancesService } from "./tenant-instances.js";
 export { companyPortabilityService } from "./company-portability.js";
 export { executionWorkspaceService } from "./execution-workspaces.js";
 export { workspaceOperationService } from "./workspace-operations.js";

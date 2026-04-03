@@ -5,6 +5,9 @@ import {
   type InstanceExperimentalSettings,
   type InstanceSettings,
   type PatchInstanceExperimentalSettings,
+  tenantProvisioningSettingsSchema,
+  type PatchTenantProvisioningSettings,
+  type TenantProvisioningSettings,
 } from "@ciutatis/shared";
 import { eq } from "drizzle-orm";
 
@@ -22,10 +25,20 @@ function normalizeExperimentalSettings(raw: unknown): InstanceExperimentalSettin
   };
 }
 
+function normalizeTenantProvisioningSettings(raw: unknown): TenantProvisioningSettings {
+  const parsed = tenantProvisioningSettingsSchema.safeParse(raw ?? {});
+  if (parsed.success) return parsed.data;
+  return tenantProvisioningSettingsSchema.parse({});
+}
+
 function toInstanceSettings(row: typeof instanceSettings.$inferSelect): InstanceSettings {
+  const experimentalRecord = typeof row.experimental === "object" && row.experimental !== null
+    ? (row.experimental as Record<string, unknown>)
+    : {};
   return {
     id: row.id,
-    experimental: normalizeExperimentalSettings(row.experimental),
+    experimental: normalizeExperimentalSettings(experimentalRecord),
+    tenantProvisioning: normalizeTenantProvisioningSettings(experimentalRecord.tenantProvisioning),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -79,6 +92,38 @@ export function instanceSettingsService(db: Db) {
         .update(instanceSettings)
         .set({
           experimental: { ...nextExperimental },
+          updatedAt: now,
+        })
+        .where(eq(instanceSettings.id, current.id))
+        .returning();
+      return toInstanceSettings(updated ?? current);
+    },
+
+    getTenantProvisioning: async (): Promise<TenantProvisioningSettings> => {
+      const row = await getOrCreateRow();
+      const experimental = typeof row.experimental === "object" && row.experimental !== null
+        ? (row.experimental as Record<string, unknown>)
+        : {};
+      return normalizeTenantProvisioningSettings(experimental.tenantProvisioning);
+    },
+
+    updateTenantProvisioning: async (patch: PatchTenantProvisioningSettings): Promise<InstanceSettings> => {
+      const current = await getOrCreateRow();
+      const experimental = typeof current.experimental === "object" && current.experimental !== null
+        ? (current.experimental as Record<string, unknown>)
+        : {};
+      const nextTenantProvisioning = normalizeTenantProvisioningSettings({
+        ...normalizeTenantProvisioningSettings(experimental.tenantProvisioning),
+        ...patch,
+      });
+      const now = new Date();
+      const [updated] = await db
+        .update(instanceSettings)
+        .set({
+          experimental: {
+            ...experimental,
+            tenantProvisioning: nextTenantProvisioning,
+          },
           updatedAt: now,
         })
         .where(eq(instanceSettings.id, current.id))

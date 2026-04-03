@@ -115,6 +115,7 @@ export async function createApp(
         id: req.actor.userId,
         email: null,
         name: req.actor.source === "local_implicit" ? "Local Board" : null,
+        isInstanceAdmin: req.actor.source === "local_implicit" || req.actor.isInstanceAdmin === true,
       },
     });
   });

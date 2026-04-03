@@ -1,8 +1,13 @@
 export {
   instanceExperimentalSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
+  tenantProvisioningSettingsSchema,
+  patchTenantProvisioningSettingsSchema,
+  tenantInstanceStatusSchema,
   type InstanceExperimentalSettings,
   type PatchInstanceExperimentalSettings,
+  type TenantProvisioningSettings,
+  type PatchTenantProvisioningSettings,
 } from "./instance.js";
 
 export {
@@ -19,6 +24,13 @@ export {
   type CreateInstitution,
   type UpdateInstitution,
 } from "./institution.js";
+
+export {
+  createTenantInstanceSchema,
+  updateTenantInstanceSchema,
+  type CreateTenantInstance,
+  type UpdateTenantInstance,
+} from "./tenant-instance.js";
 
 // Backward-compat from company.ts shim
 export {

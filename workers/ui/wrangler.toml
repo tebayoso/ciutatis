@@ -1,0 +1,22 @@
+# Cloudflare Pages - Ciutatis UI
+name = "ciutatis-ui"
+compatibility_date = "2025-01-01"
+
+# Account configuration
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+# Build configuration
+[build]
+command = "npm run build"
+directory = "dist"
+
+# Environment variables for build
+[vars]
+VITE_API_BASE_URL = "https://api.ciutatis.com"
+
+# Environment-specific configs
+[env.production]
+name = "ciutatis-ui"
+
+[env.staging]
+name = "ciutatis-ui-staging"

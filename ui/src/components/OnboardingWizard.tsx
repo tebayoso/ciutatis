@@ -8,6 +8,7 @@ import { companiesApi } from "../api/companies";
 import { goalsApi } from "../api/goals";
 import { agentsApi } from "../api/agents";
 import { issuesApi } from "../api/issues";
+import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import {
@@ -45,6 +46,7 @@ import {
   Loader2,
   FolderOpen,
   ChevronDown,
+  ShieldAlert,
   X
 } from "lucide-react";
 
@@ -67,6 +69,13 @@ export function OnboardingWizard() {
   const location = useLocation();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
   const [routeDismissed, setRouteDismissed] = useState(false);
+
+  const { data: session } = useQuery({
+    queryKey: queryKeys.auth.session,
+    queryFn: () => authApi.getSession(),
+    retry: false,
+  });
+  const isAdmin = session?.user?.isInstanceAdmin === true;
 
   const routeOnboardingOptions =
     companyPrefix && companiesLoading
@@ -413,6 +422,50 @@ export function OnboardingWizard() {
   }
 
   if (!effectiveOnboardingOpen) return null;
+
+  if (!isAdmin && !existingCompanyId) {
+    return (
+      <Dialog
+        open={effectiveOnboardingOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRouteDismissed(true);
+            handleClose();
+          }
+        }}
+      >
+        <DialogPortal>
+          <div className="fixed inset-0 z-50 bg-background" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <button
+              onClick={handleClose}
+              className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+            >
+              <X className="h-5 w-5" />
+              <span className="sr-only">Close</span>
+            </button>
+            <div className="max-w-md px-8 py-12 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+                <ShieldAlert className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h2 className="text-lg font-semibold">Admin access required</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Please contact your administrator to set up the instance.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-6"
+                onClick={handleClose}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogPortal>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog

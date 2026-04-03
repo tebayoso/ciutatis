@@ -6,6 +6,8 @@ export {
   DEPLOYMENT_MODES,
   DEPLOYMENT_EXPOSURES,
   AUTH_BASE_URL_MODES,
+  TENANT_ROUTING_MODES,
+  TENANT_INSTANCE_STATUSES,
   AGENT_STATUSES,
   AGENT_ADAPTER_TYPES,
   AGENT_ROLES,
@@ -73,6 +75,8 @@ export {
   type DeploymentMode,
   type DeploymentExposure,
   type AuthBaseUrlMode,
+  type TenantRoutingMode,
+  type TenantInstanceStatus,
   type AgentStatus,
   type AgentAdapterType,
   type AgentRole,
@@ -131,6 +135,7 @@ export {
 export type {
   Institution,
   Company,
+  TenantInstance,
   InstanceExperimentalSettings,
   InstanceSettings,
   Agent,
@@ -288,7 +293,12 @@ export type {
 export {
   instanceExperimentalSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
+  tenantProvisioningSettingsSchema,
+  patchTenantProvisioningSettingsSchema,
+  tenantInstanceStatusSchema,
   type PatchInstanceExperimentalSettings,
+  type TenantProvisioningSettings,
+  type PatchTenantProvisioningSettings,
 } from "./validators/index.js";
 
 export {
@@ -296,6 +306,10 @@ export {
   updateInstitutionSchema,
   type CreateInstitution,
   type UpdateInstitution,
+  createTenantInstanceSchema,
+  updateTenantInstanceSchema,
+  type CreateTenantInstance,
+  type UpdateTenantInstance,
   createCompanySchema,
   updateCompanySchema,
   type CreateCompany,

@@ -1,0 +1,14 @@
+# Minimal wrangler config for running the seed-runner Worker.
+# Not deployed — only used with `wrangler dev --remote`.
+
+name = "ciutatis-seed-runner"
+main = "src/seed-runner.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ciutatis-db"
+database_id = "2978f493-067e-40c8-ab7d-ca4b2926d17c"

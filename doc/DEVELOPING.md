@@ -35,7 +35,21 @@ pnpm dev
 This starts:
 
 - API server: `http://localhost:3100`
-- UI: served by the API server in dev middleware mode (same origin as API)
+- Admin shell UI: served by the API server in dev middleware mode (same origin as API)
+
+For standalone frontend services:
+
+```sh
+pnpm dev:admin
+pnpm dev:landing
+```
+
+Default ports:
+
+- standalone admin UI (Vite): `http://localhost:4173`
+- landing app (Vite): `http://localhost:3000`
+
+The admin UI no longer defaults to `5173`.
 
 `pnpm dev` runs the server in watch mode and restarts on changes from workspace packages (including adapter packages). Use `pnpm dev:once` to run without file watching.
 

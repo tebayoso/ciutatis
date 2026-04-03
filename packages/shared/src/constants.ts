@@ -12,6 +12,12 @@ export type DeploymentExposure = (typeof DEPLOYMENT_EXPOSURES)[number];
 export const AUTH_BASE_URL_MODES = ["auto", "explicit"] as const;
 export type AuthBaseUrlMode = (typeof AUTH_BASE_URL_MODES)[number];
 
+export const TENANT_ROUTING_MODES = ["path", "subdomain", "custom_domain"] as const;
+export type TenantRoutingMode = (typeof TENANT_ROUTING_MODES)[number];
+
+export const TENANT_INSTANCE_STATUSES = ["draft", "provisioning", "active", "paused", "error", "archived"] as const;
+export type TenantInstanceStatus = (typeof TENANT_INSTANCE_STATUSES)[number];
+
 export const AGENT_STATUSES = [
   "active",
   "paused",

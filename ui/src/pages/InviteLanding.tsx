@@ -134,7 +134,7 @@ export function InviteLandingPage() {
             The first instance admin is now configured. You can continue to the board.
           </p>
           <Button asChild className="mt-4">
-            <Link to="/">Open board</Link>
+            <Link to="/app">Open board</Link>
           </Button>
         </div>
       </div>

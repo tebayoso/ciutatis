@@ -70,6 +70,8 @@ export const queryKeys = {
   instance: {
     schedulerHeartbeats: ["instance", "scheduler-heartbeats"] as const,
     experimentalSettings: ["instance", "experimental-settings"] as const,
+    tenantProvisioning: ["instance", "tenant-provisioning"] as const,
+    tenants: ["instance", "tenants"] as const,
   },
   health: ["health"] as const,
   secrets: {

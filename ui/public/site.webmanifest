@@ -2,13 +2,13 @@
   "id": "/",
   "name": "Ciutatis",
   "short_name": "Ciutatis",
-  "description": "AI-powered project management and agent coordination platform",
-  "start_url": "/",
+  "description": "Open-source civic operating system for governed institutional execution.",
+  "start_url": "/en",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#18181b",
-  "background_color": "#18181b",
+  "theme_color": "#fcfbf7",
+  "background_color": "#fcfbf7",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

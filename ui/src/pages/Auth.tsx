@@ -15,7 +15,7 @@ export function AuthPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const nextPath = useMemo(() => searchParams.get("next") || "/", [searchParams]);
+  const nextPath = useMemo(() => searchParams.get("next") || "/app", [searchParams]);
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),

@@ -9,17 +9,23 @@ const mockInstanceSettingsService = vi.hoisted(() => ({
   updateExperimental: vi.fn(),
   listCompanyIds: vi.fn(),
 }));
+const mockTenantInstancesService = vi.hoisted(() => ({
+  list: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+}));
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/index.js", () => ({
   instanceSettingsService: () => mockInstanceSettingsService,
+  tenantInstancesService: () => mockTenantInstancesService,
   logActivity: mockLogActivity,
 }));
 
 function createApp(actor: any) {
   const app = express();
   app.use(express.json());
-  app.use((req, _res, next) => {
+  app.use((req: express.Request & { actor?: unknown }, _res, next) => {
     req.actor = actor;
     next();
   });
@@ -31,6 +37,7 @@ function createApp(actor: any) {
 describe("instance settings routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTenantInstancesService.list.mockResolvedValue([]);
     mockInstanceSettingsService.getExperimental.mockResolvedValue({
       enableIsolatedWorkspaces: false,
     });

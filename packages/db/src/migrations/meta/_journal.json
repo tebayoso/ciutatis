@@ -267,6 +267,20 @@
       "when": 1773756922363,
       "tag": "0037_friendly_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1775208000000,
+      "tag": "20260403120000_add_email_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1775211000000,
+      "tag": "20260403193000_add_tenant_instances",
+      "breakpoints": true
     }
   ]
 }

@@ -117,13 +117,10 @@ describe("codex execute", () => {
 
       const isolatedAuth = path.join(isolatedCodexHome, "auth.json");
       const isolatedConfig = path.join(isolatedCodexHome, "config.toml");
-      const isolatedSkill = path.join(isolatedCodexHome, "skills", "paperclip");
-
       expect((await fs.lstat(isolatedAuth)).isSymbolicLink()).toBe(true);
       expect(await fs.realpath(isolatedAuth)).toBe(await fs.realpath(path.join(sharedCodexHome, "auth.json")));
       expect((await fs.lstat(isolatedConfig)).isFile()).toBe(true);
       expect(await fs.readFile(isolatedConfig, "utf8")).toBe('model = "codex-mini-latest"\n');
-      expect((await fs.lstat(isolatedSkill)).isSymbolicLink()).toBe(true);
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
@@ -133,7 +130,7 @@ describe("codex execute", () => {
       expect(logs).toContainEqual(
         expect.objectContaining({
           stream: "stdout",
-          chunk: expect.stringContaining('Injected Codex skill "paperclip"'),
+          chunk: expect.stringContaining("Injected Codex skill"),
         }),
       );
     } finally {

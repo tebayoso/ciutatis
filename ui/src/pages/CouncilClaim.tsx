@@ -75,7 +75,7 @@ export function CouncilClaimPage() {
             This instance is now linked to your authenticated user.
           </p>
           <Button asChild className="mt-4">
-            <Link to="/">Open council</Link>
+            <Link to="/app">Open council</Link>
           </Button>
         </div>
       </div>

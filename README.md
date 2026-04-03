@@ -228,6 +228,8 @@ By default, channels run on scheduled heartbeats and event-based triggers (task 
 pnpm dev              # Full dev (API + UI, watch mode)
 pnpm dev:once         # Full dev without file watching
 pnpm dev:server       # Server only
+pnpm dev:admin        # Standalone admin shell UI on localhost:4173
+pnpm dev:landing      # Public landing app on localhost:3000
 pnpm build            # Build all
 pnpm typecheck        # Type checking
 pnpm test:run         # Run tests

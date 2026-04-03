@@ -1,0 +1,57 @@
+{
+  "name": "@ciutatis/db-cloudflare",
+  "version": "0.1.0",
+  "license": "MIT",
+  "homepage": "https://github.com/tebayoso/ciutatis",
+  "bugs": {
+    "url": "https://github.com/tebayoso/ciutatis/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tebayoso/ciutatis",
+    "directory": "packages/db-cloudflare"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./*": {
+        "types": "./dist/*.d.ts",
+        "import": "./dist/*.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && cp -r src/migrations dist/migrations",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "generate": "tsc -p tsconfig.json && drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "seed:remote": "wrangler dev src/seed-runner.ts --remote --config wrangler.seed.toml"
+  },
+  "dependencies": {
+    "@ciutatis/shared": "workspace:*",
+    "drizzle-orm": "^0.38.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@types/node": "^24.6.0",
+    "drizzle-kit": "^0.31.9",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.99.0"
+  }
+}

@@ -18,7 +18,7 @@ zone_name = "ciutatis.com"
 # Plain-text environment variables (safe to commit)
 [vars]
 # "local_trusted" (no login) or "authenticated" (login required)
-DEPLOYMENT_MODE = "local_trusted"
+DEPLOYMENT_MODE = "authenticated"
 # Disables new user registrations in authenticated mode
 AUTH_DISABLE_SIGNUP = "true"
 

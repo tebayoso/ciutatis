@@ -29,6 +29,8 @@ import {
   pluginRoutes,
   pluginUiStaticRoutes,
   accessRoutes,
+  contactRoutes,
+  authRoutes,
 } from "./routes/index.js";
 
 export function createApp() {
@@ -59,9 +61,12 @@ export function createApp() {
         id: actor.userId,
         email: null,
         name: actor.source === "local_implicit" ? "Local Board" : null,
+        isInstanceAdmin: actor.source === "local_implicit" || actor.isInstanceAdmin === true,
       },
     });
   });
+
+  app.route("/api/auth", authRoutes());
 
   app.post("/api/auth/sign-up/*", (c) => {
     const disableSignup = c.env.AUTH_DISABLE_SIGNUP;
@@ -75,6 +80,8 @@ export function createApp() {
   });
 
   app.route("/", llmRoutes());
+
+  app.route("/api", contactRoutes());
 
   const api = new Hono<AppEnv>();
   api.use("*", boardMutationGuard);

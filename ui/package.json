@@ -10,11 +10,17 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@ciutatis/adapter-claude-local": "workspace:*",
+    "@ciutatis/adapter-codex-local": "workspace:*",
+    "@ciutatis/adapter-cursor-local": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@mdxeditor/editor": "^3.52.4",
     "@ciutatis/adapter-gemini-local": "workspace:*",
+    "@ciutatis/adapter-openclaw-gateway": "workspace:*",
+    "@ciutatis/adapter-opencode-local": "workspace:*",
+    "@ciutatis/adapter-pi-local": "workspace:*",
     "@ciutatis/adapter-utils": "workspace:*",
     "@ciutatis/shared": "workspace:*",
     "@radix-ui/react-slot": "^1.2.4",

@@ -5,8 +5,8 @@ import { Layout } from "./components/Layout";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { authApi } from "./api/auth";
 import { healthApi } from "./api/health";
-import { Landing } from "./pages/Landing";
 import { Dashboard } from "./pages/Dashboard";
+import { PublicSite } from "./pages/PublicSite";
 import { Institutions } from "./pages/Institutions";
 import { Agents } from "./pages/Agents";
 import { AgentDetail } from "./pages/AgentDetail";
@@ -25,6 +25,7 @@ import { Inbox } from "./pages/Inbox";
 import { InstitutionSettings } from "./pages/InstitutionSettings";
 import { DesignGuide } from "./pages/DesignGuide";
 import { InstanceSettings } from "./pages/InstanceSettings";
+import { InstanceTenants } from "./pages/InstanceTenants";
 import { InstanceExperimentalSettings } from "./pages/InstanceExperimentalSettings";
 import { PluginManager } from "./pages/PluginManager";
 import { PluginSettings } from "./pages/PluginSettings";
@@ -75,10 +76,14 @@ function RootPage() {
   }
 
   if (isAuthenticatedMode && !sessionQuery.data) {
-    return <Landing />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <CompanyRootRedirect />;
+}
+
+function ShellEntryRedirect() {
+  return <RootPage />;
 }
 
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
@@ -365,8 +370,17 @@ export function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<RootPage />} />
+        <Route path="/" element={<PublicSite />} />
+        <Route path="en" element={<PublicSite />} />
+        <Route path="en/platform" element={<PublicSite />} />
+        <Route path="en/about" element={<PublicSite />} />
+        <Route path="en/partners" element={<PublicSite />} />
+        <Route path="es" element={<PublicSite />} />
+        <Route path="es/plataforma" element={<PublicSite />} />
+        <Route path="es/nosotros" element={<PublicSite />} />
+        <Route path="es/alianzas" element={<PublicSite />} />
         <Route path="auth" element={<AuthPage />} />
+        <Route path="app" element={<ShellEntryRedirect />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />
 
@@ -376,6 +390,7 @@ export function App() {
           <Route path="instance/settings" element={<Layout />}>
             <Route index element={<Navigate to="heartbeats" replace />} />
             <Route path="heartbeats" element={<InstanceSettings />} />
+            <Route path="tenants" element={<InstanceTenants />} />
             <Route path="experimental" element={<InstanceExperimentalSettings />} />
             <Route path="plugins" element={<PluginManager />} />
             <Route path="plugins/:pluginId" element={<PluginSettings />} />

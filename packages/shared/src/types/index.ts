@@ -1,5 +1,6 @@
 // New canonical exports
 export type { Institution } from "./institution.js";
+export type { TenantInstance } from "./tenant-instance.js";
 export type { Objective } from "./objective.js";
 export type {
   Request,

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.dev.vars
 *.tsbuildinfo
 drizzle/meta/
 .vite/
@@ -50,3 +51,9 @@ tests/release-smoke/test-results/
 tests/release-smoke/playwright-report/
 .superset/
 .claude/worktrees/
+
+# Sisyphus evidence (contains secrets like API keys)
+.sisyphus/evidence/
+
+# Seed credentials (local reference only — DO NOT COMMIT)
+doc/SEED-CREDENTIALS.md

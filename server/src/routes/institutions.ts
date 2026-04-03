@@ -1,26 +1,26 @@
 import { Router } from "express";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import {
   companyPortabilityExportSchema,
   companyPortabilityImportSchema,
   companyPortabilityPreviewSchema,
   createCompanySchema,
   updateCompanySchema,
-} from "@paperclipai/shared";
+} from "@ciutatis/shared";
 import { forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
 import {
   accessService,
   budgetService,
   companyPortabilityService,
-  companyService,
+  institutionService,
   logActivity,
 } from "../services/index.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
-export function companyRoutes(db: Db) {
+export function institutionRoutes(db: Db) {
   const router = Router();
-  const svc = companyService(db);
+  const svc = institutionService(db);
   const portability = companyPortabilityService(db);
   const access = accessService(db);
   const budgets = budgetService(db);
@@ -33,7 +33,7 @@ export function companyRoutes(db: Db) {
       return;
     }
     const allowed = new Set(req.actor.companyIds ?? []);
-    res.json(result.filter((company) => allowed.has(company.id)));
+    res.json(result.filter((institution) => allowed.has(institution.id)));
   });
 
   router.get("/stats", async (req, res) => {

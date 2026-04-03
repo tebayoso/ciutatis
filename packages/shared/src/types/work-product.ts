@@ -1,4 +1,4 @@
-export type IssueWorkProductType =
+export type RequestWorkProductType =
   | "preview_url"
   | "runtime_service"
   | "pull_request"
@@ -7,14 +7,14 @@ export type IssueWorkProductType =
   | "artifact"
   | "document";
 
-export type IssueWorkProductProvider =
+export type RequestWorkProductProvider =
   | "paperclip"
   | "github"
   | "vercel"
   | "s3"
   | "custom";
 
-export type IssueWorkProductStatus =
+export type RequestWorkProductStatus =
   | "active"
   | "ready_for_review"
   | "approved"
@@ -25,26 +25,26 @@ export type IssueWorkProductStatus =
   | "archived"
   | "draft";
 
-export type IssueWorkProductReviewState =
+export type RequestWorkProductReviewState =
   | "none"
   | "needs_board_review"
   | "approved"
   | "changes_requested";
 
-export interface IssueWorkProduct {
+export interface RequestWorkProduct {
   id: string;
   companyId: string;
   projectId: string | null;
   issueId: string;
   executionWorkspaceId: string | null;
   runtimeServiceId: string | null;
-  type: IssueWorkProductType;
-  provider: IssueWorkProductProvider | string;
+  type: RequestWorkProductType;
+  provider: RequestWorkProductProvider | string;
   externalId: string | null;
   title: string;
   url: string | null;
-  status: IssueWorkProductStatus | string;
-  reviewState: IssueWorkProductReviewState;
+  status: RequestWorkProductStatus | string;
+  reviewState: RequestWorkProductReviewState;
   isPrimary: boolean;
   healthStatus: "unknown" | "healthy" | "unhealthy";
   summary: string | null;
@@ -53,3 +53,9 @@ export interface IssueWorkProduct {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type IssueWorkProductType = RequestWorkProductType;
+export type IssueWorkProductProvider = RequestWorkProductProvider;
+export type IssueWorkProductStatus = RequestWorkProductStatus;
+export type IssueWorkProductReviewState = RequestWorkProductReviewState;
+export type IssueWorkProduct = RequestWorkProduct;

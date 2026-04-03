@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import { validate } from "../middleware/validate.js";
 import { activityService } from "../services/activity.js";
 import { assertBoard, assertCompanyAccess } from "./authz.js";
-import { issueService } from "../services/index.js";
+import { requestService } from "../services/index.js";
 import { sanitizeRecord } from "../redaction.js";
 
 const createActivitySchema = z.object({
@@ -20,13 +20,13 @@ const createActivitySchema = z.object({
 export function activityRoutes(db: Db) {
   const router = Router();
   const svc = activityService(db);
-  const issueSvc = issueService(db);
+  const requestSvc = requestService(db);
 
   async function resolveIssueByRef(rawId: string) {
     if (/^[A-Z]+-\d+$/i.test(rawId)) {
-      return issueSvc.getByIdentifier(rawId);
+      return requestSvc.getByIdentifier(rawId);
     }
-    return issueSvc.getById(rawId);
+    return requestSvc.getById(rawId);
   }
 
   router.get("/companies/:companyId/activity", async (req, res) => {

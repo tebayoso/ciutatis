@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import {
   agents,
   assets,
@@ -18,8 +18,8 @@ import {
   labels,
   projectWorkspaces,
   projects,
-} from "@paperclipai/db";
-import { extractProjectMentionIds } from "@paperclipai/shared";
+} from "@ciutatis/db";
+import { extractProjectMentionIds } from "@ciutatis/shared";
 import { conflict, notFound, unprocessable } from "../errors.js";
 import {
   defaultIssueExecutionWorkspaceSettingsForProject,
@@ -29,7 +29,7 @@ import {
 import { instanceSettingsService } from "./instance-settings.js";
 import { redactCurrentUserText } from "../log-redaction.js";
 import { resolveIssueGoalId, resolveNextIssueGoalId } from "./issue-goal-fallback.js";
-import { getDefaultCompanyGoal } from "./goals.js";
+import { getDefaultInstitutionObjective } from "./objectiveService.js";
 
 const ALL_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"];
 const MAX_ISSUE_COMMENT_PAGE_LIMIT = 500;
@@ -59,7 +59,7 @@ function applyStatusSideEffects(
   return patch;
 }
 
-export interface IssueFilters {
+export interface RequestFilters {
   status?: string;
   assigneeAgentId?: string;
   assigneeUserId?: string;
@@ -85,11 +85,6 @@ type IssueActiveRunRow = {
 };
 type IssueWithLabels = IssueRow & { labels: IssueLabelRow[]; labelIds: string[] };
 type IssueWithLabelsAndRun = IssueWithLabels & { activeRun: IssueActiveRunRow | null };
-type IssueUserCommentStats = {
-  issueId: string;
-  myLastCommentAt: Date | null;
-  lastExternalCommentAt: Date | null;
-};
 type IssueUserContextInput = {
   createdByUserId: string | null;
   assigneeUserId: string | null;
@@ -317,7 +312,7 @@ function withActiveRuns(
   }));
 }
 
-export function issueService(db: Db) {
+export function requestService(db: Db) {
   const instanceSettings = instanceSettingsService(db);
 
   async function assertAssignableAgent(companyId: string, agentId: string) {
@@ -474,7 +469,7 @@ export function issueService(db: Db) {
   }
 
   return {
-    list: async (companyId: string, filters?: IssueFilters) => {
+    list: async (companyId: string, filters?: RequestFilters) => {
       const conditions = [eq(issues.companyId, companyId)];
       const touchedByUserId = filters?.touchedByUserId?.trim() || undefined;
       const unreadForUserId = filters?.unreadForUserId?.trim() || undefined;
@@ -705,7 +700,7 @@ export function issueService(db: Db) {
         throw unprocessable("in_progress issues require an assignee");
       }
       return db.transaction(async (tx) => {
-        const defaultCompanyGoal = await getDefaultCompanyGoal(tx, companyId);
+        const defaultInstitutionObjective = await getDefaultInstitutionObjective(tx, companyId);
         let executionWorkspaceSettings =
           (issueData.executionWorkspaceSettings as Record<string, unknown> | null | undefined) ?? null;
         if (executionWorkspaceSettings == null && issueData.projectId) {
@@ -753,11 +748,11 @@ export function issueService(db: Db) {
 
         const values = {
           ...issueData,
-          goalId: resolveIssueGoalId({
-            projectId: issueData.projectId,
-            goalId: issueData.goalId,
-            defaultGoalId: defaultCompanyGoal?.id ?? null,
-          }),
+             goalId: resolveIssueGoalId({
+             projectId: issueData.projectId,
+             goalId: issueData.goalId,
+             defaultGoalId: defaultInstitutionObjective?.id ?? null,
+           }),
           ...(projectWorkspaceId ? { projectWorkspaceId } : {}),
           ...(executionWorkspaceSettings ? { executionWorkspaceSettings } : {}),
           companyId,
@@ -855,13 +850,13 @@ export function issueService(db: Db) {
       }
 
       return db.transaction(async (tx) => {
-        const defaultCompanyGoal = await getDefaultCompanyGoal(tx, existing.companyId);
+        const defaultInstitutionObjective = await getDefaultInstitutionObjective(tx, existing.companyId);
         patch.goalId = resolveNextIssueGoalId({
           currentProjectId: existing.projectId,
           currentGoalId: existing.goalId,
           projectId: issueData.projectId,
           goalId: issueData.goalId,
-          defaultGoalId: defaultCompanyGoal?.id ?? null,
+          defaultGoalId: defaultInstitutionObjective?.id ?? null,
         });
         const updated = await tx
           .update(issues)

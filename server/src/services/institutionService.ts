@@ -1,5 +1,5 @@
 import { and, count, eq, gte, inArray, lt, sql } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import {
   companies,
   companyLogos,
@@ -25,10 +25,10 @@ import {
   invites,
   principalPermissionGrants,
   companyMemberships,
-} from "@paperclipai/db";
+} from "@ciutatis/db";
 import { notFound, unprocessable } from "../errors.js";
 
-export function companyService(db: Db) {
+export function institutionService(db: Db) {
   const ISSUE_PREFIX_FALLBACK = "CMP";
 
   const companySelection = {

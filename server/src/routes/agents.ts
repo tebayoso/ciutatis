@@ -1,8 +1,8 @@
 import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
-import type { Db } from "@paperclipai/db";
-import { agents as agentsTable, companies, heartbeatRuns } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
+import { agents as agentsTable, companies, heartbeatRuns } from "@ciutatis/db";
 import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
 import {
   createAgentKeySchema,
@@ -17,7 +17,7 @@ import {
   updateAgentInstructionsPathSchema,
   wakeAgentSchema,
   updateAgentSchema,
-} from "@paperclipai/shared";
+} from "@ciutatis/shared";
 import { validate } from "../middleware/validate.js";
 import {
   agentService,
@@ -26,7 +26,7 @@ import {
   budgetService,
   heartbeatService,
   issueApprovalService,
-  issueService,
+  requestService,
   logActivity,
   secretService,
   workspaceOperationService,
@@ -36,14 +36,14 @@ import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
-import { runClaudeLogin } from "@paperclipai/adapter-claude-local/server";
+import { runClaudeLogin } from "@ciutatis/adapter-claude-local/server";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
-} from "@paperclipai/adapter-codex-local";
-import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
-import { ensureOpenCodeModelConfiguredAndAvailable } from "@paperclipai/adapter-opencode-local/server";
+} from "@ciutatis/adapter-codex-local";
+import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ciutatis/adapter-cursor-local";
+import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
+import { ensureOpenCodeModelConfiguredAndAvailable } from "@ciutatis/adapter-opencode-local/server";
 
 export function agentRoutes(db: Db) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
@@ -585,24 +585,24 @@ export function agentRoutes(db: Db) {
       return;
     }
 
-    const issuesSvc = issueService(db);
-    const rows = await issuesSvc.list(req.actor.companyId, {
+    const requestsSvc = requestService(db);
+    const rows = await requestsSvc.list(req.actor.companyId, {
       assigneeAgentId: req.actor.agentId,
       status: "todo,in_progress,blocked",
     });
 
     res.json(
-      rows.map((issue) => ({
-        id: issue.id,
-        identifier: issue.identifier,
-        title: issue.title,
-        status: issue.status,
-        priority: issue.priority,
-        projectId: issue.projectId,
-        goalId: issue.goalId,
-        parentId: issue.parentId,
-        updatedAt: issue.updatedAt,
-        activeRun: issue.activeRun,
+      rows.map((request) => ({
+        id: request.id,
+        identifier: request.identifier,
+        title: request.title,
+        status: request.status,
+        priority: request.priority,
+        projectId: request.projectId,
+        goalId: request.goalId,
+        parentId: request.parentId,
+        updatedAt: request.updatedAt,
+        activeRun: request.activeRun,
       })),
     );
   });
@@ -1598,14 +1598,14 @@ export function agentRoutes(db: Db) {
 
   router.get("/issues/:issueId/live-runs", async (req, res) => {
     const rawId = req.params.issueId as string;
-    const issueSvc = issueService(db);
+    const requestSvc = requestService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
-    if (!issue) {
+    const request = isIdentifier ? await requestSvc.getByIdentifier(rawId) : await requestSvc.getById(rawId);
+    if (!request) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    assertCompanyAccess(req, request.companyId);
 
     const liveRuns = await db
       .select({
@@ -1624,9 +1624,9 @@ export function agentRoutes(db: Db) {
       .innerJoin(agentsTable, eq(heartbeatRuns.agentId, agentsTable.id))
       .where(
         and(
-          eq(heartbeatRuns.companyId, issue.companyId),
+          eq(heartbeatRuns.companyId, request.companyId),
           inArray(heartbeatRuns.status, ["queued", "running"]),
-          sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
+          sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${request.id}`,
         ),
       )
       .orderBy(desc(heartbeatRuns.createdAt));
@@ -1636,25 +1636,25 @@ export function agentRoutes(db: Db) {
 
   router.get("/issues/:issueId/active-run", async (req, res) => {
     const rawId = req.params.issueId as string;
-    const issueSvc = issueService(db);
+    const requestSvc = requestService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
-    if (!issue) {
+    const request = isIdentifier ? await requestSvc.getByIdentifier(rawId) : await requestSvc.getById(rawId);
+    if (!request) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    assertCompanyAccess(req, request.companyId);
 
-    let run = issue.executionRunId ? await heartbeat.getRun(issue.executionRunId) : null;
+    let run = request.executionRunId ? await heartbeat.getRun(request.executionRunId) : null;
     if (run && run.status !== "queued" && run.status !== "running") {
       run = null;
     }
 
-    if (!run && issue.assigneeAgentId && issue.status === "in_progress") {
-      const candidateRun = await heartbeat.getActiveRunForAgent(issue.assigneeAgentId);
+    if (!run && request.assigneeAgentId && request.status === "in_progress") {
+      const candidateRun = await heartbeat.getActiveRunForAgent(request.assigneeAgentId);
       const candidateContext = asRecord(candidateRun?.contextSnapshot);
       const candidateIssueId = asNonEmptyString(candidateContext?.issueId);
-      if (candidateRun && candidateIssueId === issue.id) {
+      if (candidateRun && candidateIssueId === request.id) {
         run = candidateRun;
       }
     }

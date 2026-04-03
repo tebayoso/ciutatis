@@ -1,20 +1,20 @@
 import pc from "picocolors";
 
-const PAPERCLIP_ART = [
-  "██████╗  █████╗ ██████╗ ███████╗██████╗  ██████╗██╗     ██╗██████╗ ",
-  "██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝██║     ██║██╔══██╗",
-  "██████╔╝███████║██████╔╝█████╗  ██████╔╝██║     ██║     ██║██████╔╝",
-  "██╔═══╝ ██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗██║     ██║     ██║██╔═══╝ ",
-  "██║     ██║  ██║██║     ███████╗██║  ██║╚██████╗███████╗██║██║     ",
-  "╚═╝     ╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚═╝╚═╝     ",
+const CIUTATIS_ART = [
+  " ██████╗██╗██╗   ██╗████████╗ █████╗ ████████╗██╗███████╗",
+  "██╔════╝██║██║   ██║╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔════╝",
+  "██║     ██║██║   ██║   ██║   ███████║   ██║   ██║███████╗",
+  "██║     ██║██║   ██║   ██║   ██╔══██║   ██║   ██║╚════██║",
+  "╚██████╗██║╚██████╔╝   ██║   ██║  ██║   ██║   ██║███████║",
+  " ╚═════╝╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝╚══════╝",
 ] as const;
 
-const TAGLINE = "Open-source orchestration for zero-human companies";
+const TAGLINE = "Civic Operations Platform — AI-powered governance";
 
-export function printPaperclipCliBanner(): void {
+export function printCiutatisCliBanner(): void {
   const lines = [
     "",
-    ...PAPERCLIP_ART.map((line) => pc.cyan(line)),
+    ...CIUTATIS_ART.map((line) => pc.cyan(line)),
     pc.blue("  ───────────────────────────────────────────────────────"),
     pc.bold(pc.white(`  ${TAGLINE}`)),
     "",

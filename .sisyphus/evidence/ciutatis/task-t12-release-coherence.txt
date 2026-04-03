@@ -1,0 +1,82 @@
+T12 Release Coherence Verification
+=====================================
+Date: 2026-04-03
+Repository: tebayoso/ciutatis (paperclip civic fork)
+
+1. UPSTREAM ATTRIBUTION
+------------------------
+Status: PASS
+
+README.md (lines 1-13): HTML comment block with:
+  - "CIUTATIS — Civic Operations Platform"
+  - "A civic fork of Paperclip (https://github.com/paperclipai/paperclip)"
+  - "Original work Copyright (c) 2025 Paperclip AI"
+  - "Fork maintained by tebayoso/ciutatis"
+
+LICENSE: MIT License, Copyright (c) 2025 Paperclip AI
+
+2. CLI BRANDING
+----------------
+Status: PASS
+
+cli/src/utils/banner.ts:
+  - CIUTATIS_ART: ASCII art banner
+  - TAGLINE: "Civic Operations Platform — AI-powered governance"
+
+cli/src/index.ts:
+  - .name("ciutatis") — CLI invoked as `ciutatis`
+
+cli/src/commands/*.ts:
+  - All intro banners use `ciutatis` prefix (e.g., "ciutatis onboard", "ciutatis doctor")
+  - Help text references `ciutatis run`, `ciutatis configure`, etc.
+
+3. UI BRANDING
+---------------
+Status: PARTIAL (documented finding)
+
+Coherent:
+  - All package imports use @ciutatis/* namespace
+  - InstitutionSettings.tsx references `pnpm ciutatis` commands
+  - RequestDetail.tsx uses `ciutatis:request-comment-draft:` localStorage key
+  - Requests.tsx uses `ciutatis:requests-view` localStorage key
+  - PluginManager.tsx placeholder uses `@ciutatis/plugin-example`
+
+Finding (non-blocking):
+  - ui/index.html still has <title>Paperclip</title> and
+    <meta name="apple-mobile-web-app-title" content="Paperclip" />
+  - Runtime branding markers exist (PAPERCLIP_RUNTIME_BRANDING_START/END)
+    suggesting server-side injection may override at runtime
+  - This is cosmetic and may be intentionally left for upstream compatibility
+
+4. GEMINI-ONLY POLICY
+-----------------------
+Status: PASS (no server-side regressions)
+
+Server adapter registry (server/src/adapters/registry.ts):
+  - Only 3 adapters registered: gemini_local, processAdapter, httpAdapter
+  - No registerAdapter calls for codex, cursor, claude, opencode, or openai
+  - Unknown adapter types fall back to processAdapter
+
+Server adapter model files:
+  - codex-models.ts and cursor-models.ts still exist as dead code
+  - Neither is imported or wired into the registry
+  - These could be removed in a cleanup pass but pose no runtime risk
+
+UI adapter packages:
+  - UI still imports from adapter-codex-local, adapter-cursor-local (in AgentConfigForm.tsx,
+    NewAgent.tsx, OnboardingWizard.tsx) for display/configuration purposes
+  - These are UI-only definitions — the server enforces the Gemini-only gate
+
+5. PACKAGE NAMESPACE
+---------------------
+Status: PASS
+All packages use @ciutatis/* scope:
+  @ciutatis/shared, @ciutatis/db, @ciutatis/server, @ciutatis/adapter-utils,
+  @ciutatis/adapter-gemini-local, @ciutatis/plugin-sdk, etc.
+
+OVERALL RELEASE COHERENCE: READY
+  - Attribution: Complete
+  - CLI branding: Complete
+  - UI branding: Functional (minor index.html title finding)
+  - Gemini-only: Enforced at server level
+  - Package namespace: Fully migrated to @ciutatis

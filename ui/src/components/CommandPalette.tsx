@@ -121,7 +121,7 @@ export function CommandPalette() {
             }}
           >
             <SquarePen className="mr-2 h-4 w-4" />
-            Create new issue
+            Create new request
             <span className="ml-auto text-xs text-muted-foreground">C</span>
           </CommandItem>
           <CommandItem
@@ -150,17 +150,17 @@ export function CommandPalette() {
             <Inbox className="mr-2 h-4 w-4" />
             Inbox
           </CommandItem>
-          <CommandItem onSelect={() => go("/issues")}>
+          <CommandItem onSelect={() => go("/requests")}>
             <CircleDot className="mr-2 h-4 w-4" />
-            Issues
+            Requests
           </CommandItem>
           <CommandItem onSelect={() => go("/projects")}>
             <Hexagon className="mr-2 h-4 w-4" />
             Projects
           </CommandItem>
-          <CommandItem onSelect={() => go("/goals")}>
+          <CommandItem onSelect={() => go("/objectives")}>
             <Target className="mr-2 h-4 w-4" />
-            Goals
+            Objectives
           </CommandItem>
           <CommandItem onSelect={() => go("/agents")}>
             <Bot className="mr-2 h-4 w-4" />
@@ -179,7 +179,7 @@ export function CommandPalette() {
         {visibleIssues.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Issues">
+            <CommandGroup heading="Requests">
               {visibleIssues.slice(0, 10).map((issue) => (
                 <CommandItem
                   key={issue.id}
@@ -188,7 +188,7 @@ export function CommandPalette() {
                       ? `${searchQuery} ${issue.identifier ?? ""} ${issue.title}`
                       : undefined
                   }
-                  onSelect={() => go(`/issues/${issue.identifier ?? issue.id}`)}
+                    onSelect={() => go(`/requests/${issue.identifier ?? issue.id}`)}
                 >
                   <CircleDot className="mr-2 h-4 w-4" />
                   <span className="text-muted-foreground mr-2 font-mono text-xs">

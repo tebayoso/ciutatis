@@ -7,13 +7,13 @@ import {
   PERMISSION_KEYS,
 } from "../constants.js";
 
-export const createCompanyInviteSchema = z.object({
+export const createInstitutionInviteSchema = z.object({
   allowedJoinTypes: z.enum(INVITE_JOIN_TYPES).default("both"),
   defaultsPayload: z.record(z.string(), z.unknown()).optional().nullable(),
   agentMessage: z.string().max(4000).optional().nullable(),
 });
 
-export type CreateCompanyInvite = z.infer<typeof createCompanyInviteSchema>;
+export type CreateInstitutionInvite = z.infer<typeof createInstitutionInviteSchema>;
 
 export const createOpenClawInvitePromptSchema = z.object({
   agentMessage: z.string().max(4000).optional().nullable(),
@@ -29,7 +29,6 @@ export const acceptInviteSchema = z.object({
   adapterType: z.enum(AGENT_ADAPTER_TYPES).optional(),
   capabilities: z.string().max(4000).optional().nullable(),
   agentDefaultsPayload: z.record(z.string(), z.unknown()).optional().nullable(),
-  // OpenClaw join compatibility fields accepted at top level.
   responsesWebhookUrl: z.string().max(4000).optional().nullable(),
   responsesWebhookMethod: z.string().max(32).optional().nullable(),
   responsesWebhookHeaders: z.record(z.string(), z.unknown()).optional().nullable(),
@@ -63,8 +62,13 @@ export const updateMemberPermissionsSchema = z.object({
 
 export type UpdateMemberPermissions = z.infer<typeof updateMemberPermissionsSchema>;
 
-export const updateUserCompanyAccessSchema = z.object({
+export const updateUserInstitutionAccessSchema = z.object({
   companyIds: z.array(z.string().uuid()).default([]),
 });
 
-export type UpdateUserCompanyAccess = z.infer<typeof updateUserCompanyAccessSchema>;
+export type UpdateUserInstitutionAccess = z.infer<typeof updateUserInstitutionAccessSchema>;
+
+export const createCompanyInviteSchema = createInstitutionInviteSchema;
+export type CreateCompanyInvite = CreateInstitutionInvite;
+export const updateUserCompanyAccessSchema = updateUserInstitutionAccessSchema;
+export type UpdateUserCompanyAccess = UpdateUserInstitutionAccess;

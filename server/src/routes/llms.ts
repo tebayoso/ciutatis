@@ -1,9 +1,11 @@
 import { Router, type Request } from "express";
-import type { Db } from "@paperclipai/db";
-import { AGENT_ICON_NAMES } from "@paperclipai/shared";
+import type { Db } from "@ciutatis/db";
+import { AGENT_ICON_NAMES } from "@ciutatis/shared";
 import { forbidden } from "../errors.js";
 import { listServerAdapters } from "../adapters/index.js";
 import { agentService } from "../services/agents.js";
+
+const LLM_ADAPTER_TYPES = new Set(["gemini_local"]);
 
 function hasCreatePermission(agent: { role: string; permissions: Record<string, unknown> | null | undefined }) {
   if (!agent.permissions || typeof agent.permissions !== "object") return false;
@@ -27,7 +29,9 @@ export function llmRoutes(db: Db) {
 
   router.get("/llms/agent-configuration.txt", async (req, res) => {
     await assertCanRead(req);
-    const adapters = listServerAdapters().sort((a, b) => a.type.localeCompare(b.type));
+    const adapters = listServerAdapters()
+      .filter((adapter) => LLM_ADAPTER_TYPES.has(adapter.type))
+      .sort((a, b) => a.type.localeCompare(b.type));
     const lines = [
       "# Paperclip Agent Configuration Index",
       "",
@@ -68,7 +72,9 @@ export function llmRoutes(db: Db) {
   router.get("/llms/agent-configuration/:adapterType.txt", async (req, res) => {
     await assertCanRead(req);
     const adapterType = req.params.adapterType as string;
-    const adapter = listServerAdapters().find((entry) => entry.type === adapterType);
+    const adapter = listServerAdapters().find(
+      (entry) => entry.type === adapterType && LLM_ADAPTER_TYPES.has(entry.type),
+    );
     if (!adapter) {
       res.status(404).type("text/plain").send(`Unknown adapter type: ${adapterType}`);
       return;

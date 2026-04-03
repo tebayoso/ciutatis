@@ -1,10 +1,10 @@
 import express from "express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
-import { companyRoutes } from "../routes/companies.js";
+import { institutionRoutes } from "../routes/institutions.js";
 
 vi.mock("../services/index.js", () => ({
-  companyService: () => ({
+  institutionService: () => ({
     list: vi.fn(),
     stats: vi.fn(),
     getById: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock("../services/index.js", () => ({
   logActivity: vi.fn(),
 }));
 
-describe("company routes malformed issue path guard", () => {
+describe("institution routes malformed request path guard", () => {
   it("returns a clear error when companyId is missing for issues list path", async () => {
     const app = express();
     app.use((req, _res, next) => {
@@ -40,9 +40,9 @@ describe("company routes malformed issue path guard", () => {
       };
       next();
     });
-    app.use("/api/companies", companyRoutes({} as any));
+    app.use("/api/institutions", institutionRoutes({} as any));
 
-    const res = await request(app).get("/api/companies/issues");
+    const res = await request(app).get("/api/institutions/issues");
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({

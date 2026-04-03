@@ -3,7 +3,7 @@ import type { LlmConfig } from "../config/schema.js";
 
 export async function promptLlm(): Promise<LlmConfig | undefined> {
   const configureLlm = await p.confirm({
-    message: "Configure an LLM provider now?",
+    message: "Configure the Gemini LLM provider now?",
     initialValue: false,
   });
 
@@ -14,21 +14,8 @@ export async function promptLlm(): Promise<LlmConfig | undefined> {
 
   if (!configureLlm) return undefined;
 
-  const provider = await p.select({
-    message: "LLM provider",
-    options: [
-      { value: "claude" as const, label: "Claude (Anthropic)" },
-      { value: "openai" as const, label: "OpenAI" },
-    ],
-  });
-
-  if (p.isCancel(provider)) {
-    p.cancel("Setup cancelled.");
-    process.exit(0);
-  }
-
   const apiKey = await p.password({
-    message: `${provider === "claude" ? "Anthropic" : "OpenAI"} API key`,
+    message: "Google AI (Gemini) API key",
     validate: (val) => {
       if (!val) return "API key is required";
     },
@@ -39,5 +26,5 @@ export async function promptLlm(): Promise<LlmConfig | undefined> {
     process.exit(0);
   }
 
-  return { provider, apiKey };
+  return { provider: "gemini", apiKey };
 }

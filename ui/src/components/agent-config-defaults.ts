@@ -1,11 +1,12 @@
-import type { CreateConfigValues } from "@paperclipai/adapter-utils";
+import type { CreateConfigValues } from "@ciutatis/adapter-utils";
+import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
 
 export const defaultCreateValues: CreateConfigValues = {
-  adapterType: "claude_local",
+  adapterType: "gemini_local",
   cwd: "",
   instructionsFilePath: "",
   promptTemplate: "",
-  model: "",
+  model: DEFAULT_GEMINI_LOCAL_MODEL,
   thinkingEffort: "",
   chrome: false,
   dangerouslySkipPermissions: true,

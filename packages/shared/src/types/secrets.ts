@@ -36,6 +36,9 @@ export interface CompanySecret {
   updatedAt: Date;
 }
 
+// New canonical alias
+export type InstitutionSecret = CompanySecret;
+
 export interface SecretProviderDescriptor {
   id: SecretProvider;
   label: string;

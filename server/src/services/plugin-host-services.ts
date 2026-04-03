@@ -1,5 +1,5 @@
-import type { Db } from "@paperclipai/db";
-import { pluginLogs, agentTaskSessions as agentTaskSessionsTable } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
+import { pluginLogs, agentTaskSessions as agentTaskSessionsTable } from "@ciutatis/db";
 import { eq, and, like, desc } from "drizzle-orm";
 import type {
   HostServices,
@@ -10,12 +10,12 @@ import type {
   Goal,
   PluginWorkspace,
   IssueComment,
-} from "@paperclipai/plugin-sdk";
-import { companyService } from "./companies.js";
+} from "@ciutatis/plugin-sdk";
+import { institutionService } from "./institutionService.js";
 import { agentService } from "./agents.js";
 import { projectService } from "./projects.js";
-import { issueService } from "./issues.js";
-import { goalService } from "./goals.js";
+import { requestService } from "./requestService.js";
+import { objectiveService } from "./objectiveService.js";
 import { documentService } from "./documents.js";
 import { heartbeatService } from "./heartbeat.js";
 import { subscribeCompanyLiveEvents } from "./live-events.js";
@@ -446,13 +446,13 @@ export function buildHostServices(
   const registry = pluginRegistryService(db);
   const stateStore = pluginStateStore(db);
   const secretsHandler = createPluginSecretsHandler({ db, pluginId });
-  const companies = companyService(db);
+  const institutions = institutionService(db);
   const agents = agentService(db);
   const heartbeat = heartbeatService(db);
   const projects = projectService(db);
-  const issues = issueService(db);
+  const requests = requestService(db);
   const documents = documentService(db);
-  const goals = goalService(db);
+  const objectives = objectiveService(db);
   const activity = activityService(db);
   const costs = costService(db);
   const assets = assetService(db);
@@ -559,7 +559,7 @@ export function buildHostServices(
         await scopedBus.emit(params.name, params.companyId, params.payload);
       },
       async subscribe(params: { eventPattern: string; filter?: Record<string, unknown> | null }) {
-        const handler = async (event: import("@paperclipai/plugin-sdk").PluginEvent) => {
+        const handler = async (event: import("@ciutatis/plugin-sdk").PluginEvent) => {
           if (notifyWorker) {
             notifyWorker("onEvent", { event });
           }
@@ -672,11 +672,11 @@ export function buildHostServices(
 
     companies: {
       async list(params) {
-        return applyWindow((await companies.list()) as Company[], params);
+        return applyWindow((await institutions.list()) as Company[], params);
       },
       async get(params) {
         await ensurePluginAvailableForCompany(params.companyId);
-        return (await companies.getById(params.companyId)) as Company;
+        return (await institutions.getById(params.companyId)) as Company;
       },
     },
 
@@ -734,9 +734,9 @@ export function buildHostServices(
       async getWorkspaceForIssue(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        const issue = await issues.getById(params.issueId);
-        if (!inCompany(issue, companyId)) return null;
-        const projectId = (issue as Record<string, unknown>).projectId as string | null;
+          const request = await requests.getById(params.issueId);
+          if (!inCompany(request, companyId)) return null;
+          const projectId = (request as Record<string, unknown>).projectId as string | null;
         if (!projectId) return null;
         const project = await projects.getById(projectId);
         if (!inCompany(project, companyId)) return null;
@@ -759,36 +759,36 @@ export function buildHostServices(
       async list(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        return applyWindow((await issues.list(companyId, params as any)) as Issue[], params);
+        return applyWindow((await requests.list(companyId, params as any)) as Issue[], params);
       },
       async get(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        const issue = await issues.getById(params.issueId);
-        return (inCompany(issue, companyId) ? issue : null) as Issue | null;
+        const request = await requests.getById(params.issueId);
+        return (inCompany(request, companyId) ? request : null) as Issue | null;
       },
       async create(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        return (await issues.create(companyId, params as any)) as Issue;
+        return (await requests.create(companyId, params as any)) as Issue;
       },
       async update(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
-        return (await issues.update(params.issueId, params.patch as any)) as Issue;
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
+        return (await requests.update(params.issueId, params.patch as any)) as Issue;
       },
       async listComments(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        if (!inCompany(await issues.getById(params.issueId), companyId)) return [];
-        return (await issues.listComments(params.issueId)) as IssueComment[];
+        if (!inCompany(await requests.getById(params.issueId), companyId)) return [];
+        return (await requests.listComments(params.issueId)) as IssueComment[];
       },
       async createComment(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
-        return (await issues.addComment(
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
+        return (await requests.addComment(
           params.issueId,
           params.body,
           {},
@@ -800,21 +800,21 @@ export function buildHostServices(
       async list(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
         const rows = await documents.listIssueDocuments(params.issueId);
         return rows as any;
       },
       async get(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
         const doc = await documents.getIssueDocumentByKey(params.issueId, params.key);
         return (doc ?? null) as any;
       },
       async upsert(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
         const result = await documents.upsertIssueDocument({
           issueId: params.issueId,
           key: params.key,
@@ -828,7 +828,7 @@ export function buildHostServices(
       async delete(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Issue", await issues.getById(params.issueId), companyId);
+        requireInCompany("Issue", await requests.getById(params.issueId), companyId);
         await documents.deleteIssueDocument(params.issueId, params.key);
       },
     },
@@ -885,7 +885,7 @@ export function buildHostServices(
       async list(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        const rows = await goals.list(companyId);
+        const rows = await objectives.list(companyId);
         return applyWindow(
           rows.filter((goal) =>
             (!params.level || goal.level === params.level) &&
@@ -897,13 +897,13 @@ export function buildHostServices(
       async get(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        const goal = await goals.getById(params.goalId);
-        return (inCompany(goal, companyId) ? goal : null) as Goal | null;
+        const objective = await objectives.getById(params.goalId);
+        return (inCompany(objective, companyId) ? objective : null) as Goal | null;
       },
       async create(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        return (await goals.create(companyId, {
+        return (await objectives.create(companyId, {
           title: params.title,
           description: params.description,
           level: params.level as any,
@@ -915,8 +915,8 @@ export function buildHostServices(
       async update(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
-        requireInCompany("Goal", await goals.getById(params.goalId), companyId);
-        return (await goals.update(params.goalId, params.patch as any)) as Goal;
+        requireInCompany("Goal", await objectives.getById(params.goalId), companyId);
+        return (await objectives.update(params.goalId, params.patch as any)) as Goal;
       },
     },
 

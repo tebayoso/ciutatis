@@ -77,7 +77,7 @@ vi.mock("../services/index.js", () => ({
   budgetService: () => mockBudgetService,
   costService: () => mockCostService,
   financeService: () => mockFinanceService,
-  companyService: () => mockCompanyService,
+  institutionService: () => mockCompanyService,
   agentService: () => mockAgentService,
   heartbeatService: () => mockHeartbeatService,
   logActivity: mockLogActivity,
@@ -91,7 +91,7 @@ function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    req.actor = { type: "board", userId: "board-user", source: "local_implicit" };
+    (req as any).actor = { type: "board", userId: "board-user", source: "local_implicit" };
     next();
   });
   app.use("/api", costRoutes(makeDb() as any));
@@ -103,7 +103,7 @@ function createAppWithActor(actor: any) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    req.actor = actor;
+    (req as any).actor = actor;
     next();
   });
   app.use("/api", costRoutes(makeDb() as any));

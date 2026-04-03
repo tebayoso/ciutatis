@@ -1,16 +1,16 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import type { Db } from "@paperclipai/db";
-import { goals } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
+import { goals } from "@ciutatis/db";
 
-type GoalReader = Pick<Db, "select">;
+type ObjectiveReader = Pick<Db, "select">;
 
-export async function getDefaultCompanyGoal(db: GoalReader, companyId: string) {
+export async function getDefaultInstitutionObjective(db: ObjectiveReader, institutionId: string) {
   const activeRootGoal = await db
     .select()
     .from(goals)
     .where(
       and(
-        eq(goals.companyId, companyId),
+        eq(goals.companyId, institutionId),
         eq(goals.level, "company"),
         eq(goals.status, "active"),
         isNull(goals.parentId),
@@ -25,7 +25,7 @@ export async function getDefaultCompanyGoal(db: GoalReader, companyId: string) {
     .from(goals)
     .where(
       and(
-        eq(goals.companyId, companyId),
+        eq(goals.companyId, institutionId),
         eq(goals.level, "company"),
         isNull(goals.parentId),
       ),
@@ -37,14 +37,14 @@ export async function getDefaultCompanyGoal(db: GoalReader, companyId: string) {
   return db
     .select()
     .from(goals)
-    .where(and(eq(goals.companyId, companyId), eq(goals.level, "company")))
+    .where(and(eq(goals.companyId, institutionId), eq(goals.level, "company")))
     .orderBy(asc(goals.createdAt))
     .then((rows) => rows[0] ?? null);
 }
 
-export function goalService(db: Db) {
+export function objectiveService(db: Db) {
   return {
-    list: (companyId: string) => db.select().from(goals).where(eq(goals.companyId, companyId)),
+    list: (institutionId: string) => db.select().from(goals).where(eq(goals.companyId, institutionId)),
 
     getById: (id: string) =>
       db
@@ -53,12 +53,12 @@ export function goalService(db: Db) {
         .where(eq(goals.id, id))
         .then((rows) => rows[0] ?? null),
 
-    getDefaultCompanyGoal: (companyId: string) => getDefaultCompanyGoal(db, companyId),
+    getDefaultInstitutionObjective: (institutionId: string) => getDefaultInstitutionObjective(db, institutionId),
 
-    create: (companyId: string, data: Omit<typeof goals.$inferInsert, "companyId">) =>
+    create: (institutionId: string, data: Omit<typeof goals.$inferInsert, "companyId">) =>
       db
         .insert(goals)
-        .values({ ...data, companyId })
+        .values({ ...data, companyId: institutionId })
         .returning()
         .then((rows) => rows[0]),
 

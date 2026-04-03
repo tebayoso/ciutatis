@@ -1,5 +1,7 @@
-export const COMPANY_STATUSES = ["active", "paused", "archived"] as const;
-export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
+export const INSTITUTION_STATUSES = ["active", "paused", "archived"] as const;
+export type InstitutionStatus = (typeof INSTITUTION_STATUSES)[number];
+export const COMPANY_STATUSES = INSTITUTION_STATUSES;
+export type CompanyStatus = InstitutionStatus;
 
 export const DEPLOYMENT_MODES = ["local_trusted", "authenticated"] as const;
 export type DeploymentMode = (typeof DEPLOYMENT_MODES)[number];
@@ -26,6 +28,7 @@ export const AGENT_ADAPTER_TYPES = [
   "http",
   "claude_local",
   "codex_local",
+  "gemini_local",
   "opencode_local",
   "pi_local",
   "cursor",
@@ -108,7 +111,7 @@ export const AGENT_ICON_NAMES = [
 ] as const;
 export type AgentIconName = (typeof AGENT_ICON_NAMES)[number];
 
-export const ISSUE_STATUSES = [
+export const REQUEST_STATUSES = [
   "backlog",
   "todo",
   "in_progress",
@@ -117,16 +120,24 @@ export const ISSUE_STATUSES = [
   "blocked",
   "cancelled",
 ] as const;
-export type IssueStatus = (typeof ISSUE_STATUSES)[number];
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+export const ISSUE_STATUSES = REQUEST_STATUSES;
+export type IssueStatus = RequestStatus;
 
-export const ISSUE_PRIORITIES = ["critical", "high", "medium", "low"] as const;
-export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
+export const REQUEST_PRIORITIES = ["critical", "high", "medium", "low"] as const;
+export type RequestPriority = (typeof REQUEST_PRIORITIES)[number];
+export const ISSUE_PRIORITIES = REQUEST_PRIORITIES;
+export type IssuePriority = RequestPriority;
 
-export const GOAL_LEVELS = ["company", "team", "agent", "task"] as const;
-export type GoalLevel = (typeof GOAL_LEVELS)[number];
+export const OBJECTIVE_LEVELS = ["company", "team", "agent", "task"] as const;
+export type ObjectiveLevel = (typeof OBJECTIVE_LEVELS)[number];
+export const GOAL_LEVELS = OBJECTIVE_LEVELS;
+export type GoalLevel = ObjectiveLevel;
 
-export const GOAL_STATUSES = ["planned", "active", "achieved", "cancelled"] as const;
-export type GoalStatus = (typeof GOAL_STATUSES)[number];
+export const OBJECTIVE_STATUSES = ["planned", "active", "achieved", "cancelled"] as const;
+export type ObjectiveStatus = (typeof OBJECTIVE_STATUSES)[number];
+export const GOAL_STATUSES = OBJECTIVE_STATUSES;
+export type GoalStatus = ObjectiveStatus;
 
 export const PROJECT_STATUSES = [
   "backlog",

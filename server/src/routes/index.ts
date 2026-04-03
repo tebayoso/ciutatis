@@ -1,9 +1,9 @@
 export { healthRoutes } from "./health.js";
-export { companyRoutes } from "./companies.js";
+export { institutionRoutes } from "./institutions.js";
 export { agentRoutes } from "./agents.js";
 export { projectRoutes } from "./projects.js";
-export { issueRoutes } from "./issues.js";
-export { goalRoutes } from "./goals.js";
+export { requestRoutes } from "./requests.js";
+export { objectiveRoutes } from "./objectives.js";
 export { approvalRoutes } from "./approvals.js";
 export { secretRoutes } from "./secrets.js";
 export { costRoutes } from "./costs.js";

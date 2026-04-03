@@ -1,11 +1,12 @@
-export { companyService } from "./companies.js";
+export { institutionService } from "./institutionService.js";
 export { agentService, deduplicateAgentName } from "./agents.js";
 export { assetService } from "./assets.js";
 export { documentService, extractLegacyPlanBody } from "./documents.js";
 export { projectService } from "./projects.js";
-export { issueService, type IssueFilters } from "./issues.js";
+export { requestService, type RequestFilters } from "./requestService.js";
+export type { RequestFilters as IssueFilters } from "./requestService.js";
 export { issueApprovalService } from "./issue-approvals.js";
-export { goalService } from "./goals.js";
+export { objectiveService } from "./objectiveService.js";
 export { activityService, type ActivityFilters } from "./activity.js";
 export { approvalService } from "./approvals.js";
 export { budgetService } from "./budgets.js";

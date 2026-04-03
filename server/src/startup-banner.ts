@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolvePaperclipConfigPath, resolvePaperclipEnvPath } from "./paths.js";
-import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
+import type { DeploymentExposure, DeploymentMode } from "@ciutatis/shared";
 
 import { parse as parseEnvFileContents } from "dotenv";
 
@@ -50,6 +50,8 @@ function color(text: string, c: keyof typeof ansi): string {
   return `${ansi[c]}${text}${ansi.reset}`;
 }
 
+const productName = color("Ciutatis", "cyan");
+
 function row(label: string, value: string): string {
   return `${color(label.padEnd(16), "dim")} ${value}`;
 }
@@ -92,7 +94,7 @@ function resolveAgentJwtSecretStatus(
 
   return {
     status: "warn",
-    message: "missing (run `pnpm paperclipai onboard`)",
+    message: "missing (run `pnpm ciutatis onboard`)",
   };
 }
 
@@ -134,6 +136,8 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     : color("disabled", "yellow");
 
   const art = [
+    productName,
+    color("Ciutatis", "cyan"),
     color("██████╗  █████╗ ██████╗ ███████╗██████╗  ██████╗██╗     ██╗██████╗ ", "cyan"),
     color("██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝██║     ██║██╔══██╗", "cyan"),
     color("██████╔╝███████║██████╔╝█████╗  ██████╔╝██║     ██║     ██║██████╔╝", "cyan"),

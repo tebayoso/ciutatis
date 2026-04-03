@@ -1,13 +1,13 @@
 import { Router } from "express";
-import type { Db } from "@paperclipai/db";
-import { createGoalSchema, updateGoalSchema } from "@paperclipai/shared";
+import type { Db } from "@ciutatis/db";
+import { createObjectiveSchema, updateObjectiveSchema } from "@ciutatis/shared";
 import { validate } from "../middleware/validate.js";
-import { goalService, logActivity } from "../services/index.js";
+import { objectiveService, logActivity } from "../services/index.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
-export function goalRoutes(db: Db) {
+export function objectiveRoutes(db: Db) {
   const router = Router();
-  const svc = goalService(db);
+  const svc = objectiveService(db);
 
   router.get("/companies/:companyId/goals", async (req, res) => {
     const companyId = req.params.companyId as string;
@@ -27,7 +27,7 @@ export function goalRoutes(db: Db) {
     res.json(goal);
   });
 
-  router.post("/companies/:companyId/goals", validate(createGoalSchema), async (req, res) => {
+  router.post("/companies/:companyId/goals", validate(createObjectiveSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const goal = await svc.create(companyId, req.body);
@@ -45,7 +45,7 @@ export function goalRoutes(db: Db) {
     res.status(201).json(goal);
   });
 
-  router.patch("/goals/:id", validate(updateGoalSchema), async (req, res) => {
+  router.patch("/goals/:id", validate(updateObjectiveSchema), async (req, res) => {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {

@@ -12,22 +12,44 @@ export {
   type ResolveBudgetIncident,
 } from "./budget.js";
 
+// New canonical exports from institution.ts
+export {
+  createInstitutionSchema,
+  updateInstitutionSchema,
+  type CreateInstitution,
+  type UpdateInstitution,
+} from "./institution.js";
+
+// Backward-compat from company.ts shim
 export {
   createCompanySchema,
   updateCompanySchema,
   type CreateCompany,
   type UpdateCompany,
 } from "./company.js";
+
+// New canonical exports from institution-portability.ts
 export {
   portabilityIncludeSchema,
   portabilitySecretRequirementSchema,
-  portabilityCompanyManifestEntrySchema,
+  portabilityInstitutionManifestEntrySchema,
   portabilityAgentManifestEntrySchema,
   portabilityManifestSchema,
   portabilitySourceSchema,
   portabilityTargetSchema,
   portabilityAgentSelectionSchema,
   portabilityCollisionStrategySchema,
+  institutionPortabilityExportSchema,
+  institutionPortabilityPreviewSchema,
+  institutionPortabilityImportSchema,
+  type InstitutionPortabilityExport,
+  type InstitutionPortabilityPreview,
+  type InstitutionPortabilityImport,
+} from "./institution-portability.js";
+
+// Backward-compat from company-portability.ts shim
+export {
+  portabilityCompanyManifestEntrySchema,
   companyPortabilityExportSchema,
   companyPortabilityPreviewSchema,
   companyPortabilityImportSchema,
@@ -71,15 +93,45 @@ export {
   type ProjectExecutionWorkspacePolicy,
 } from "./project.js";
 
+// New canonical exports from request.ts
+export {
+  createRequestSchema,
+  createRequestLabelSchema,
+  updateRequestSchema,
+  requestExecutionWorkspaceSettingsSchema,
+  requestAssigneeAdapterOverridesSchema,
+  checkoutRequestSchema,
+  addRequestCommentSchema,
+  linkRequestApprovalSchema,
+  createRequestAttachmentMetadataSchema,
+  REQUEST_DOCUMENT_FORMATS,
+  requestDocumentFormatSchema,
+  requestDocumentKeySchema,
+  upsertRequestDocumentSchema,
+  type CreateRequest,
+  type CreateRequestLabel,
+  type UpdateRequest,
+  type RequestExecutionWorkspaceSettings,
+  type CheckoutRequest,
+  type AddRequestComment,
+  type LinkRequestApproval,
+  type CreateRequestAttachmentMetadata,
+  type RequestDocumentFormat,
+  type UpsertRequestDocument,
+} from "./request.js";
+
+// Backward-compat from issue.ts shim
 export {
   createIssueSchema,
   createIssueLabelSchema,
   updateIssueSchema,
   issueExecutionWorkspaceSettingsSchema,
+  issueAssigneeAdapterOverridesSchema,
   checkoutIssueSchema,
   addIssueCommentSchema,
   linkIssueApprovalSchema,
   createIssueAttachmentMetadataSchema,
+  ISSUE_DOCUMENT_FORMATS,
   issueDocumentFormatSchema,
   issueDocumentKeySchema,
   upsertIssueDocumentSchema,
@@ -95,12 +147,20 @@ export {
   type UpsertIssueDocument,
 } from "./issue.js";
 
+// New canonical + backward-compat from work-product.ts
 export {
-  createIssueWorkProductSchema,
-  updateIssueWorkProductSchema,
+  requestWorkProductTypeSchema,
+  requestWorkProductStatusSchema,
+  requestWorkProductReviewStateSchema,
+  createRequestWorkProductSchema,
+  updateRequestWorkProductSchema,
+  type CreateRequestWorkProduct,
+  type UpdateRequestWorkProduct,
   issueWorkProductTypeSchema,
   issueWorkProductStatusSchema,
   issueWorkProductReviewStateSchema,
+  createIssueWorkProductSchema,
+  updateIssueWorkProductSchema,
   type CreateIssueWorkProduct,
   type UpdateIssueWorkProduct,
 } from "./work-product.js";
@@ -111,6 +171,15 @@ export {
   type UpdateExecutionWorkspace,
 } from "./execution-workspace.js";
 
+// New canonical exports from objective.ts
+export {
+  createObjectiveSchema,
+  updateObjectiveSchema,
+  type CreateObjective,
+  type UpdateObjective,
+} from "./objective.js";
+
+// Backward-compat from goal.ts shim
 export {
   createGoalSchema,
   updateGoalSchema,
@@ -161,21 +230,26 @@ export {
   type CreateAssetImageMetadata,
 } from "./asset.js";
 
+// New canonical + backward-compat from access.ts
 export {
+  createInstitutionInviteSchema,
+  type CreateInstitutionInvite,
+  updateUserInstitutionAccessSchema,
+  type UpdateUserInstitutionAccess,
   createCompanyInviteSchema,
-  createOpenClawInvitePromptSchema,
-  acceptInviteSchema,
-  listJoinRequestsQuerySchema,
-  claimJoinRequestApiKeySchema,
-  updateMemberPermissionsSchema,
-  updateUserCompanyAccessSchema,
   type CreateCompanyInvite,
-  type CreateOpenClawInvitePrompt,
-  type AcceptInvite,
-  type ListJoinRequestsQuery,
-  type ClaimJoinRequestApiKey,
-  type UpdateMemberPermissions,
+  updateUserCompanyAccessSchema,
   type UpdateUserCompanyAccess,
+  createOpenClawInvitePromptSchema,
+  type CreateOpenClawInvitePrompt,
+  acceptInviteSchema,
+  type AcceptInvite,
+  listJoinRequestsQuerySchema,
+  type ListJoinRequestsQuery,
+  claimJoinRequestApiKeySchema,
+  type ClaimJoinRequestApiKey,
+  updateMemberPermissionsSchema,
+  type UpdateMemberPermissions,
 } from "./access.js";
 
 export {

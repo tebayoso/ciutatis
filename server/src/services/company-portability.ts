@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import type {
   CompanyPortabilityAgentManifestEntry,
   CompanyPortabilityCollisionStrategy,
@@ -13,12 +13,12 @@ import type {
   CompanyPortabilityPreview,
   CompanyPortabilityPreviewAgentPlan,
   CompanyPortabilityPreviewResult,
-} from "@paperclipai/shared";
-import { normalizeAgentUrlKey, portabilityManifestSchema } from "@paperclipai/shared";
+} from "@ciutatis/shared";
+import { normalizeAgentUrlKey, portabilityManifestSchema } from "@ciutatis/shared";
 import { notFound, unprocessable } from "../errors.js";
 import { accessService } from "./access.js";
 import { agentService } from "./agents.js";
-import { companyService } from "./companies.js";
+import { institutionService } from "./institutionService.js";
 
 const DEFAULT_INCLUDE: CompanyPortabilityInclude = {
   company: true,
@@ -479,7 +479,7 @@ async function readAgentInstructions(agent: AgentLike): Promise<{ body: string; 
 }
 
 export function companyPortabilityService(db: Db) {
-  const companies = companyService(db);
+  const institutions = institutionService(db);
   const agents = agentService(db);
   const access = accessService(db);
 
@@ -551,7 +551,7 @@ export function companyPortabilityService(db: Db) {
     input: CompanyPortabilityExport,
   ): Promise<CompanyPortabilityExportResult> {
     const include = normalizeInclude(input.include);
-    const company = await companies.getById(companyId);
+    const company = await institutions.getById(companyId);
     if (!company) throw notFound("Company not found");
 
     const files: Record<string, string> = {};
@@ -733,7 +733,7 @@ export function companyPortabilityService(db: Db) {
     let targetCompanyName: string | null = null;
 
     if (input.target.mode === "existing_company") {
-      const targetCompany = await companies.getById(input.target.companyId);
+      const targetCompany = await institutions.getById(input.target.companyId);
       if (!targetCompany) throw notFound("Target company not found");
       targetCompanyId = targetCompany.id;
       targetCompanyName = targetCompany.name;
@@ -853,7 +853,7 @@ export function companyPortabilityService(db: Db) {
         sourceManifest.company?.name ??
         sourceManifest.source?.companyName ??
         "Imported Company";
-      const created = await companies.create({
+      const created = await institutions.create({
         name: companyName,
         description: include.company ? (sourceManifest.company?.description ?? null) : null,
         brandColor: include.company ? (sourceManifest.company?.brandColor ?? null) : null,
@@ -865,10 +865,10 @@ export function companyPortabilityService(db: Db) {
       targetCompany = created;
       companyAction = "created";
     } else {
-      targetCompany = await companies.getById(input.target.companyId);
+      targetCompany = await institutions.getById(input.target.companyId);
       if (!targetCompany) throw notFound("Target company not found");
       if (include.company && sourceManifest.company) {
-        const updated = await companies.update(targetCompany.id, {
+        const updated = await institutions.update(targetCompany.id, {
           name: sourceManifest.company.name,
           description: sourceManifest.company.description,
           brandColor: sourceManifest.company.brandColor,

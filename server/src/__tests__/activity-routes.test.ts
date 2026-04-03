@@ -22,7 +22,7 @@ vi.mock("../services/activity.js", () => ({
 }));
 
 vi.mock("../services/index.js", () => ({
-  issueService: () => mockIssueService,
+  requestService: () => mockIssueService,
 }));
 
 function createApp() {

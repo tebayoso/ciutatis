@@ -1,29 +1,29 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import {
-  addIssueCommentSchema,
-  createIssueAttachmentMetadataSchema,
-  createIssueWorkProductSchema,
-  createIssueLabelSchema,
-  checkoutIssueSchema,
-  createIssueSchema,
-  linkIssueApprovalSchema,
-  issueDocumentKeySchema,
-  updateIssueWorkProductSchema,
-  upsertIssueDocumentSchema,
-  updateIssueSchema,
-} from "@paperclipai/shared";
+  addRequestCommentSchema,
+  createRequestAttachmentMetadataSchema,
+  createRequestWorkProductSchema,
+  createRequestLabelSchema,
+  checkoutRequestSchema,
+  createRequestSchema,
+  linkRequestApprovalSchema,
+  requestDocumentKeySchema,
+  updateRequestWorkProductSchema,
+  upsertRequestDocumentSchema,
+  updateRequestSchema,
+} from "@ciutatis/shared";
 import type { StorageService } from "../storage/types.js";
 import { validate } from "../middleware/validate.js";
 import {
   accessService,
   agentService,
   executionWorkspaceService,
-  goalService,
+  objectiveService,
   heartbeatService,
   issueApprovalService,
-  issueService,
+  requestService,
   documentService,
   logActivity,
   projectService,
@@ -37,14 +37,14 @@ import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 
-export function issueRoutes(db: Db, storage: StorageService) {
+export function requestRoutes(db: Db, storage: StorageService) {
   const router = Router();
-  const svc = issueService(db);
+  const svc = requestService(db);
   const access = accessService(db);
   const heartbeat = heartbeatService(db);
   const agentsSvc = agentService(db);
   const projectsSvc = projectService(db);
-  const goalsSvc = goalService(db);
+  const objectivesSvc = objectiveService(db);
   const issueApprovalsSvc = issueApprovalService(db);
   const executionWorkspacesSvc = executionWorkspaceService(db);
   const workProductsSvc = workProductService(db);
@@ -169,7 +169,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   }
 
   // Resolve issue identifiers (e.g. "PAP-39") to UUIDs for all /issues/:id routes
-  router.param("id", async (req, res, next, rawId) => {
+  router.param("id", async (req, _res, next, rawId) => {
     try {
       req.params.id = await normalizeIssueIdentifier(rawId);
       next();
@@ -179,7 +179,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   });
 
   // Resolve issue identifiers (e.g. "PAP-39") to UUIDs for company-scoped attachment routes.
-  router.param("issueId", async (req, res, next, rawId) => {
+  router.param("issueId", async (req, _res, next, rawId) => {
     try {
       req.params.issueId = await normalizeIssueIdentifier(rawId);
       next();
@@ -248,7 +248,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(result);
   });
 
-  router.post("/companies/:companyId/labels", validate(createIssueLabelSchema), async (req, res) => {
+  router.post("/companies/:companyId/labels", validate(createRequestLabelSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const label = await svc.createLabel(companyId, req.body);
@@ -307,9 +307,9 @@ export function issueRoutes(db: Db, storage: StorageService) {
       svc.getAncestors(issue.id),
       issue.projectId ? projectsSvc.getById(issue.projectId) : null,
       issue.goalId
-        ? goalsSvc.getById(issue.goalId)
+        ? objectivesSvc.getById(issue.goalId)
         : !issue.projectId
-          ? goalsSvc.getDefaultCompanyGoal(issue.companyId)
+          ? objectivesSvc.getDefaultInstitutionObjective(issue.companyId)
           : null,
       svc.findMentionedProjectIds(issue.id),
       documentsSvc.getIssueDocumentPayload(issue),
@@ -352,9 +352,9 @@ export function issueRoutes(db: Db, storage: StorageService) {
       svc.getAncestors(issue.id),
       issue.projectId ? projectsSvc.getById(issue.projectId) : null,
       issue.goalId
-        ? goalsSvc.getById(issue.goalId)
+        ? objectivesSvc.getById(issue.goalId)
         : !issue.projectId
-          ? goalsSvc.getDefaultCompanyGoal(issue.companyId)
+          ? objectivesSvc.getDefaultInstitutionObjective(issue.companyId)
           : null,
       svc.getCommentCursor(issue.id),
       wakeCommentId ? svc.getComment(wakeCommentId) : null,
@@ -439,7 +439,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     assertCompanyAccess(req, issue.companyId);
-    const keyParsed = issueDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
+    const keyParsed = requestDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
     if (!keyParsed.success) {
       res.status(400).json({ error: "Invalid document key", details: keyParsed.error.issues });
       return;
@@ -452,7 +452,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(doc);
   });
 
-  router.put("/issues/:id/documents/:key", validate(upsertIssueDocumentSchema), async (req, res) => {
+  router.put("/issues/:id/documents/:key", validate(upsertRequestDocumentSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
     if (!issue) {
@@ -460,7 +460,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     assertCompanyAccess(req, issue.companyId);
-    const keyParsed = issueDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
+    const keyParsed = requestDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
     if (!keyParsed.success) {
       res.status(400).json({ error: "Invalid document key", details: keyParsed.error.issues });
       return;
@@ -509,7 +509,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     assertCompanyAccess(req, issue.companyId);
-    const keyParsed = issueDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
+    const keyParsed = requestDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
     if (!keyParsed.success) {
       res.status(400).json({ error: "Invalid document key", details: keyParsed.error.issues });
       return;
@@ -530,7 +530,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(403).json({ error: "Board authentication required" });
       return;
     }
-    const keyParsed = issueDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
+    const keyParsed = requestDocumentKeySchema.safeParse(String(req.params.key ?? "").trim().toLowerCase());
     if (!keyParsed.success) {
       res.status(400).json({ error: "Invalid document key", details: keyParsed.error.issues });
       return;
@@ -559,7 +559,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json({ ok: true });
   });
 
-  router.post("/issues/:id/work-products", validate(createIssueWorkProductSchema), async (req, res) => {
+  router.post("/issues/:id/work-products", validate(createRequestWorkProductSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
     if (!issue) {
@@ -590,7 +590,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.status(201).json(product);
   });
 
-  router.patch("/work-products/:id", validate(updateIssueWorkProductSchema), async (req, res) => {
+  router.patch("/work-products/:id", validate(updateRequestWorkProductSchema), async (req, res) => {
     const id = req.params.id as string;
     const existing = await workProductsSvc.getById(id);
     if (!existing) {
@@ -690,7 +690,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(approvals);
   });
 
-  router.post("/issues/:id/approvals", validate(linkIssueApprovalSchema), async (req, res) => {
+  router.post("/issues/:id/approvals", validate(linkRequestApprovalSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
     if (!issue) {
@@ -749,7 +749,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json({ ok: true });
   });
 
-  router.post("/companies/:companyId/issues", validate(createIssueSchema), async (req, res) => {
+  router.post("/companies/:companyId/issues", validate(createRequestSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     if (req.body.assigneeAgentId || req.body.assigneeUserId) {
@@ -792,7 +792,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.status(201).json(issue);
   });
 
-  router.patch("/issues/:id", validate(updateIssueSchema), async (req, res) => {
+  router.patch("/issues/:id", validate(updateRequestSchema), async (req, res) => {
     const id = req.params.id as string;
     const existing = await svc.getById(id);
     if (!existing) {
@@ -1023,7 +1023,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(issue);
   });
 
-  router.post("/issues/:id/checkout", validate(checkoutIssueSchema), async (req, res) => {
+  router.post("/issues/:id/checkout", validate(checkoutRequestSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
     if (!issue) {
@@ -1179,7 +1179,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(comment);
   });
 
-  router.post("/issues/:id/comments", validate(addIssueCommentSchema), async (req, res) => {
+  router.post("/issues/:id/comments", validate(addRequestCommentSchema), async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
     if (!issue) {
@@ -1447,7 +1447,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
 
-    const parsedMeta = createIssueAttachmentMetadataSchema.safeParse(req.body ?? {});
+    const parsedMeta = createRequestAttachmentMetadataSchema.safeParse(req.body ?? {});
     if (!parsedMeta.success) {
       res.status(400).json({ error: "Invalid attachment metadata", details: parsedMeta.error.issues });
       return;

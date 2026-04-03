@@ -10,7 +10,7 @@ import type {
   PrincipalType,
 } from "../constants.js";
 
-export interface CompanyMembership {
+export interface InstitutionMembership {
   id: string;
   companyId: string;
   principalType: PrincipalType;
@@ -20,6 +20,8 @@ export interface CompanyMembership {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type CompanyMembership = InstitutionMembership;
 
 export interface PrincipalPermissionGrant {
   id: string;

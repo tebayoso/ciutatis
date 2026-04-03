@@ -1,18 +1,18 @@
 import { Router } from "express";
-import type { Db } from "@paperclipai/db";
+import type { Db } from "@ciutatis/db";
 import {
   createCostEventSchema,
   createFinanceEventSchema,
   resolveBudgetIncidentSchema,
   updateBudgetSchema,
   upsertBudgetPolicySchema,
-} from "@paperclipai/shared";
+} from "@ciutatis/shared";
 import { validate } from "../middleware/validate.js";
 import {
   budgetService,
   costService,
   financeService,
-  companyService,
+  institutionService,
   agentService,
   heartbeatService,
   logActivity,
@@ -30,7 +30,7 @@ export function costRoutes(db: Db) {
   const costs = costService(db, budgetHooks);
   const finance = financeService(db);
   const budgets = budgetService(db, budgetHooks);
-  const companies = companyService(db);
+  const institutions = institutionService(db);
   const agents = agentService(db);
 
   router.post("/companies/:companyId/cost-events", validate(createCostEventSchema), async (req, res) => {
@@ -198,8 +198,8 @@ export function costRoutes(db: Db) {
     assertBoard(req);
     // validate companyId resolves to a real company so the "__none__" sentinel
     // and any forged ids are rejected before we touch provider credentials
-    const company = await companies.getById(companyId);
-    if (!company) {
+    const institution = await institutions.getById(companyId);
+    if (!institution) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
@@ -251,8 +251,8 @@ export function costRoutes(db: Db) {
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const company = await companies.update(companyId, { budgetMonthlyCents: req.body.budgetMonthlyCents });
-    if (!company) {
+    const institution = await institutions.update(companyId, { budgetMonthlyCents: req.body.budgetMonthlyCents });
+    if (!institution) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
@@ -278,7 +278,7 @@ export function costRoutes(db: Db) {
       req.actor.userId ?? "board",
     );
 
-    res.json(company);
+    res.json(institution);
   });
 
   router.patch("/agents/:agentId/budgets", validate(updateBudgetSchema), async (req, res) => {

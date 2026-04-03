@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,11 +9,19 @@ import {
   ChevronRight,
   Handshake,
   Landmark,
-  Scale,
+  Network,
+  ShieldCheck,
+  Waypoints,
 } from "lucide-react";
 
 type Locale = "en" | "es";
 type PageKey = "home" | "platform" | "about" | "partners";
+
+type HeroContent = {
+  eyebrow: string;
+  title: string;
+  body: string;
+};
 
 type SiteContent = {
   meta: {
@@ -42,9 +50,7 @@ type SiteContent = {
     {
       title: string;
       description: string;
-      eyebrow: string;
-      heroTitle: string;
-      heroBody: string;
+      hero: HeroContent;
     }
   >;
   home: {
@@ -69,9 +75,10 @@ type SiteContent = {
     architectureEyebrow: string;
     architectureTitle: string;
     architectureBody: string;
-    architectureCards: Array<{ title: string; body: string }>;
+    architectureCards: Array<{ title: string; body: string; icon: "public" | "shell" | "tenant" }>;
     governanceEyebrow: string;
     governanceTitle: string;
+    governanceBody: string;
     governanceSteps: Array<{ label: string; title: string; body: string }>;
     boundaryEyebrow: string;
     boundaryTitle: string;
@@ -118,7 +125,7 @@ const SITE: Record<Locale, SiteContent> = {
     meta: {
       defaultTitle: "Ciutatis — Open-source civic control plane",
       defaultDescription:
-        "Ciutatis is an open-source civic control plane for institutions that need governance, budget discipline, auditability, and deployable operating structure.",
+        "Ciutatis is an open-source civic control plane for institutions that need clearer governance, operational discipline, and deployable city-specific runtimes.",
     },
     nav: {
       mark: "Ciutatis",
@@ -148,37 +155,45 @@ const SITE: Record<Locale, SiteContent> = {
         title: "Ciutatis — Govern institutional work with clarity",
         description:
           "Open-source civic control plane for public institutions, municipal operations, and governed AI-assisted execution.",
-        eyebrow: "Open-source civic control plane",
-        heroTitle: "Govern institutional work with clarity, not improvisation.",
-        heroBody:
-          "Ciutatis gives public-service teams a structured operating surface for approvals, tasks, budgets, audit trails, and deployable city-specific runtimes. It is built for institutions that need autonomy to move — without losing visibility, limits, or responsibility.",
+        hero: {
+          eyebrow: "Open-source civic control plane",
+          title: "A civic control plane for institutions that need clarity.",
+          body:
+            "Ciutatis gives public-service teams a structured operating surface for approvals, tasks, budgets, audit trails, and deployable city-specific runtimes. It helps institutions move faster without losing accountability, limits, or operational visibility.",
+        },
       },
       platform: {
         title: "What Ciutatis does — The platform",
         description:
           "See how Ciutatis structures governance, task execution, agent orchestration, budgets, and tenant runtimes inside one civic control plane.",
-        eyebrow: "What we do",
-        heroTitle: "A control plane for governed public execution.",
-        heroBody:
-          "Ciutatis organizes institutions the way generic workflow software does not: through explicit authority, task lineage, cost discipline, and a clear separation between the public front door, the institutional shell, and each deployable runtime.",
+        hero: {
+          eyebrow: "What we do",
+          title: "One operating layer for governed public execution.",
+          body:
+            "Ciutatis structures institutions in a way generic workflow software does not: through explicit authority, task lineage, cost discipline, and a clear separation between the public front door, the institutional shell, and each deployable runtime.",
+        },
       },
       about: {
         title: "Who we are — About Ciutatis",
         description:
           "Ciutatis is an open-source civic platform built in Argentina to help institutions operate AI-assisted workflows with public accountability.",
-        eyebrow: "Who we are",
-        heroTitle: "Built in Argentina for institutions that need accountable modernization.",
-        heroBody:
-          "Ciutatis is an open-source civic platform maintained by The Hipster Cloud S.A. It adapts the control-plane model of AI-native operations to public-service environments where governance, oversight, and local deployment constraints cannot be treated as afterthoughts.",
+        hero: {
+          eyebrow: "Who we are",
+          title: "Built in Argentina for institutions that need accountable modernization.",
+          body:
+            "Ciutatis is an open-source civic platform maintained by The Hipster Cloud S.A. It adapts the control-plane model of AI-native operations to public-service environments where governance, oversight, and local deployment constraints are part of the core design.",
+        },
       },
       partners: {
         title: "Partners & pilots — Ciutatis",
         description:
           "Current Ciutatis pilot and validation network across Tandil, UNICEN, and the local technology cluster.",
-        eyebrow: "Partners & pilots",
-        heroTitle: "A pilot and validation network grounded in real public-service contexts.",
-        heroBody:
-          "Ciutatis is not being framed in the abstract. Its current network combines a municipality, a public university, and a regional technology cluster to validate operations, impact, and deployment readiness in LATAM contexts.",
+        hero: {
+          eyebrow: "Partners & pilots",
+          title: "A pilot and validation network grounded in real public-service work.",
+          body:
+            "Ciutatis is not being framed in the abstract. Its current network combines a municipality, a public university, and a regional technology cluster to validate operations, impact, and deployment readiness in real LATAM contexts.",
+        },
       },
     },
     home: {
@@ -196,7 +211,7 @@ const SITE: Record<Locale, SiteContent> = {
           note: "Confirmed pilot window with Municipalidad de Tandil and UNICEN.",
         },
         {
-          label: "36‑month reach goal",
+          label: "36-month reach goal",
           value: "2–5M citizens",
           note: "Target reach across 5–10 municipalities as the rollout scales.",
         },
@@ -220,7 +235,7 @@ const SITE: Record<Locale, SiteContent> = {
         },
       ],
       featuredEyebrow: "Public site",
-      featuredTitle: "A clearer way to understand Ciutatis.",
+      featuredTitle: "Start with the parts that matter most.",
       featuredCards: [
         {
           page: "platform",
@@ -239,9 +254,9 @@ const SITE: Record<Locale, SiteContent> = {
         },
       ],
       loopEyebrow: "How it works",
-      loopTitle: "The board stays in control while the system keeps moving.",
+      loopTitle: "Leadership stays in control while the system keeps moving.",
       loopBody:
-        "The current V1 contract is explicit: a human board defines goals, creates agents and structures, tracks work through tasks and comments, monitors costs, and can intervene anywhere in the loop.",
+        "The current V1 contract is explicit: a human board defines goals, creates agents and structure, tracks work through tasks and comments, monitors costs, and can intervene anywhere in the loop.",
       loopSteps: [
         {
           label: "01",
@@ -270,20 +285,25 @@ const SITE: Record<Locale, SiteContent> = {
         "The public site, the institutional shell, and each tenant runtime should not collapse into one undifferentiated surface. Ciutatis is being shaped to keep each responsibility explicit.",
       architectureCards: [
         {
+          icon: "public",
           title: "Public layer",
           body: "Explains the model, frames the institutional promise, and gives external stakeholders a credible front door.",
         },
         {
+          icon: "shell",
           title: "Institutional shell",
           body: "Holds provisioning, support, defaults, governance, onboarding, and strategic oversight across deployments.",
         },
         {
+          icon: "tenant",
           title: "Tenant runtime",
           body: "Provides a deployable operating surface for a city or institution, with its own routing identity and lifecycle.",
         },
       ],
       governanceEyebrow: "Governance loop",
       governanceTitle: "The V1 product contract is intentionally strict.",
+      governanceBody:
+        "Ciutatis treats governance as part of execution rather than documentation after the fact. The system keeps authority, cost limits, and decision points visible while work moves.",
       governanceSteps: [
         {
           label: "A",
@@ -401,7 +421,7 @@ const SITE: Record<Locale, SiteContent> = {
     meta: {
       defaultTitle: "Ciutatis — Capa de control cívica de código abierto",
       defaultDescription:
-        "Ciutatis es una capa de control cívica de código abierto para instituciones que necesitan gobernanza, disciplina presupuestaria, trazabilidad y estructura operativa desplegable.",
+        "Ciutatis es una capa de control cívica de código abierto para instituciones que necesitan más claridad de gobernanza, disciplina operativa y runtimes desplegables por ciudad.",
     },
     nav: {
       mark: "Ciutatis",
@@ -431,37 +451,45 @@ const SITE: Record<Locale, SiteContent> = {
         title: "Ciutatis — Gobernar trabajo institucional con claridad",
         description:
           "Capa de control cívica de código abierto para instituciones públicas, operaciones municipales y ejecución asistida por IA con gobernanza.",
-        eyebrow: "Capa de control cívica de código abierto",
-        heroTitle: "Gobierne trabajo institucional con claridad, no con improvisación.",
-        heroBody:
-          "Ciutatis da a equipos públicos una superficie operativa estructurada para aprobaciones, tareas, presupuestos, trazabilidad y runtimes desplegables por ciudad. Está hecho para instituciones que necesitan autonomía para avanzar sin perder visibilidad, límites ni responsabilidad.",
+        hero: {
+          eyebrow: "Capa de control cívica de código abierto",
+          title: "Una capa de control cívica para instituciones que necesitan claridad.",
+          body:
+            "Ciutatis da a equipos públicos una superficie operativa estructurada para aprobaciones, tareas, presupuestos, trazabilidad y runtimes desplegables por ciudad. Ayuda a avanzar más rápido sin perder responsabilidad, límites ni visibilidad operativa.",
+        },
       },
       platform: {
         title: "Qué hace Ciutatis — La plataforma",
         description:
           "Cómo Ciutatis estructura gobernanza, ejecución de tareas, orquestación de agentes, presupuestos y runtimes inquilinos dentro de una misma capa de control cívica.",
-        eyebrow: "Qué hacemos",
-        heroTitle: "Una capa de control para ejecución pública gobernada.",
-        heroBody:
-          "Ciutatis organiza instituciones de una manera que el software genérico de flujo de trabajo no resuelve: con autoridad explícita, linaje de tareas, disciplina de costos y una separación clara entre la puerta pública, el panel institucional y cada runtime desplegable.",
+        hero: {
+          eyebrow: "Qué hacemos",
+          title: "Una capa operativa para ejecución pública gobernada.",
+          body:
+            "Ciutatis organiza instituciones de una manera que el software genérico de flujo de trabajo no resuelve: con autoridad explícita, linaje de tareas, disciplina de costos y una separación clara entre la puerta pública, el panel institucional y cada runtime desplegable.",
+        },
       },
       about: {
         title: "Quiénes somos — Ciutatis",
         description:
           "Ciutatis es una plataforma cívica de código abierto construida en Argentina para ayudar a instituciones a operar flujos asistidos por IA con responsabilidad pública.",
-        eyebrow: "Quiénes somos",
-        heroTitle: "Construido en Argentina para instituciones que necesitan modernización con responsabilidad.",
-        heroBody:
-          "Ciutatis es una plataforma cívica de código abierto mantenida por The Hipster Cloud S.A. Adapta el modelo de control plane de operaciones nativas de IA a entornos públicos donde la gobernanza, la supervisión y las restricciones de despliegue local no pueden tratarse como detalles secundarios.",
+        hero: {
+          eyebrow: "Quiénes somos",
+          title: "Construido en Argentina para instituciones que necesitan modernización con responsabilidad.",
+          body:
+            "Ciutatis es una plataforma cívica de código abierto mantenida por The Hipster Cloud S.A. Adapta el modelo de control plane de operaciones nativas de IA a entornos públicos donde la gobernanza, la supervisión y las restricciones de despliegue local forman parte del diseño central.",
+        },
       },
       partners: {
         title: "Alianzas y pilotos — Ciutatis",
         description:
           "Red actual de pilotos y validación de Ciutatis entre Tandil, UNICEN y el clúster tecnológico local.",
-        eyebrow: "Alianzas y pilotos",
-        heroTitle: "Una red de pilotos y validación anclada en contextos reales de servicio público.",
-        heroBody:
-          "Ciutatis no se está planteando en abstracto. Su red actual combina un municipio, una universidad pública y un clúster tecnológico regional para validar operación, impacto y preparación de despliegue en contextos LATAM.",
+        hero: {
+          eyebrow: "Alianzas y pilotos",
+          title: "Una red de pilotos y validación anclada en trabajo público real.",
+          body:
+            "Ciutatis no se está planteando en abstracto. Su red actual combina un municipio, una universidad pública y un clúster tecnológico regional para validar operación, impacto y preparación de despliegue en contextos LATAM reales.",
+        },
       },
     },
     home: {
@@ -503,7 +531,7 @@ const SITE: Record<Locale, SiteContent> = {
         },
       ],
       featuredEyebrow: "Sitio público",
-      featuredTitle: "Una manera más clara de entender Ciutatis.",
+      featuredTitle: "Empiece por las partes que más importan.",
       featuredCards: [
         {
           page: "platform",
@@ -553,20 +581,25 @@ const SITE: Record<Locale, SiteContent> = {
         "El sitio público, el panel institucional y cada runtime inquilino no deberían colapsar en una sola superficie indiferenciada. Ciutatis está siendo diseñado para mantener cada responsabilidad explícita.",
       architectureCards: [
         {
+          icon: "public",
           title: "Capa pública",
           body: "Explica el modelo, ordena la promesa institucional y ofrece una puerta de entrada creíble para actores externos.",
         },
         {
+          icon: "shell",
           title: "Panel institucional",
           body: "Concentra aprovisionamiento, soporte, configuraciones base, onboarding y supervisión estratégica entre despliegues.",
         },
         {
+          icon: "tenant",
           title: "Runtime inquilino",
           body: "Brinda una superficie operativa desplegable para una ciudad o institución, con identidad de ruteo y ciclo de vida propios.",
         },
       ],
       governanceEyebrow: "Ciclo de gobernanza",
       governanceTitle: "El contrato de producto V1 es deliberadamente estricto.",
+      governanceBody:
+        "Ciutatis trata la gobernanza como parte de la ejecución y no como documentación posterior. El sistema mantiene visibles la autoridad, los límites de costo y los puntos de decisión mientras el trabajo avanza.",
       governanceSteps: [
         {
           label: "A",
@@ -732,208 +765,233 @@ function upsertLink(rel: string, href: string, hreflang?: string) {
   element.setAttribute("href", href);
 }
 
-function PublicSectionLabel({ children }: { children: string }) {
-  return <p className="text-[11px] uppercase tracking-[0.28em] text-[#6e7f8f]">{children}</p>;
+function iconForArchitecture(icon: "public" | "shell" | "tenant") {
+  switch (icon) {
+    case "public":
+      return Landmark;
+    case "shell":
+      return ShieldCheck;
+    case "tenant":
+      return Network;
+  }
 }
 
-function PublicPageGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-px overflow-hidden border border-[#d5dce3] bg-[#d5dce3] lg:grid-cols-3">{children}</div>;
+function SectionEyebrow({ children }: { children: string }) {
+  return <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</p>;
 }
 
-function PublicCard({ className, children }: { className?: string; children: React.ReactNode }) {
+function SectionShell({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <article
-      className={cn(
-        "bg-[rgba(255,255,255,0.93)] p-7 shadow-[0_18px_45px_rgba(36,53,72,0.05)] sm:p-8",
-        className,
-      )}
-    >
+    <section className={cn("border-b border-border py-14 sm:py-16 lg:py-20", className)}>
       {children}
-    </article>
+    </section>
   );
 }
 
-function PublicPageHeader(props: {
-  locale: Locale;
-  site: SiteContent;
-  currentPage: PageKey;
-}) {
-  const alternateLocale: Locale = props.locale === "en" ? "es" : "en";
+function ContentShell({ children }: { children: ReactNode }) {
+  return <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">{children}</div>;
+}
+
+function PublicHeader({ locale, currentPage, site }: { locale: Locale; currentPage: PageKey; site: SiteContent }) {
+  const alternateLocale: Locale = locale === "en" ? "es" : "en";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#d5dce3]/80 bg-[rgba(246,244,239,0.9)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-8 lg:px-10">
-        <Link className="flex items-center gap-3 text-[#112033]" to={pathFor(props.locale, "home")}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d5dce3] bg-white shadow-[0_8px_24px_rgba(36,53,72,0.07)]">
-            <Landmark className="h-4 w-4 text-[#8a6038]" />
-          </div>
-          <div>
-            <div className="font-serif text-lg font-semibold tracking-[0.08em]">{props.site.nav.mark}</div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-[#6e7f8f]">{props.site.pages.home.eyebrow}</div>
-          </div>
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur">
+      <ContentShell>
+        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+          <Link className="flex items-center gap-3 text-foreground" to={pathFor(locale, "home")}>
+            <div className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm">
+              <Landmark className="size-4" />
+            </div>
+            <div>
+              <div className="text-base font-semibold tracking-tight">{site.nav.mark}</div>
+              <div className="text-xs text-muted-foreground">{site.pages.home.hero.eyebrow}</div>
+            </div>
+          </Link>
 
-        <div className="hidden items-center gap-1 lg:flex">
-          {(Object.keys(props.site.nav.links) as PageKey[]).map((page) => {
-            const active = page === props.currentPage;
-            return (
+          <nav className="hidden items-center gap-1 lg:flex">
+            {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
               <Link
                 key={page}
+                to={pathFor(locale, page)}
                 className={cn(
-                  "inline-flex items-center border px-3 py-2 text-[11px] uppercase tracking-[0.24em] transition-colors",
-                  active
-                    ? "border-[#243548] bg-[#243548] text-[#f7f4ee]"
-                    : "border-transparent text-[#5a6a79] hover:border-[#d5dce3] hover:bg-white hover:text-[#112033]",
+                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  currentPage === page
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
-                to={pathFor(props.locale, page)}
               >
-                {props.site.nav.links[page]}
+                {site.nav.links[page]}
               </Link>
-            );
-          })}
-        </div>
+            ))}
+          </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden items-center gap-2 rounded-full border border-[#d5dce3] bg-white px-3 py-2 text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f] sm:flex">
-            <span>{props.site.nav.languageLabel}</span>
-            <Link className="font-semibold text-[#112033] transition-colors hover:text-[#8a6038]" to={pathFor(alternateLocale, props.currentPage)}>
-              {props.locale === "en" ? "ES" : props.site.common.xDefaultLabel}
-            </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground sm:flex">
+              <span>{site.nav.languageLabel}</span>
+              <Link className="font-semibold text-foreground hover:text-primary" to={pathFor(alternateLocale, currentPage)}>
+                {locale === "en" ? "ES" : site.common.xDefaultLabel}
+              </Link>
+            </div>
+            <a
+              className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+              href="https://github.com/tebayoso/ciutatis"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {site.nav.github}
+            </a>
+            <Button asChild>
+              <Link to="/auth">{site.nav.signIn}</Link>
+            </Button>
           </div>
-          <a
-            className="hidden text-sm font-medium text-[#5a6a79] transition-colors hover:text-[#112033] sm:inline-flex"
-            href="https://github.com/tebayoso/ciutatis"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {props.site.nav.github}
-          </a>
-          <Button asChild className="rounded-none border border-[#112033] bg-[#112033] px-4 text-xs uppercase tracking-[0.18em] text-white hover:bg-[#1d3045] sm:px-5">
-            <Link to="/auth">{props.site.nav.signIn}</Link>
-          </Button>
         </div>
-      </div>
+      </ContentShell>
     </header>
+  );
+}
+
+function HeroBlock({ page, locale, site }: { page: SiteContent["pages"][PageKey]; locale: Locale; site: SiteContent }) {
+  const isHomePage = page === site.pages.home;
+
+  return (
+    <SectionShell className="pt-10 sm:pt-14 lg:pt-18">
+      <ContentShell>
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground shadow-sm">
+              <Waypoints className="size-3.5 text-primary" />
+              {page.hero.eyebrow}
+            </div>
+            <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              {page.hero.title}
+            </h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl sm:leading-9">
+              {page.hero.body}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link to={isHomePage ? pathFor(locale, "platform") : "/auth"}>
+                  {isHomePage ? site.home.primaryCta : site.common.openShell}
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link to={isHomePage ? pathFor(locale, "partners") : pathFor(locale, "home")}>
+                  {isHomePage ? site.home.secondaryCta : site.common.backHome}
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+              <SectionEyebrow>{site.common.currentStatus}</SectionEyebrow>
+              <p className="mt-3 text-lg leading-8 text-foreground">{site.common.currentStatusBody}</p>
+              <div className="mt-6 space-y-4">
+                {site.home.statusCards.map((card) => (
+                  <div key={card.label} className="rounded-xl border border-border bg-background px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{card.label}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{card.value}</p>
+                    <p className="mt-2 text-sm leading-7 text-muted-foreground">{card.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ContentShell>
+    </SectionShell>
   );
 }
 
 function HomePage({ locale, site }: { locale: Locale; site: SiteContent }) {
   return (
     <>
-      <section className="grid gap-14 border-b border-[#d5dce3] pb-16 pt-10 lg:grid-cols-[1.12fr_0.88fr] lg:items-end lg:pb-24">
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 border border-[#d5dce3] bg-white px-4 py-2 text-[11px] uppercase tracking-[0.26em] text-[#5a6a79] shadow-[0_18px_40px_rgba(36,53,72,0.05)]">
-            <Scale className="h-3.5 w-3.5 text-[#8a6038]" />
-            {site.pages.home.eyebrow}
-          </div>
+      <HeroBlock page={site.pages.home} locale={locale} site={site} />
 
-          <div className="space-y-6">
-            <h1 className="max-w-4xl font-serif text-5xl font-semibold leading-[0.94] tracking-[-0.04em] text-[#112033] md:text-7xl">
-              {site.pages.home.heroTitle}
-            </h1>
-            <p className="max-w-3xl font-serif text-xl leading-9 text-[#304556] md:text-2xl">
-              {site.pages.home.heroBody}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button asChild className="rounded-none border border-[#112033] bg-[#112033] px-6 py-6 text-xs uppercase tracking-[0.22em] text-white hover:bg-[#1d3045]">
-              <Link to={pathFor(locale, "platform")}>
-                {site.home.primaryCta}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-none border-[#9aa9b5] bg-white/80 px-6 py-6 text-xs uppercase tracking-[0.22em] text-[#304556] hover:border-[#304556] hover:bg-white hover:text-[#112033]">
-              <Link to={pathFor(locale, "partners")}>{site.home.secondaryCta}</Link>
-            </Button>
-          </div>
-        </div>
-
-        <aside className="relative overflow-hidden border border-[#d5dce3] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(236,241,246,0.94)_100%)] p-7 shadow-[0_30px_80px_rgba(36,53,72,0.09)]">
-          <div className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(180deg,transparent,#35526c,transparent)] opacity-55" />
-          <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#8a6038,transparent)] opacity-55" />
-          <div className="space-y-6">
-            <div className="space-y-3 border-b border-[#d5dce3] pb-5">
-              <PublicSectionLabel>{site.common.currentStatus}</PublicSectionLabel>
-              <p className="font-serif text-2xl leading-tight text-[#112033]">{site.common.currentStatusBody}</p>
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.home.audienceEyebrow}</SectionEyebrow>
             </div>
-            <div className="space-y-4">
-              {site.home.statusCards.map((card) => (
-                <div key={card.label} className="border-b border-[#e2e8ef] pb-4 last:border-b-0 last:pb-0">
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f]">{card.label}</p>
-                  <p className="mt-2 font-serif text-3xl text-[#112033]">{card.value}</p>
-                  <p className="mt-2 text-sm leading-7 text-[#486071]">{card.note}</p>
-                </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.home.audienceTitle}
+              </h2>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.home.audienceBody}</p>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {site.home.audienceCards.map((card) => (
+                  <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.home.featuredEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.home.featuredTitle}
+              </h2>
+              <div className="mt-8 grid gap-4 lg:grid-cols-3">
+                {site.home.featuredCards.map((card) => (
+                  <Link
+                    key={card.page}
+                    to={pathFor(locale, card.page)}
+                    className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {site.nav.links[card.page]}
+                    </p>
+                    <h3 className="mt-3 text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                    <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
+                      <span>{site.nav.links[card.page]}</span>
+                      <ChevronRight className="size-4" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.home.loopEyebrow}</SectionEyebrow>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.home.loopTitle}
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-muted-foreground">{site.home.loopBody}</p>
+            </div>
+            <div className="space-y-4 lg:col-span-8">
+              {site.home.loopSteps.map((step) => (
+                <article key={step.label} className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:grid-cols-[72px_1fr]">
+                  <div className="text-sm font-semibold text-primary">{step.label}</div>
+                  <div>
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{step.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{step.body}</p>
+                  </div>
+                </article>
               ))}
             </div>
           </div>
-        </aside>
-      </section>
-
-      <section className="grid gap-10 border-b border-[#d5dce3] py-16 lg:grid-cols-[0.72fr_1.28fr] lg:py-24">
-        <div>
-          <PublicSectionLabel>{site.home.audienceEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-8">
-          <div className="space-y-5">
-            <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{site.home.audienceTitle}</h2>
-            <p className="max-w-3xl text-lg leading-9 text-[#304556]">{site.home.audienceBody}</p>
-          </div>
-          <PublicPageGrid>
-            {site.home.audienceCards.map((card) => (
-              <PublicCard key={card.title}>
-                <h3 className="font-serif text-2xl leading-tight text-[#112033]">{card.title}</h3>
-                <p className="mt-4 text-sm leading-8 text-[#486071]">{card.body}</p>
-              </PublicCard>
-            ))}
-          </PublicPageGrid>
-        </div>
-      </section>
-
-      <section className="grid gap-10 border-b border-[#d5dce3] py-16 lg:grid-cols-[0.72fr_1.28fr] lg:py-24">
-        <div>
-          <PublicSectionLabel>{site.home.featuredEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-8">
-          <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{site.home.featuredTitle}</h2>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {site.home.featuredCards.map((card) => (
-              <Link
-                key={card.page}
-                className="group border border-[#d5dce3] bg-white/90 p-7 shadow-[0_16px_40px_rgba(36,53,72,0.05)] transition-transform hover:-translate-y-0.5"
-                to={pathFor(locale, card.page)}
-              >
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f]">{site.nav.links[card.page]}</p>
-                <h3 className="mt-4 font-serif text-2xl text-[#112033]">{card.title}</h3>
-                <p className="mt-4 text-sm leading-8 text-[#486071]">{card.body}</p>
-                <div className="mt-6 inline-flex items-center text-sm font-medium text-[#24415d] transition-colors group-hover:text-[#8a6038]">
-                  <span>{site.nav.links[card.page]}</span>
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-12 border-b border-[#d5dce3] py-16 lg:grid-cols-[0.7fr_1.3fr] lg:gap-16 lg:py-24">
-        <div className="space-y-4">
-          <PublicSectionLabel>{site.home.loopEyebrow}</PublicSectionLabel>
-          <h2 className="font-serif text-3xl leading-tight text-[#112033] md:text-4xl">{site.home.loopTitle}</h2>
-          <p className="text-base leading-8 text-[#304556]">{site.home.loopBody}</p>
-        </div>
-        <div className="space-y-6">
-          {site.home.loopSteps.map((step) => (
-            <PublicCard key={step.label} className="grid gap-5 border border-[#d5dce3] md:grid-cols-[84px_1fr]">
-              <div className="text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f]">{step.label}</div>
-              <div>
-                <h3 className="font-serif text-2xl text-[#112033]">{step.title}</h3>
-                <p className="mt-3 text-sm leading-8 text-[#486071]">{step.body}</p>
-              </div>
-            </PublicCard>
-          ))}
-        </div>
-      </section>
+        </ContentShell>
+      </SectionShell>
 
       <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
     </>
@@ -943,61 +1001,83 @@ function HomePage({ locale, site }: { locale: Locale; site: SiteContent }) {
 function PlatformPage({ site }: { site: SiteContent }) {
   return (
     <>
-      <section className="grid gap-10 border-b border-[#d5dce3] pb-16 pt-10 lg:grid-cols-[0.72fr_1.28fr] lg:pb-24">
-        <div>
-          <PublicSectionLabel>{site.platform.architectureEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-5">
-          <h2 className="max-w-3xl font-serif text-4xl leading-tight text-[#112033] md:text-6xl">{site.platform.architectureTitle}</h2>
-          <p className="max-w-3xl text-lg leading-9 text-[#304556]">{site.platform.architectureBody}</p>
-        </div>
-      </section>
-
-      <section className="py-16 lg:py-24">
-        <PublicPageGrid>
-          {site.platform.architectureCards.map((card) => (
-            <PublicCard key={card.title}>
-              <h3 className="font-serif text-2xl leading-tight text-[#112033]">{card.title}</h3>
-              <p className="mt-4 text-sm leading-8 text-[#486071]">{card.body}</p>
-            </PublicCard>
-          ))}
-        </PublicPageGrid>
-      </section>
-
-      <section className="grid gap-12 border-b border-[#d5dce3] py-16 lg:grid-cols-[0.7fr_1.3fr] lg:gap-16 lg:py-24">
-        <div className="space-y-4">
-          <PublicSectionLabel>{site.platform.governanceEyebrow}</PublicSectionLabel>
-          <h2 className="font-serif text-3xl leading-tight text-[#112033] md:text-4xl">{site.platform.governanceTitle}</h2>
-        </div>
-        <div className="space-y-6">
-          {site.platform.governanceSteps.map((step) => (
-            <article key={step.label} className="grid gap-4 border-b border-[#d5dce3] pb-6 last:border-b-0 last:pb-0 md:grid-cols-[64px_1fr]">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-[#6e7f8f]">{step.label}</div>
-              <div>
-                <h3 className="font-serif text-2xl text-[#112033]">{step.title}</h3>
-                <p className="mt-3 text-sm leading-8 text-[#486071]">{step.body}</p>
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.platform.architectureEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.platform.architectureTitle}
+              </h2>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.platform.architectureBody}</p>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {site.platform.architectureCards.map((card) => {
+                  const Icon = iconForArchitecture(card.icon);
+                  return (
+                    <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                      <div className="flex size-11 items-center justify-center rounded-full border border-border bg-background text-primary">
+                        <Icon className="size-4" />
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                    </article>
+                  );
+                })}
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-10 py-16 lg:grid-cols-[0.72fr_1.28fr] lg:py-24">
-        <div>
-          <PublicSectionLabel>{site.platform.boundaryEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-8">
-          <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{site.platform.boundaryTitle}</h2>
-          <div className="space-y-4 border border-[#d5dce3] bg-white/90 p-8 shadow-[0_18px_45px_rgba(36,53,72,0.05)]">
-            {site.platform.boundaryPoints.map((point) => (
-              <div key={point} className="flex gap-3">
-                <BadgeCheck className="mt-1 h-4 w-4 shrink-0 text-[#35526c]" />
-                <p className="text-sm leading-8 text-[#486071]">{point}</p>
-              </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.platform.governanceEyebrow}</SectionEyebrow>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.platform.governanceTitle}
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-muted-foreground">{site.platform.governanceBody}</p>
+            </div>
+            <div className="space-y-4 lg:col-span-8">
+              {site.platform.governanceSteps.map((step) => (
+                <article key={step.label} className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:grid-cols-[72px_1fr]">
+                  <div className="text-sm font-semibold text-primary">{step.label}</div>
+                  <div>
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{step.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{step.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell className="border-b-0">
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.platform.boundaryEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.platform.boundaryTitle}
+              </h2>
+              <div className="mt-8 space-y-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                {site.platform.boundaryPoints.map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <p className="text-sm leading-7 text-muted-foreground">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
     </>
   );
 }
@@ -1005,43 +1085,50 @@ function PlatformPage({ site }: { site: SiteContent }) {
 function AboutPage({ site }: { site: SiteContent }) {
   return (
     <>
-      <section className="grid gap-10 border-b border-[#d5dce3] pb-16 pt-10 lg:grid-cols-[0.72fr_1.28fr] lg:pb-24">
-        <div>
-          <PublicSectionLabel>{site.about.storyEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-5">
-          <h2 className="max-w-3xl font-serif text-4xl leading-tight text-[#112033] md:text-6xl">{site.about.storyTitle}</h2>
-          <p className="max-w-3xl text-lg leading-9 text-[#304556]">{site.about.storyBody}</p>
-        </div>
-      </section>
-
-      <section className="py-16 lg:py-24">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {site.about.storyCards.map((card) => (
-            <PublicCard key={card.title} className="border border-[#d5dce3]">
-              <h3 className="font-serif text-2xl leading-tight text-[#112033]">{card.title}</h3>
-              <p className="mt-4 text-sm leading-8 text-[#486071]">{card.body}</p>
-            </PublicCard>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-10 py-16 lg:grid-cols-[0.72fr_1.28fr] lg:py-24">
-        <div>
-          <PublicSectionLabel>{site.about.principlesEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-8">
-          <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{site.about.principlesTitle}</h2>
-          <div className="space-y-4">
-            {site.about.principles.map((principle) => (
-              <div key={principle.title} className="border border-[#d5dce3] bg-white/90 p-7 shadow-[0_18px_45px_rgba(36,53,72,0.05)]">
-                <h3 className="font-serif text-2xl text-[#112033]">{principle.title}</h3>
-                <p className="mt-3 text-sm leading-8 text-[#486071]">{principle.body}</p>
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.about.storyEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.about.storyTitle}
+              </h2>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.about.storyBody}</p>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {site.about.storyCards.map((card) => (
+                  <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                  </article>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell className="border-b-0">
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.about.principlesEyebrow}</SectionEyebrow>
+            </div>
+            <div className="space-y-4 lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.about.principlesTitle}
+              </h2>
+              {site.about.principles.map((principle) => (
+                <article key={principle.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold tracking-tight text-foreground">{principle.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted-foreground">{principle.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
     </>
   );
 }
@@ -1049,107 +1136,147 @@ function AboutPage({ site }: { site: SiteContent }) {
 function PartnersPage({ site }: { site: SiteContent }) {
   return (
     <>
-      <section className="grid gap-10 border-b border-[#d5dce3] pb-16 pt-10 lg:grid-cols-[0.72fr_1.28fr] lg:pb-24">
-        <div>
-          <PublicSectionLabel>{site.partners.networkEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-5">
-          <h2 className="max-w-3xl font-serif text-4xl leading-tight text-[#112033] md:text-6xl">{site.partners.networkTitle}</h2>
-          <p className="max-w-3xl text-lg leading-9 text-[#304556]">{site.partners.networkBody}</p>
-        </div>
-      </section>
-
-      <section className="py-16 lg:py-24">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {site.partners.partnerCards.map((partner) => (
-            <a
-              key={partner.name}
-              className="group border border-[#d5dce3] bg-white/92 p-7 shadow-[0_18px_45px_rgba(36,53,72,0.05)] transition-transform hover:-translate-y-0.5"
-              href={partner.href}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div className="flex items-center gap-3 text-[#35526c]">
-                <Handshake className="h-4 w-4" />
-                <span className="text-[11px] uppercase tracking-[0.24em]">{partner.role}</span>
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.partners.networkEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.partners.networkTitle}
+              </h2>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.partners.networkBody}</p>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {site.partners.partnerCards.map((partner) => (
+                  <a
+                    key={partner.name}
+                    href={partner.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <Handshake className="size-4" />
+                      <span>{partner.role}</span>
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{partner.name}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{partner.body}</p>
+                    <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
+                      <span>{partner.name}</span>
+                      <ChevronRight className="size-4" />
+                    </div>
+                  </a>
+                ))}
               </div>
-              <h3 className="mt-5 font-serif text-2xl text-[#112033]">{partner.name}</h3>
-              <p className="mt-4 text-sm leading-8 text-[#486071]">{partner.body}</p>
-              <div className="mt-6 inline-flex items-center text-sm font-medium text-[#24415d] transition-colors group-hover:text-[#8a6038]">
-                <span>{partner.name}</span>
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-10 py-16 lg:grid-cols-[0.72fr_1.28fr] lg:py-24">
-        <div>
-          <PublicSectionLabel>{site.partners.impactEyebrow}</PublicSectionLabel>
-        </div>
-        <div className="space-y-8">
-          <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{site.partners.impactTitle}</h2>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {site.partners.impactCards.map((card) => (
-              <PublicCard key={card.label} className="border border-[#d5dce3]">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f]">{card.label}</p>
-                <p className="mt-3 font-serif text-4xl text-[#112033]">{card.value}</p>
-                <p className="mt-3 text-sm leading-8 text-[#486071]">{card.note}</p>
-              </PublicCard>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell className="border-b-0">
+        <ContentShell>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-4">
+              <SectionEyebrow>{site.partners.impactEyebrow}</SectionEyebrow>
+            </div>
+            <div className="lg:col-span-8">
+              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {site.partners.impactTitle}
+              </h2>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {site.partners.impactCards.map((card) => (
+                  <article key={card.label} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{card.label}</p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{card.value}</p>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.note}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
     </>
   );
 }
 
-function ClosingSection(props: { locale: Locale; site: SiteContent; title: string; body: string }) {
+function ClosingSection({ locale, site, title, body }: { locale: Locale; site: SiteContent; title: string; body: string }) {
   return (
-    <section className="border border-[#d5dce3] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(236,241,246,0.94)_100%)] p-8 shadow-[0_28px_70px_rgba(36,53,72,0.09)] sm:p-10 lg:p-14">
-      <div className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
-        <div className="space-y-5">
-          <PublicSectionLabel>Ciutatis</PublicSectionLabel>
-          <h2 className="max-w-3xl font-serif text-3xl leading-tight text-[#112033] md:text-5xl">{props.title}</h2>
-          <p className="max-w-3xl text-lg leading-9 text-[#304556]">{props.body}</p>
+    <SectionShell className="border-b-0 pt-10">
+      <ContentShell>
+        <div className="rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10 lg:p-12">
+          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
+            <div>
+              <SectionEyebrow>Ciutatis</SectionEyebrow>
+              <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {title}
+              </h2>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{body}</p>
+            </div>
+            <div className="flex flex-col gap-3 lg:items-end">
+              <Button asChild size="lg" className="w-full lg:w-auto">
+                <Link to="/auth">
+                  {site.common.openShell}
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="w-full lg:w-auto">
+                <a href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
+                  {site.common.readCode}
+                </a>
+              </Button>
+              <Button asChild size="lg" variant="ghost" className="w-full lg:w-auto">
+                <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
+              </Button>
+            </div>
+          </div>
         </div>
-
-        <div className="flex flex-col gap-3 lg:items-end">
-          <Button asChild className="w-full rounded-none border border-[#112033] bg-[#112033] px-6 py-6 text-xs uppercase tracking-[0.22em] text-white hover:bg-[#1d3045] lg:w-auto">
-            <Link to="/auth">
-              {props.site.common.openShell}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <a
-            className="inline-flex w-full items-center justify-center rounded-none border border-[#9aa9b5] bg-white px-6 py-6 text-xs font-medium uppercase tracking-[0.22em] text-[#304556] transition-colors hover:border-[#304556] hover:text-[#112033] lg:w-auto"
-            href="https://github.com/tebayoso/ciutatis"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {props.site.common.readCode}
-          </a>
-        </div>
-      </div>
-    </section>
+      </ContentShell>
+    </SectionShell>
   );
 }
 
 function PublicNotFound({ locale, site }: { locale: Locale; site: SiteContent }) {
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-3xl border border-[#d5dce3] bg-white/94 p-10 text-center shadow-[0_24px_60px_rgba(36,53,72,0.06)]">
-        <PublicSectionLabel>404</PublicSectionLabel>
-        <h2 className="mt-4 font-serif text-4xl text-[#112033]">{site.common.pageNotFound}</h2>
-        <p className="mt-4 text-lg leading-8 text-[#486071]">{site.common.pageNotFoundBody}</p>
-        <div className="mt-8">
-          <Button asChild className="rounded-none border border-[#112033] bg-[#112033] px-6 py-6 text-xs uppercase tracking-[0.22em] text-white hover:bg-[#1d3045]">
-            <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
-          </Button>
+    <SectionShell className="border-b-0 pt-20">
+      <ContentShell>
+        <div className="mx-auto max-w-3xl rounded-3xl border border-border bg-card p-10 text-center shadow-sm">
+          <SectionEyebrow>404</SectionEyebrow>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            {site.common.pageNotFound}
+          </h2>
+          <p className="mt-4 text-lg leading-8 text-muted-foreground">{site.common.pageNotFoundBody}</p>
+          <div className="mt-8">
+            <Button asChild size="lg">
+              <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
+            </Button>
+          </div>
         </div>
-      </div>
-    </section>
+      </ContentShell>
+    </SectionShell>
+  );
+}
+
+function PageHero({ page }: { page: SiteContent["pages"][PageKey] }) {
+  return (
+    <SectionShell className="pt-10 sm:pt-14 lg:pt-18">
+      <ContentShell>
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-4">
+            <SectionEyebrow>{page.hero.eyebrow}</SectionEyebrow>
+          </div>
+          <div className="lg:col-span-8">
+            <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              {page.hero.title}
+            </h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl sm:leading-9">
+              {page.hero.body}
+            </p>
+          </div>
+        </div>
+      </ContentShell>
+    </SectionShell>
   );
 }
 
@@ -1177,7 +1304,7 @@ export function PublicSite() {
         setTheme(previousTheme);
       }
     };
-  }, [setTheme]);
+  }, [setTheme, theme]);
 
   useEffect(() => {
     if (previousLangRef.current === null) {
@@ -1201,7 +1328,7 @@ export function PublicSite() {
     document.documentElement.lang = locale;
     document.title = pageTitle;
     upsertMetaByName("description", pageDescription);
-    upsertMetaByName("theme-color", "#fcfbf7");
+    upsertMetaByName("theme-color", "#ffffff");
     upsertMetaByProperty("og:title", pageTitle);
     upsertMetaByProperty("og:description", pageDescription);
     upsertMetaByProperty("og:type", "website");
@@ -1233,55 +1360,43 @@ export function PublicSite() {
   }, [currentPage, locale, page, site]);
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-[linear-gradient(180deg,#f3ede2_0%,#f6f4ef_28%,#eef3f8_100%)] text-[#112033] selection:bg-[#d0dceb]">
-      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(53,82,108,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(53,82,108,0.05)_1px,transparent_1px)] bg-[size:32px_32px] opacity-35" />
-      <div className="relative mx-auto max-w-7xl">
-        <PublicPageHeader currentPage={currentPage ?? "home"} locale={locale} site={site} />
+    <div className="h-[100dvh] w-full overflow-y-auto bg-background text-foreground">
+      <div className="relative min-h-full bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.025),transparent_45%)]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(180deg,rgba(0,0,0,0.035),transparent)]" />
+        <div className="relative">
+          <PublicHeader currentPage={currentPage ?? "home"} locale={locale} site={site} />
 
-        <main className="px-5 pb-24 sm:px-8 lg:px-10 lg:pb-32">
-          {currentPage === "home" && <HomePage locale={locale} site={site} />}
-          {currentPage === "platform" && (
-            <>
-              <HeroIntro page={site.pages.platform} />
-              <PlatformPage site={site} />
-              <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
-            </>
-          )}
-          {currentPage === "about" && (
-            <>
-              <HeroIntro page={site.pages.about} />
-              <AboutPage site={site} />
-              <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
-            </>
-          )}
-          {currentPage === "partners" && (
-            <>
-              <HeroIntro page={site.pages.partners} />
-              <PartnersPage site={site} />
-              <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
-            </>
-          )}
-          {currentPage === null && <PublicNotFound locale={locale} site={site} />}
-        </main>
+          <main className="pb-16 sm:pb-20 lg:pb-24">
+            {currentPage === "home" && <HomePage locale={locale} site={site} />}
+            {currentPage === "platform" && (
+              <>
+                <PageHero page={site.pages.platform} />
+                <PlatformPage site={site} />
+                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+              </>
+            )}
+            {currentPage === "about" && (
+              <>
+                <PageHero page={site.pages.about} />
+                <AboutPage site={site} />
+                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+              </>
+            )}
+            {currentPage === "partners" && (
+              <>
+                <PageHero page={site.pages.partners} />
+                <PartnersPage site={site} />
+                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+              </>
+            )}
+            {currentPage === null && <PublicNotFound locale={locale} site={site} />}
+          </main>
 
-        <footer className="border-t border-[#d5dce3] px-5 py-8 text-center text-[11px] uppercase tracking-[0.24em] text-[#6e7f8f] sm:px-8 lg:px-10">
-          {site.footer}
-        </footer>
+          <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
+            <ContentShell>{site.footer}</ContentShell>
+          </footer>
+        </div>
       </div>
     </div>
-  );
-}
-
-function HeroIntro({ page }: { page: SiteContent["pages"][PageKey] }) {
-  return (
-    <section className="grid gap-10 border-b border-[#d5dce3] pb-16 pt-10 lg:grid-cols-[0.72fr_1.28fr] lg:pb-24">
-      <div>
-        <PublicSectionLabel>{page.eyebrow}</PublicSectionLabel>
-      </div>
-      <div className="space-y-5">
-        <h1 className="max-w-3xl font-serif text-4xl leading-tight text-[#112033] md:text-6xl">{page.heroTitle}</h1>
-        <p className="max-w-3xl text-lg leading-9 text-[#304556]">{page.heroBody}</p>
-      </div>
-    </section>
   );
 }

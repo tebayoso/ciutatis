@@ -59,7 +59,7 @@ Environment knobs:
 - `OPENCLAW_DISABLE_DEVICE_AUTH=0` keeps pairing enabled (then approve browser with `devices` CLI commands)
 - `OPENCLAW_MODEL_PRIMARY` (default `openai/gpt-5.2`)
 - `OPENCLAW_MODEL_FALLBACK` (default `openai/gpt-5.2-chat-latest`)
-- `OPENCLAW_CONFIG_DIR` (default `~/.openclaw-paperclip-smoke`)
+- `OPENCLAW_CONFIG_DIR` (default `~/.openclaw-ciutatis-smoke`)
 - `OPENCLAW_RESET_STATE=1` (default) resets smoke agent state on each run to avoid stale auth/session drift
 - `PAPERCLIP_HOST_PORT` (default `3100`)
 - `PAPERCLIP_HOST_FROM_CONTAINER` (default `host.docker.internal`)
@@ -82,7 +82,7 @@ PAPERCLIP_COOKIE="your_session_cookie=..." pnpm smoke:openclaw-join
 - If Ciutatis rejects the container-visible host with a hostname error, allow it from host:
 
 ```bash
-pnpm paperclipai allowed-hostname host.docker.internal
+pnpm ciutatis allowed-hostname host.docker.internal
 ```
 
 Then restart Ciutatis and rerun the smoke script.
@@ -90,7 +90,7 @@ Then restart Ciutatis and rerun the smoke script.
 - Authenticated/private mode: ensure hostnames are in the allowed list when required:
 
 ```bash
-pnpm paperclipai allowed-hostname <host>
+pnpm ciutatis allowed-hostname <host>
 ```
 
 ## Prerequisites

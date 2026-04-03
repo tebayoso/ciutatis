@@ -45,11 +45,11 @@ Ciutatis supports three deployment configurations, from zero-friction local to i
 Set the mode during onboarding:
 
 ```sh
-pnpm paperclipai onboard
+pnpm ciutatis onboard
 ```
 
 Or update it later:
 
 ```sh
-pnpm paperclipai configure --section server
+pnpm ciutatis configure --section server
 ```

@@ -8,7 +8,7 @@ Get Ciutatis running locally in under 5 minutes.
 ## Quick Start (Recommended)
 
 ```sh
-npx paperclipai onboard --yes
+npx ciutatis onboard --yes
 ```
 
 This walks you through setup, configures your environment, and gets Ciutatis running.
@@ -29,7 +29,7 @@ No external database required — Ciutatis uses an embedded PostgreSQL instance 
 ## One-Command Bootstrap
 
 ```sh
-pnpm paperclipai run
+pnpm ciutatis run
 ```
 
 This auto-onboards if config is missing, runs health checks with auto-repair, and starts the server.

@@ -22,7 +22,7 @@ For production or multi-node deployments, use S3-compatible object storage (AWS 
 Configure via CLI:
 
 ```sh
-pnpm paperclipai configure --section storage
+pnpm ciutatis configure --section storage
 ```
 
 ## Configuration

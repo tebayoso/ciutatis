@@ -140,3 +140,27 @@ The `NewAgent.tsx` page already enforces `gemini_local` at runtime via `useEffec
 - `pnpm -r typecheck`: ✅ 19/19 packages passed
 - No breaking changes to edit agent flow
 - Minimal changes focused only on the 2 identified issues
+
+## 2026-04-03 - Final Paperclip Reference Sweep
+
+### Scope completed
+- Ran a comprehensive repo grep for `paperclipai`, `pnpx paperclip`, `@paperclip`, and `Paperclip`.
+- Classified matches into user-facing vs acceptable internal/historical references.
+- Updated user-facing command/help/error/docs references from `paperclipai` to `ciutatis`.
+
+### Files/surfaces updated
+- CLI command UX strings (`run`, `doctor`, client command help/examples).
+- Server remediation/error hints for hostname allowlist commands.
+- Public docs under `docs/` (CLI, deploy, start, adapters, OpenClaw guide).
+- README star-history link switched to `tebayoso/ciutatis`.
+
+### Keep-as-is rules followed
+- Preserved origin notice and license references to Paperclip.
+- Did not change internal data model fields (`isPaperclipManaged`, `paperclipApiUrl`).
+- Did not touch `.paperclip` path conventions.
+- Did not modify CHANGELOG files.
+
+### Verification notes
+- `lsp_diagnostics` clean on all changed TS files.
+- `pnpm -r typecheck` passes.
+- `pnpm test:run` currently fails on pre-existing unstable tests unrelated to this rename sweep (not introduced by these changes).

@@ -1,0 +1,56 @@
+# Cloudflare Workers API - Ciutatis
+name = "ciutatis-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Account configuration
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+[[routes]]
+pattern = "ciutatis.com/api/*"
+zone_name = "ciutatis.com"
+
+[[routes]]
+pattern = "www.ciutatis.com/api/*"
+zone_name = "ciutatis.com"
+
+# Plain-text environment variables (safe to commit)
+[vars]
+# "local_trusted" (no login) or "authenticated" (login required)
+DEPLOYMENT_MODE = "local_trusted"
+# Disables new user registrations in authenticated mode
+AUTH_DISABLE_SIGNUP = "true"
+
+# Secrets — values must be set via: wrangler secret put <NAME>
+# BETTER_AUTH_SECRET   — session signing secret (required for authenticated mode)
+# R2_ACCESS_KEY_ID     — R2 bucket access key
+# R2_SECRET_ACCESS_KEY — R2 bucket secret key
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "ciutatis-db"
+database_id = "2978f493-067e-40c8-ab7d-ca4b2926d17c"
+migrations_dir = "../../packages/db-cloudflare/src/migrations"
+
+# R2 Bucket binding for asset storage
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "ciutatis-assets"
+
+[[kv_namespaces]]
+binding = "CIUTATIS_SESSIONS"
+id = "ab19e1c5abe54868a89462c46570cad1"
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Environment-specific configs
+[env.production]
+name = "ciutatis-api"
+
+[env.staging]
+name = "ciutatis-api-staging"

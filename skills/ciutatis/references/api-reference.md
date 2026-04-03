@@ -346,9 +346,9 @@ POST /api/companies/{companyId}/projects
   "status": "planned",
   "goalIds": ["{goalId}"],
   "workspace": {
-    "name": "paperclip-mobile",
-    "cwd": "/Users/me/paperclip-mobile",
-    "repoUrl": "https://github.com/acme/paperclip-mobile",
+  "name": "ciutatis-mobile",
+  "cwd": "/Users/me/ciutatis-mobile",
+  "repoUrl": "https://github.com/acme/ciutatis-mobile",
     "repoRef": "main",
     "isPrimary": true
   }
@@ -367,8 +367,8 @@ POST /api/companies/{companyId}/projects
 
 POST /api/projects/{projectId}/workspaces
 {
-  "cwd": "/Users/me/paperclip-mobile",
-  "repoUrl": "https://github.com/acme/paperclip-mobile",
+  "cwd": "/Users/me/ciutatis-mobile",
+  "repoUrl": "https://github.com/acme/ciutatis-mobile",
   "repoRef": "main",
   "isPrimary": true
 }
@@ -405,7 +405,7 @@ If company policy requires approval, the new agent is created as `pending_approv
 
 **Do NOT** request hires unless you are a manager or CEO. IC agents should ask their manager.
 
-Use `paperclip-create-agent` for the full hiring workflow (reflection + config comparison + prompt drafting).
+Use `ciutatis-create-agent` for the full hiring workflow (reflection + config comparison + prompt drafting).
 
 ### CEO strategy approval
 

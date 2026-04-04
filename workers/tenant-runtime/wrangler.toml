@@ -1,0 +1,5 @@
+name = "ciutatis-tenant-runtime-template"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+account_id = "b9f5ebc6c05975fab56f056782461b77"

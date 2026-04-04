@@ -1,5 +1,5 @@
-# Cloudflare Workers API - Ciutatis
-name = "ciutatis-api"
+# Cloudflare Workers API - Ciutatis Admin API
+name = "ciutatis-admin-api"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
@@ -8,11 +8,11 @@ compatibility_flags = ["nodejs_compat"]
 account_id = "b9f5ebc6c05975fab56f056782461b77"
 
 [[routes]]
-pattern = "ciutatis.com/api/*"
+pattern = "admin.ciutatis.com/api/*"
 zone_name = "ciutatis.com"
 
 [[routes]]
-pattern = "www.ciutatis.com/api/*"
+pattern = "www.admin.ciutatis.com/api/*"
 zone_name = "ciutatis.com"
 
 # Plain-text environment variables (safe to commit)
@@ -24,6 +24,7 @@ AUTH_DISABLE_SIGNUP = "true"
 
 # Secrets — values must be set via: wrangler secret put <NAME>
 # BETTER_AUTH_SECRET   — session signing secret (required for authenticated mode)
+# CLOUDFLARE_API_TOKEN — management API token used for tenant provisioning
 # R2_ACCESS_KEY_ID     — R2 bucket access key
 # R2_SECRET_ACCESS_KEY — R2 bucket secret key
 
@@ -50,7 +51,7 @@ head_sampling_rate = 1
 
 # Environment-specific configs
 [env.production]
-name = "ciutatis-api"
+name = "ciutatis-admin-api"
 
 [env.staging]
-name = "ciutatis-api-staging"
+name = "ciutatis-admin-api-staging"

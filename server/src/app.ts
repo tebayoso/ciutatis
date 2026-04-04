@@ -10,6 +10,7 @@ import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
+import { contactRoutes } from "./routes/contact.js";
 import { institutionRoutes } from "./routes/institutions.js";
 import { agentRoutes } from "./routes/agents.js";
 import { projectRoutes } from "./routes/projects.js";
@@ -72,6 +73,8 @@ export async function createApp(
     localPluginDir?: string;
     betterAuthHandler?: express.RequestHandler;
     resolveSession?: (req: ExpressRequest) => Promise<BetterAuthSessionResult | null>;
+    publicContactCompanyId?: string;
+    publicContactAssigneeAgentId?: string;
   },
 ) {
   const app = express();
@@ -123,6 +126,13 @@ export async function createApp(
     app.all("/api/auth/*authPath", opts.betterAuthHandler);
   }
   app.use(llmRoutes(db));
+  app.use(
+    "/api",
+    contactRoutes(db, {
+      publicContactCompanyId: opts.publicContactCompanyId,
+      publicContactAssigneeAgentId: opts.publicContactAssigneeAgentId,
+    }),
+  );
 
   // Mount API routes
   const api = Router();

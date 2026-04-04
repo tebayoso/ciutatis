@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import type { Db } from "@ciutatis/db";
 import {
   createTenantInstanceSchema,
+  patchCloudflareProvisioningSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
   patchTenantProvisioningSettingsSchema,
   updateTenantInstanceSchema,
@@ -24,7 +25,20 @@ function assertCanManageInstanceSettings(req: Request) {
 export function instanceSettingsRoutes(db: Db) {
   const router = Router();
   const svc = instanceSettingsService(db);
-  const tenants = tenantInstancesService(db);
+  const tenants = tenantInstancesService(db, {
+    cloudflareApiToken:
+      process.env.CLOUDFLARE_API_TOKEN ??
+      process.env.CIUTATIS_CLOUDFLARE_API_TOKEN ??
+      null,
+  });
+
+  function requireTenantId(req: Request) {
+    const tenantId = Array.isArray(req.params.tenantId) ? req.params.tenantId[0] : req.params.tenantId;
+    if (!tenantId) {
+      throw new Error("Tenant instance id is required");
+    }
+    return tenantId;
+  }
 
   router.get("/instance/settings/experimental", async (req, res) => {
     assertCanManageInstanceSettings(req);
@@ -66,6 +80,11 @@ export function instanceSettingsRoutes(db: Db) {
     res.json(await tenants.list());
   });
 
+  router.get("/instance/settings/admin-overview", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    res.json(await tenants.getOverview());
+  });
+
   router.get("/instance/settings/tenant-provisioning", async (req, res) => {
     assertCanManageInstanceSettings(req);
     res.json(await svc.getTenantProvisioning());
@@ -101,9 +120,60 @@ export function instanceSettingsRoutes(db: Db) {
     },
   );
 
+  router.get("/instance/settings/cloudflare", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    const current = await svc.getCloudflareProvisioning();
+    res.json({
+      ...current,
+      apiTokenConfigured:
+        Boolean(process.env.CLOUDFLARE_API_TOKEN ?? process.env.CIUTATIS_CLOUDFLARE_API_TOKEN),
+    });
+  });
+
+  router.patch(
+    "/instance/settings/cloudflare",
+    validate(patchCloudflareProvisioningSettingsSchema),
+    async (req, res) => {
+      assertCanManageInstanceSettings(req);
+      const updated = await svc.updateCloudflareProvisioning(req.body);
+      const actor = getActorInfo(req);
+      const companyIds = await svc.listCompanyIds();
+      await Promise.all(
+        companyIds.map((companyId) =>
+          logActivity(db, {
+            companyId,
+            actorType: actor.actorType,
+            actorId: actor.actorId,
+            agentId: actor.agentId,
+            runId: actor.runId,
+            action: "instance.settings.cloudflare_updated",
+            entityType: "instance_settings",
+            entityId: updated.id,
+            details: {
+              changedKeys: Object.keys(req.body).sort(),
+              cloudflareProvisioning: updated.cloudflareProvisioning,
+            },
+          }),
+        ),
+      );
+      res.json({
+        ...updated.cloudflareProvisioning,
+        apiTokenConfigured:
+          Boolean(process.env.CLOUDFLARE_API_TOKEN ?? process.env.CIUTATIS_CLOUDFLARE_API_TOKEN),
+      });
+    },
+  );
+
+  router.post("/instance/settings/cloudflare/validate", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    const validation = await tenants.validateCloudflare();
+    res.json(validation);
+  });
+
   router.post("/instance/settings/tenants", validate(createTenantInstanceSchema), async (req, res) => {
     assertCanManageInstanceSettings(req);
     const created = await tenants.create(req.body);
+    void tenants.drainQueuedJobs();
     const actor = getActorInfo(req);
     const companyIds = await svc.listCompanyIds();
     await Promise.all(
@@ -131,8 +201,10 @@ export function instanceSettingsRoutes(db: Db) {
 
   router.patch("/instance/settings/tenants/:tenantId", validate(updateTenantInstanceSchema), async (req, res) => {
     assertCanManageInstanceSettings(req);
-    const tenantId = Array.isArray(req.params.tenantId) ? req.params.tenantId[0] : req.params.tenantId;
-    if (!tenantId) {
+    let tenantId: string;
+    try {
+      tenantId = requireTenantId(req);
+    } catch {
       res.status(400).json({ error: "Tenant instance id is required" });
       return;
     }
@@ -163,6 +235,70 @@ export function instanceSettingsRoutes(db: Db) {
         }),
       ),
     );
+    res.json(updated);
+  });
+
+  router.get("/instance/settings/tenants/:tenantId/jobs", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    let tenantId: string;
+    try {
+      tenantId = requireTenantId(req);
+    } catch {
+      res.status(400).json({ error: "Tenant instance id is required" });
+      return;
+    }
+    res.json(await tenants.getJobs(tenantId));
+  });
+
+  router.post("/instance/settings/tenants/:tenantId/redeploy", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    let tenantId: string;
+    try {
+      tenantId = requireTenantId(req);
+    } catch {
+      res.status(400).json({ error: "Tenant instance id is required" });
+      return;
+    }
+    const updated = await tenants.enqueueRedeploy(tenantId);
+    if (!updated) {
+      res.status(404).json({ error: "Tenant instance not found" });
+      return;
+    }
+    void tenants.drainQueuedJobs();
+    res.json(updated);
+  });
+
+  router.post("/instance/settings/tenants/:tenantId/pause", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    let tenantId: string;
+    try {
+      tenantId = requireTenantId(req);
+    } catch {
+      res.status(400).json({ error: "Tenant instance id is required" });
+      return;
+    }
+    const updated = await tenants.pause(tenantId);
+    if (!updated) {
+      res.status(404).json({ error: "Tenant instance not found" });
+      return;
+    }
+    res.json(updated);
+  });
+
+  router.post("/instance/settings/tenants/:tenantId/archive", async (req, res) => {
+    assertCanManageInstanceSettings(req);
+    let tenantId: string;
+    try {
+      tenantId = requireTenantId(req);
+    } catch {
+      res.status(400).json({ error: "Tenant instance id is required" });
+      return;
+    }
+    const updated = await tenants.archive(tenantId);
+    if (!updated) {
+      res.status(404).json({ error: "Tenant instance not found" });
+      return;
+    }
     res.json(updated);
   });
 

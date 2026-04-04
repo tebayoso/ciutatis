@@ -1,4 +1,4 @@
-const BASE = "/api";
+import { getRuntimeApiBase } from "@/lib/runtime-config";
 
 export class ApiError extends Error {
   status: number;
@@ -13,13 +13,14 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const base = getRuntimeApiBase();
   const headers = new Headers(init?.headers ?? undefined);
   const body = init?.body;
   if (!(body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${base}${path}`, {
     headers,
     credentials: "include",
     ...init,

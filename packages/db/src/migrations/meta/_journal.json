@@ -281,6 +281,13 @@
       "when": 1775211000000,
       "tag": "20260403193000_add_tenant_instances",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1775295600000,
+      "tag": "20260404110000_instance_admin_cloudflare",
+      "breakpoints": true
     }
   ]
 }

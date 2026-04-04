@@ -6,6 +6,8 @@ export const instanceSettings = sqliteTable(
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     singletonKey: text("singleton_key").notNull().default("default"),
     experimental: text("experimental", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
+    tenantProvisioning: text("tenant_provisioning", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
+    cloudflareProvisioning: text("cloudflare_provisioning", { mode: "json" }).$type<Record<string, unknown>>().notNull().default({}),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
   },

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import type { PublicContactLocale, PublicContactSubmission } from "@ciutatis/shared";
+import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/api/client";
 
 interface ContactFormState {
   name: string;
@@ -11,64 +12,111 @@ interface ContactFormState {
   message: string;
 }
 
+type ContactFormField = keyof ContactFormState;
+type ContactFormErrors = Partial<Record<ContactFormField, string>>;
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
-function validateEmail(email: string): boolean {
+export interface ContactFormCopy {
+  nameLabel: string;
+  namePlaceholder: string;
+  emailLabel: string;
+  emailPlaceholder: string;
+  messageLabel: string;
+  messagePlaceholder: string;
+  submitIdle: string;
+  submitSubmitting: string;
+  successTitle: string;
+  successAction: string;
+  errorMessage: string;
+  validation: {
+    nameRequired: string;
+    emailRequired: string;
+    emailInvalid: string;
+    messageRequired: string;
+  };
+}
+
+interface ContactFormProps {
+  copy: ContactFormCopy;
+  locale: PublicContactLocale;
+  sourcePath: string;
+}
+
+const EMPTY_FORM: ContactFormState = {
+  name: "",
+  email: "",
+  message: "",
+};
+
+function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function ContactForm() {
-  const [form, setForm] = useState<ContactFormState>({
-    name: "",
-    email: "",
-    message: "",
-  });
-  const [status, setStatus] = useState<FormStatus>("idle");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+export function buildPublicContactSubmission(
+  form: ContactFormState,
+  locale: PublicContactLocale,
+  sourcePath: string,
+): PublicContactSubmission {
+  return {
+    name: form.name.trim(),
+    email: form.email.trim(),
+    message: form.message.trim(),
+    locale,
+    sourcePath,
+  };
+}
 
-  function validateFields(): Record<string, string> {
-    const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = "Name is required";
-    if (!form.email.trim()) {
-      errs.email = "Email is required";
-    } else if (!validateEmail(form.email.trim())) {
-      errs.email = "Please enter a valid email address";
-    }
-    if (!form.message.trim()) errs.message = "Message is required";
-    return errs;
+export function validateContactForm(form: ContactFormState, copy: ContactFormCopy): ContactFormErrors {
+  const submission = buildPublicContactSubmission(form, "en", "/");
+  const errors: ContactFormErrors = {};
+
+  if (!submission.name) {
+    errors.name = copy.validation.nameRequired;
+  }
+  if (!submission.email) {
+    errors.email = copy.validation.emailRequired;
+  } else if (!isValidEmail(submission.email)) {
+    errors.email = copy.validation.emailInvalid;
+  }
+  if (!submission.message) {
+    errors.message = copy.validation.messageRequired;
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErrorMessage("");
+  return errors;
+}
 
-    const errs = validateFields();
-    setFieldErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
+  const [form, setForm] = useState<ContactFormState>(EMPTY_FORM);
+  const [status, setStatus] = useState<FormStatus>("idle");
+  const [fieldErrors, setFieldErrors] = useState<ContactFormErrors>({});
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const errors = validateContactForm(form, copy);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setStatus("idle");
+      return;
+    }
 
     setStatus("submitting");
     try {
-      await api.post("/contact", {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        message: form.message.trim(),
-      });
+      await api.post<{ id: string; identifier: string }>("/contact", buildPublicContactSubmission(form, locale, sourcePath));
       setStatus("success");
-      setForm({ name: "", email: "", message: "" });
-    } catch (err: unknown) {
+      setForm(EMPTY_FORM);
+      setFieldErrors({});
+    } catch {
       setStatus("error");
-      const message =
-        err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setErrorMessage(message);
     }
   }
 
-  function handleChange(field: keyof ContactFormState, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  function handleChange(field: ContactFormField, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
+    setStatus((current) => (current === "success" ? current : "idle"));
     if (fieldErrors[field]) {
-      setFieldErrors((prev) => {
-        const next = { ...prev };
+      setFieldErrors((current) => {
+        const next = { ...current };
         delete next[field];
         return next;
       });
@@ -77,18 +125,21 @@ export function ContactForm() {
 
   if (status === "success") {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center dark:border-green-800 dark:bg-green-950/30">
+      <div
+        className="rounded-[18px] border border-emerald-300/70 bg-emerald-50 p-6 text-center"
+        role="status"
+        aria-live="polite"
+      >
         <div className="mb-2 text-2xl">✓</div>
-        <p className="text-lg font-medium text-green-800 dark:text-green-200">
-          Thank you! We'll get back to you soon.
-        </p>
+        <p className="text-lg font-medium text-emerald-900">{copy.successTitle}</p>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           className="mt-4"
           onClick={() => setStatus("idle")}
         >
-          Send another message
+          {copy.successAction}
         </Button>
       </div>
     );
@@ -97,65 +148,78 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="contact-name">Name</Label>
+        <Label htmlFor="contact-name">{copy.nameLabel}</Label>
         <Input
           id="contact-name"
+          name="name"
           type="text"
-          placeholder="Your name"
+          autoComplete="name"
+          placeholder={copy.namePlaceholder}
           value={form.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          aria-invalid={!!fieldErrors.name}
+          onChange={(event) => handleChange("name", event.target.value)}
+          aria-invalid={fieldErrors.name ? "true" : "false"}
           disabled={status === "submitting"}
         />
-        {fieldErrors.name && (
-          <p className="text-sm text-destructive">{fieldErrors.name}</p>
-        )}
+        {fieldErrors.name ? (
+          <p className="text-sm text-destructive" aria-live="polite">
+            {fieldErrors.name}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact-email">Email</Label>
+        <Label htmlFor="contact-email">{copy.emailLabel}</Label>
         <Input
           id="contact-email"
+          name="email"
           type="email"
-          placeholder="you@example.com"
+          autoComplete="email"
+          placeholder={copy.emailPlaceholder}
           value={form.email}
-          onChange={(e) => handleChange("email", e.target.value)}
-          aria-invalid={!!fieldErrors.email}
+          onChange={(event) => handleChange("email", event.target.value)}
+          aria-invalid={fieldErrors.email ? "true" : "false"}
+          spellCheck={false}
           disabled={status === "submitting"}
         />
-        {fieldErrors.email && (
-          <p className="text-sm text-destructive">{fieldErrors.email}</p>
-        )}
+        {fieldErrors.email ? (
+          <p className="text-sm text-destructive" aria-live="polite">
+            {fieldErrors.email}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact-message">Message</Label>
+        <Label htmlFor="contact-message">{copy.messageLabel}</Label>
         <Textarea
           id="contact-message"
-          placeholder="How can we help you?"
-          rows={4}
+          name="message"
+          autoComplete="off"
+          placeholder={copy.messagePlaceholder}
+          rows={5}
           value={form.message}
-          onChange={(e) => handleChange("message", e.target.value)}
-          aria-invalid={!!fieldErrors.message}
+          onChange={(event) => handleChange("message", event.target.value)}
+          aria-invalid={fieldErrors.message ? "true" : "false"}
           disabled={status === "submitting"}
         />
-        {fieldErrors.message && (
-          <p className="text-sm text-destructive">{fieldErrors.message}</p>
-        )}
+        {fieldErrors.message ? (
+          <p className="text-sm text-destructive" aria-live="polite">
+            {fieldErrors.message}
+          </p>
+        ) : null}
       </div>
 
-      {status === "error" && errorMessage && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
-          {errorMessage}
+      {status === "error" ? (
+        <div
+          className="rounded-[14px] border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          role="status"
+          aria-live="polite"
+        >
+          {copy.errorMessage}
         </div>
-      )}
+      ) : null}
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={status === "submitting"}
-      >
-        {status === "submitting" ? "Sending..." : "Send Message"}
+      <Button type="submit" className="w-full rounded-[10px]" disabled={status === "submitting"}>
+        {status === "submitting" ? copy.submitSubmitting : copy.submitIdle}
       </Button>
     </form>
   );

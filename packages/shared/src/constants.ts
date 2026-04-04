@@ -18,6 +18,32 @@ export type TenantRoutingMode = (typeof TENANT_ROUTING_MODES)[number];
 export const TENANT_INSTANCE_STATUSES = ["draft", "provisioning", "active", "paused", "error", "archived"] as const;
 export type TenantInstanceStatus = (typeof TENANT_INSTANCE_STATUSES)[number];
 
+export const TENANT_BOOTSTRAP_STATUSES = ["pending", "ready", "unknown"] as const;
+export type TenantBootstrapStatus = (typeof TENANT_BOOTSTRAP_STATUSES)[number];
+
+export const TENANT_PROVISIONING_JOB_KINDS = ["initial_provision", "redeploy", "archive"] as const;
+export type TenantProvisioningJobKind = (typeof TENANT_PROVISIONING_JOB_KINDS)[number];
+
+export const TENANT_PROVISIONING_JOB_STATUSES = ["queued", "running", "succeeded", "failed", "cancelled"] as const;
+export type TenantProvisioningJobStatus = (typeof TENANT_PROVISIONING_JOB_STATUSES)[number];
+
+export const TENANT_PROVISIONING_JOB_TRIGGERS = ["tenant_created", "manual_redeploy", "manual_archive", "system_retry"] as const;
+export type TenantProvisioningJobTrigger = (typeof TENANT_PROVISIONING_JOB_TRIGGERS)[number];
+
+export const TENANT_PROVISIONING_STEPS = [
+  "queued",
+  "validate_config",
+  "reserve_names",
+  "provision_d1",
+  "provision_r2",
+  "provision_kv",
+  "deploy_worker",
+  "refresh_routing_cache",
+  "finalize",
+  "archive_soft_delete",
+] as const;
+export type TenantProvisioningStep = (typeof TENANT_PROVISIONING_STEPS)[number];
+
 export const AGENT_STATUSES = [
   "active",
   "paused",

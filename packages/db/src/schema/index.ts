@@ -39,6 +39,7 @@ export { pluginCompanySettings } from "./plugin_company_settings.js";
 export { authUsers, authSessions, authAccounts, authVerifications } from "./auth.js";
 export { instanceSettings } from "./instance_settings.js";
 export { tenantInstances } from "./tenant_instances.js";
+export { tenantProvisioningJobs } from "./tenant_provisioning_jobs.js";
 export { instanceUserRoles } from "./instance_user_roles.js";
 export { agents } from "./agents.js";
 export { principalPermissionGrants } from "./principal_permission_grants.js";

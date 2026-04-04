@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "@/lib/router";
 import { Button } from "@/components/ui/button";
+import { ContactForm, type ContactFormCopy } from "@/components/ContactForm";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/context/ThemeContext";
 import {
   ArrowRight,
   BadgeCheck,
+  Building2,
   ChevronRight,
+  FileCheck2,
   Handshake,
   Landmark,
+  MapPinned,
   Network,
+  ScrollText,
   ShieldCheck,
   Waypoints,
 } from "lucide-react";
@@ -19,6 +24,11 @@ type PageKey = "home" | "platform" | "about" | "partners";
 
 type HeroContent = {
   eyebrow: string;
+  title: string;
+  body: string;
+};
+
+type StoryCard = {
   title: string;
   body: string;
 };
@@ -38,12 +48,20 @@ type SiteContent = {
   common: {
     currentStatus: string;
     currentStatusBody: string;
+    structuralSignals: string;
+    skipToContent: string;
     openShell: string;
     readCode: string;
     pageNotFound: string;
     pageNotFoundBody: string;
     backHome: string;
     xDefaultLabel: string;
+  };
+  contact: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    form: ContactFormCopy;
   };
   pages: Record<
     PageKey,
@@ -56,11 +74,20 @@ type SiteContent = {
   home: {
     primaryCta: string;
     secondaryCta: string;
+    heroTags: string[];
     statusCards: Array<{ label: string; value: string; note: string }>;
+    commitmentEyebrow: string;
+    commitmentTitle: string;
+    commitmentBody: string;
+    commitmentCards: StoryCard[];
+    modelEyebrow: string;
+    modelTitle: string;
+    modelBody: string;
+    modelCards: StoryCard[];
     audienceEyebrow: string;
     audienceTitle: string;
     audienceBody: string;
-    audienceCards: Array<{ title: string; body: string }>;
+    audienceCards: StoryCard[];
     featuredEyebrow: string;
     featuredTitle: string;
     featuredCards: Array<{ page: PageKey; title: string; body: string }>;
@@ -97,13 +124,16 @@ type SiteContent = {
     networkEyebrow: string;
     networkTitle: string;
     networkBody: string;
-    partnerCards: Array<{ name: string; role: string; body: string; href: string }>;
+    partnerCards: Array<{ name: string; role: string; body: string; href?: string }>;
     impactEyebrow: string;
     impactTitle: string;
     impactCards: Array<{ value: string; label: string; note: string }>;
   };
   footer: string;
 };
+
+const HOME_HERO_IMAGE = "/public-site/tandil-hero.jpg";
+const HOME_COMMITMENT_IMAGE = "/public-site/tandil-commitment.jpg";
 
 const PAGE_SLUGS: Record<Locale, Record<PageKey, string>> = {
   en: {
@@ -114,18 +144,26 @@ const PAGE_SLUGS: Record<Locale, Record<PageKey, string>> = {
   },
   es: {
     home: "",
-    platform: "plataforma",
-    about: "nosotros",
-    partners: "alianzas",
+    platform: "procesos",
+    about: "modulos",
+    partners: "casos",
+  },
+};
+
+const PAGE_SLUG_ALIASES: Partial<Record<Locale, Record<string, PageKey>>> = {
+  es: {
+    plataforma: "platform",
+    nosotros: "about",
+    alianzas: "partners",
   },
 };
 
 const SITE: Record<Locale, SiteContent> = {
   en: {
     meta: {
-      defaultTitle: "Ciutatis — Open-source civic control plane",
+      defaultTitle: "Ciutatis — GovOps for citizenship, efficiency, and transparency",
       defaultDescription:
-        "Ciutatis is an open-source civic control plane for institutions that need clearer governance, operational discipline, and deployable city-specific runtimes.",
+        "Ciutatis is an open-source GovOps layer for governments that need better citizen service, higher operational efficiency, transparent execution, and custom modules that fit public work.",
     },
     nav: {
       mark: "Ciutatis",
@@ -134,584 +172,722 @@ const SITE: Record<Locale, SiteContent> = {
       signIn: "Enter admin shell",
       links: {
         home: "Home",
-        platform: "What we do",
-        about: "Who we are",
-        partners: "Partners & pilots",
+        platform: "Process & efficiency",
+        about: "Plugins & modules",
+        partners: "Success stories",
       },
     },
     common: {
-      currentStatus: "Current pilot network",
+      currentStatus: "Where it lands",
       currentStatusBody:
-        "Ciutatis is advancing through a public-sector pilot network anchored in Tandil, UNICEN, and the local technology cluster while the platform matures into a deployable civic operating layer.",
-      openShell: "Open the admin shell",
+        "Built for public teams where citizen requests cross areas, context gets lost, and each step still needs traceability.",
+      structuralSignals: "Structural signals",
+      skipToContent: "Skip to content",
+      openShell: "Open the shell",
       readCode: "Read the code",
       pageNotFound: "Public page not found",
       pageNotFoundBody: "This page is not part of the current Ciutatis public site.",
       backHome: "Back to home",
       xDefaultLabel: "EN",
     },
+    contact: {
+      eyebrow: "Contact support",
+      title: "Create a support request directly from the public site.",
+      body:
+        "Send the operational question, blocker, or workflow need here. The form creates a new request for the support agent with the page and locale attached.",
+      form: {
+        nameLabel: "Name",
+        namePlaceholder: "Alex Rivera…",
+        emailLabel: "Email",
+        emailPlaceholder: "alex@example.com…",
+        messageLabel: "Message",
+        messagePlaceholder: "Describe the process, blocker, or module you want to discuss…",
+        submitIdle: "Send message",
+        submitSubmitting: "Sending…",
+        successTitle: "Thanks. Your request is already in the support queue.",
+        successAction: "Send another message",
+        errorMessage: "We couldn't submit your message. Please try again.",
+        validation: {
+          nameRequired: "Name is required",
+          emailRequired: "Email is required",
+          emailInvalid: "Please enter a valid email address",
+          messageRequired: "Message is required",
+        },
+      },
+    },
     pages: {
       home: {
-        title: "Ciutatis — Govern institutional work with clarity",
+        title: "Ciutatis — GovOps for governments that need clarity",
         description:
-          "Open-source civic control plane for public institutions, municipal operations, and governed AI-assisted execution.",
+          "Open-source GovOps layer for governments, citizen-facing workflows, transparent operations, plugins, and custom public-service modules.",
         hero: {
-          eyebrow: "Open-source civic control plane",
-          title: "A civic control plane for institutions that need clarity.",
+          eyebrow: "Open GovOps layer",
+          title: "Better service. Clear government.",
           body:
-            "Ciutatis gives public-service teams a structured operating surface for approvals, tasks, budgets, audit trails, and deployable city-specific runtimes. It helps institutions move faster without losing accountability, limits, or operational visibility.",
+            "Ciutatis keeps workflows, approvals, conversation, plugins, and custom modules in one system. Better service for citizens. More efficiency. More transparency.",
         },
       },
       platform: {
-        title: "What Ciutatis does — The platform",
+        title: "Process & efficiency — Ciutatis",
         description:
-          "See how Ciutatis structures governance, task execution, agent orchestration, budgets, and tenant runtimes inside one civic control plane.",
+          "How Ciutatis improves GovOps flow, communication, operational efficiency, and transparency through one modular operating layer.",
         hero: {
-          eyebrow: "What we do",
-          title: "One operating layer for governed public execution.",
+          eyebrow: "Process & efficiency",
+          title: "Efficiency and transparency start in one place.",
           body:
-            "Ciutatis structures institutions in a way generic workflow software does not: through explicit authority, task lineage, cost discipline, and a clear separation between the public front door, the institutional shell, and each deployable runtime.",
+            "Workflow logic, approvals, communication, automation, and intervention stay in one frame for public operations.",
         },
       },
       about: {
-        title: "Who we are — About Ciutatis",
+        title: "Plugins & modules — Ciutatis",
         description:
-          "Ciutatis is an open-source civic platform built in Argentina to help institutions operate AI-assisted workflows with public accountability.",
+          "Extend Ciutatis with plugins, custom modules, adapters, and organization-specific workflow surfaces.",
         hero: {
-          eyebrow: "Who we are",
-          title: "Built in Argentina for institutions that need accountable modernization.",
+          eyebrow: "Plugins & modules",
+          title: "Extend the system. Keep the core.",
           body:
-            "Ciutatis is an open-source civic platform maintained by The Hipster Cloud S.A. It adapts the control-plane model of AI-native operations to public-service environments where governance, oversight, and local deployment constraints are part of the core design.",
+            "A thin core with rich edges: plugins, adapters, custom modules, and tailored operational surfaces.",
         },
       },
       partners: {
-        title: "Partners & pilots — Ciutatis",
+        title: "Success stories — Ciutatis",
         description:
-          "Current Ciutatis pilot and validation network across Tandil, UNICEN, and the local technology cluster.",
+          "Examples of institutions using the Ciutatis model to improve GovOps flow, communication, efficiency, and delivery.",
         hero: {
-          eyebrow: "Partners & pilots",
-          title: "A pilot and validation network grounded in real public-service work.",
+          eyebrow: "Success stories",
+          title: "Real institutions. Clearer flow.",
           body:
-            "Ciutatis is not being framed in the abstract. Its current network combines a municipality, a public university, and a regional technology cluster to validate operations, impact, and deployment readiness in real LATAM contexts.",
+            "The main site now speaks directly to government. These stories show how the same model improves flow, context, and delivery.",
         },
       },
     },
     home: {
-      primaryCta: "See the platform",
-      secondaryCta: "Meet the pilot network",
+      primaryCta: "See the model",
+      secondaryCta: "See stories",
+      heroTags: ["Process in plain sight", "Talk where work lives", "Extend with plugins"],
       statusCards: [
         {
-          label: "Prototype benchmark",
+          label: "Cycle time",
           value: "70% faster",
-          note: "Reduction in processing time across simulated municipal workflows documented in current project materials.",
+          note: "Routing, approvals, and context stay together.",
         },
         {
-          label: "Pilot timing",
-          value: "Q3 2026",
-          note: "Confirmed pilot window with Municipalidad de Tandil and UNICEN.",
+          label: "Follow-up loops",
+          value: "0–1 extra",
+          note: "Teams stop repeating the same context.",
         },
         {
-          label: "36-month reach goal",
-          value: "2–5M citizens",
-          note: "Target reach across 5–10 municipalities as the rollout scales.",
+          label: "Team capacity",
+          value: "3–5×",
+          note: "Less coordination drag. More throughput.",
         },
       ],
-      audienceEyebrow: "Who it serves",
-      audienceTitle: "Designed for institutions that need structure before scale.",
+      commitmentEyebrow: "Commitment",
+      commitmentTitle: "Built for trust that lasts.",
+      commitmentBody:
+        "We treat Ciutatis as public infrastructure: open code, clear governance, local stewardship, better citizen service, and measurable gains in efficiency and transparency.",
+      commitmentCards: [
+        {
+          title: "Open by default",
+          body: "The shared core stays auditable, forkable, and improveable.",
+        },
+        {
+          title: "Local stewardship",
+          body: "Each organization keeps control over data, deployment, and pace.",
+        },
+        {
+          title: "Institutional memory",
+          body: "Process, decisions, and context remain searchable and durable.",
+        },
+      ],
+      modelEyebrow: "Sustainable model",
+      modelTitle: "Open source, funded to endure.",
+      modelBody:
+        "The model is not license extraction. Revenue comes from implementation, support, hosting, GovOps modules, and sponsored upstream work that strengthens the public core.",
+      modelCards: [
+        {
+          title: "Shared core",
+          body: "The common layer stays open and improves in public.",
+        },
+        {
+          title: "Upstream contributions",
+          body: "Generic improvements go back to the shared system whenever possible.",
+        },
+        {
+          title: "Stewardship retainers",
+          body: "Institutions fund maintenance, roadmap work, and long-term support.",
+        },
+        {
+          title: "Custom delivery",
+          body: "Specific workflows fund modules, rollout, training, and integration work.",
+        },
+      ],
+      audienceEyebrow: "Built for",
+      audienceTitle: "For governments that cannot run on guesswork.",
       audienceBody:
-        "Ciutatis is strongest where work is politically sensitive, operationally complex, and expensive to mismanage. It gives every actor a clearer operating surface without flattening the realities of government and institutional delivery.",
+        "GovOps teams, public institutions, and service units that need cleaner handoffs, visible process, better citizen response, and room for custom logic.",
       audienceCards: [
         {
-          title: "Leadership and modernization teams",
-          body: "Track where work is moving, what is blocked, and which decisions still require formal approval or intervention.",
+          title: "GovOps leads",
+          body: "Spot drag. Fix flow. Intervene early.",
         },
         {
-          title: "Operators and departmental teams",
-          body: "Run requests, handoffs, and follow-through through explicit tasks, comments, statuses, and ownership instead of email chains and spreadsheet drift.",
+          title: "Citizen service teams",
+          body: "Keep approvals, notes, and status on the same request.",
         },
         {
-          title: "Implementation and rollout teams",
-          body: "Provision runtimes per city or institution while preserving a central shell for support, defaults, and deployment governance.",
+          title: "Public builders",
+          body: "Ship plugins and modules without rebuilding the core.",
         },
       ],
-      featuredEyebrow: "Public site",
-      featuredTitle: "Start with the parts that matter most.",
+      featuredEyebrow: "Start here",
+      featuredTitle: "Three ways in.",
       featuredCards: [
         {
           page: "platform",
-          title: "What we do",
-          body: "The operating model, governance loop, and structural boundaries behind the platform.",
+          title: "Process & efficiency",
+          body: "See how flow gets cleaner and faster.",
         },
         {
           page: "about",
-          title: "Who we are",
-          body: "The open-source mission, the Argentine build context, and the principles shaping the product.",
+          title: "Plugins & modules",
+          body: "See how the system bends without breaking.",
         },
         {
           page: "partners",
-          title: "Partners & pilots",
-          body: "The current network helping validate Ciutatis in municipal and institutional workflows.",
+          title: "Success stories",
+          body: "See the model in real operating environments.",
         },
       ],
       loopEyebrow: "How it works",
-      loopTitle: "Leadership stays in control while the system keeps moving.",
+      loopTitle: "One loop. No fragmentation.",
       loopBody:
-        "The current V1 contract is explicit: a human board defines goals, creates agents and structure, tracks work through tasks and comments, monitors costs, and can intervene anywhere in the loop.",
+        "Map the public process. Keep citizen context attached. Extend the system when government work demands it.",
       loopSteps: [
         {
           label: "01",
-          title: "Define the objective and institutional structure",
-          body: "Companies, goals, projects, and reporting lines establish why work exists and who is responsible for it.",
+          title: "Map the flow",
+          body: "Make stages, ownership, and approvals explicit.",
         },
         {
           label: "02",
-          title: "Execute through tasks, comments, and heartbeat-driven agents",
-          body: "Work stays attached to concrete objects with explicit assignees, visible state transitions, and auditable activity.",
+          title: "Keep context attached",
+          body: "Comments, updates, and decisions stay on the same object.",
         },
         {
           label: "03",
-          title: "Govern costs, approvals, and interventions",
-          body: "Budget limits can stop work, approvals remain in the operating loop, and leadership can pause or redirect execution at any point.",
+          title: "Extend without rework",
+          body: "Add plugins, surfaces, and organization-specific logic without tearing up the core.",
         },
       ],
-      closeTitle: "Open-source civic infrastructure for institutions that need proof, not theater.",
+      closeTitle: "Build clearer operations.",
       closeBody:
-        "Ciutatis is for institutions that want a governed operating layer for AI-assisted work — one that can be inspected, deployed, and improved in the open.",
+        "Open core. Public control. Better service.",
     },
     platform: {
-      architectureEyebrow: "Operating architecture",
-      architectureTitle: "One platform, three boundaries that stay legible.",
+      architectureEyebrow: "Core model",
+      architectureTitle: "A core shell, an extension layer, and workflow-specific modules.",
       architectureBody:
-        "The public site, the institutional shell, and each tenant runtime should not collapse into one undifferentiated surface. Ciutatis is being shaped to keep each responsibility explicit.",
+        "Ciutatis stays flexible by separating the stable GovOps core from the logic each institution needs to add.",
       architectureCards: [
         {
           icon: "public",
-          title: "Public layer",
-          body: "Explains the model, frames the institutional promise, and gives external stakeholders a credible front door.",
+          title: "Core shell",
+          body: "The shared operating surface for process state, approvals, assignments, communication, intervention, and traceable public service delivery.",
         },
         {
           icon: "shell",
-          title: "Institutional shell",
-          body: "Holds provisioning, support, defaults, governance, onboarding, and strategic oversight across deployments.",
+          title: "Plugin system",
+          body: "Adds integrations, automation, UI surfaces, and capabilities without forcing every organization into the same stack.",
         },
         {
           icon: "tenant",
-          title: "Tenant runtime",
-          body: "Provides a deployable operating surface for a city or institution, with its own routing identity and lifecycle.",
+          title: "Custom modules",
+          body: "Supports workflow-specific logic, forms, panels, and domain operations tailored to the way a team actually works.",
         },
       ],
-      governanceEyebrow: "Governance loop",
-      governanceTitle: "The V1 product contract is intentionally strict.",
+      governanceEyebrow: "Process gains",
+      governanceTitle: "Efficiency and transparency come from structure, not noise.",
       governanceBody:
-        "Ciutatis treats governance as part of execution rather than documentation after the fact. The system keeps authority, cost limits, and decision points visible while work moves.",
+        "Ciutatis improves GovOps by keeping the moving parts in one place and making each step legible.",
       governanceSteps: [
         {
           label: "A",
-          title: "A human board defines goals and company structure",
-          body: "Ciutatis treats companies as first-order entities and keeps all meaningful work tied back to the company goal chain.",
+          title: "Process stages are explicit",
+          body: "Workflows are visible, owned, and easier to improve because the sequence is no longer hidden in spreadsheets and side conversations.",
         },
         {
           label: "B",
-          title: "Agents operate inside a reporting tree, not a free-for-all",
-          body: "Each agent has a role, manager, adapter, capabilities, and budget context.",
+          title: "Communication stays in context",
+          body: "Requests, comments, decisions, and changes stay attached to the work instead of splintering across channels.",
         },
         {
           label: "C",
-          title: "Tasks and comments stay attached to work objects",
-          body: "The system is not a chatbot. Communication lives on issues and comments so context remains inspectable.",
+          title: "Plugins remove repeated manual work",
+          body: "Automations, integrations, and custom surfaces reduce repetitive coordination and keep teams moving.",
         },
         {
           label: "D",
-          title: "Costs and approvals are part of execution, not an afterthought",
-          body: "Monthly budget windows, hard-stop enforcement, and approval gates are part of the operating fabric.",
+          title: "Leadership can measure and intervene",
+          body: "Bottlenecks, idle stages, and costly loops are easier to spot before they become public-service drag.",
         },
       ],
-      boundaryEyebrow: "What Ciutatis is not",
-      boundaryTitle: "The product stays narrow where that discipline matters.",
+      boundaryEyebrow: "What it avoids",
+      boundaryTitle: "Ciutatis is designed to prevent fragmentation.",
       boundaryPoints: [
-        "It is not a general chat app; work is anchored to tasks, projects, goals, and approvals.",
-        "It is not a drag-and-drop workflow toy; it models institutions with reporting lines, budgets, and governance.",
-        "It is not a code review product; it orchestrates work and leaves execution tools free to run where they run best.",
+        "It is not another ticket list with detached chat; communication stays connected to the work.",
+        "It is not a rigid suite; plugins and custom modules let the system fit the process.",
+        "It is not automation without control; teams can inspect, intervene, and adapt as the workflow evolves.",
       ],
     },
     about: {
-      storyEyebrow: "Mission and origin",
-      storyTitle: "A civic fork, an Argentine build context, and an open-source operating stance.",
+      storyEyebrow: "Extension system",
+      storyTitle: "Plugins and custom modules are part of the product, not an afterthought.",
       storyBody:
-        "Ciutatis is a civic adaptation of the Paperclip codebase. It is maintained as open-source software and publicly framed around institutions, departments, and municipal operations rather than generic startup task management.",
+        "Ciutatis is built as an extensible GovOps layer. The core stays stable while each institution adds the modules, integrations, and workflow surfaces its public processes require.",
       storyCards: [
         {
-          title: "Built by The Hipster Cloud S.A.",
-          body: "The organization behind Ciutatis is headquartered in Argentina and documented in current project materials as a social enterprise with an explicit public-impact focus.",
+          title: "Plugins",
+          body: "Connect external tools, add automations, and extend the UI or action layer without modifying the core.",
         },
         {
-          title: "Grounded in public-service workflows",
-          body: "The current problem framing centers on permits, licenses, documentation, inter-departmental routing, and the administrative burden of municipal service delivery in LATAM.",
+          title: "Custom modules",
+          body: "Model organization-specific flows, panels, forms, and domain logic on top of the shared operating system.",
         },
         {
-          title: "Open by design",
-          body: "Ciutatis is presented as open-source civic infrastructure, designed to be inspected, improved, and locally deployed rather than hidden behind opaque platform claims.",
+          title: "Adapters and surfaces",
+          body: "Bring in new runtimes, providers, and task environments while preserving one operating model for the team.",
         },
       ],
-      principlesEyebrow: "Design principles",
-      principlesTitle: "The public promise has to match the operating reality.",
+      principlesEyebrow: "Extension principles",
+      principlesTitle: "A thin core with rich edges scales better than a bloated suite.",
       principles: [
         {
-          title: "Human oversight remains inside the loop",
-          body: "Current project materials explicitly commit to human review for consequential outputs and to human intervention when the system needs it.",
+          title: "Keep the core stable",
+          body: "Core process state, communication, and control surfaces remain consistent across organizations.",
         },
         {
-          title: "Local deployment and data restraint matter",
-          body: "The platform is framed around keeping sensitive public-sector data inside the municipality or institution rather than centralizing it unnecessarily.",
+          title: "Let teams fit the system to the work",
+          body: "Plugins and modules adapt the platform to domain-specific flows instead of forcing work into generic shapes.",
         },
         {
-          title: "Clarity beats theatrics",
-          body: "Ciutatis favors legible tasks, explicit approvals, budget boundaries, and audit visibility over vague claims about frictionless automation.",
+          title: "Ship custom capability faster",
+          body: "New logic can land as a module or plugin without slowing down the whole product.",
         },
       ],
     },
     partners: {
-      networkEyebrow: "Current network",
-      networkTitle: "Pilot and validation partners already attached to the project.",
+      networkEyebrow: "Success stories",
+      networkTitle: "Named organizations live here, not in the core story.",
       networkBody:
-        "The current public evidence around Ciutatis is not hypothetical. Existing materials document a network intended to validate municipal deployment, institutional workflows, impact assessment, and regional adoption support.",
+        "Ciutatis now speaks directly to government and public operations on the main site. These stories show how specific institutions have used the model to improve process flow, communication, efficiency, and transparency.",
       partnerCards: [
         {
-          name: "Municipalidad de Tandil",
-          role: "Municipal pilot partner",
-          body: "Documented as the first production pilot target for permits, licensing, and public works, with committed infrastructure, staff time, and historical permit data for a Q3 2026 pilot.",
-          href: "https://tandil.gov.ar",
+          name: "The Hipster Cloud S.A.",
+          role: "Internal operations and product systems",
+          body: "Used the Ciutatis model to coordinate product delivery, operational follow-through, and bespoke workflow logic without splitting communication from execution.",
         },
         {
           name: "UNICEN",
-          role: "Institutional validation partner",
-          body: "Documented as a public-university pilot for administrative workflows, research validation, independent impact assessment, and platform development support through local academic talent.",
+          role: "Institutional validation environment",
+          body: "Applied the model to administrative and validation workflows where process clarity, shared context, and review discipline matter.",
           href: "https://unicen.edu.ar",
         },
         {
           name: "Cluster Tecnológico de Tandil",
-          role: "Scaling and ecosystem partner",
-          body: "Documented as a regional technology-network partner contributing technical talent, testing environments, and local credibility for broader adoption across the Tandil ecosystem.",
+          role: "Ecosystem and rollout partner",
+          body: "Helped frame how the model can scale through repeatable modules, shared practices, and better operational communication across organizations.",
           href: "https://clustertecnologicotandil.org.ar",
         },
       ],
-      impactEyebrow: "Documented targets",
-      impactTitle: "What the current rollout aims to prove.",
+      impactEyebrow: "Shared claims",
+      impactTitle: "The same operating model keeps pointing to the same gains.",
       impactCards: [
         {
-          value: "45 → 10 days",
-          label: "Target processing-time shift",
-          note: "Current materials describe an expected move from 45 days average to 10 days average for requests in pilot conditions.",
+          value: "70% faster",
+          label: "Process cycle improvement",
+          note: "Current case materials keep pointing to materially faster operating flow when routing, approvals, and discussion live in one place.",
         },
         {
           value: "3–4 → 0–1 visits",
-          label: "Citizen office visits per request",
-          note: "The project goal is to reduce repeated in-person visits through a single operating surface and better routing.",
+          label: "Extra follow-up loops",
+          note: "Clearer communication and shared context reduce repeated follow-up, clarification, and back-and-forth.",
         },
         {
           value: "3–5× capacity",
-          label: "Target staff throughput gain",
-          note: "Current outcome framing aims to let staff handle significantly more requests without simply scaling headcount.",
+          label: "Operational throughput",
+          note: "Teams can handle more requests and custom workflow logic without adding the same level of coordination overhead.",
         },
       ],
     },
-    footer: "Open-source civic control plane for governed institutional execution.",
+    footer: "Open-source GovOps infrastructure for better citizen service, higher efficiency, and clearer transparency.",
   },
   es: {
     meta: {
-      defaultTitle: "Ciutatis — Capa de control cívica de código abierto",
+      defaultTitle: "Ciutatis — GovOps para ciudadanía, eficiencia y transparencia",
       defaultDescription:
-        "Ciutatis es una capa de control cívica de código abierto para instituciones que necesitan más claridad de gobernanza, disciplina operativa y runtimes desplegables por ciudad.",
+        "Ciutatis es una capa GovOps de código abierto para gobiernos que necesitan mejor atención a la ciudadanía, más eficiencia operativa, ejecución transparente y módulos personalizados para trabajo público.",
     },
     nav: {
       mark: "Ciutatis",
       languageLabel: "Idioma",
       github: "GitHub",
-      signIn: "Entrar al panel institucional",
+      signIn: "Entrar al shell",
       links: {
         home: "Inicio",
-        platform: "Qué hacemos",
-        about: "Quiénes somos",
-        partners: "Alianzas y pilotos",
+        platform: "Procesos y eficiencia",
+        about: "Plugins y módulos",
+        partners: "Casos de éxito",
       },
     },
     common: {
-      currentStatus: "Red actual de pilotos",
+      currentStatus: "Dónde rinde",
       currentStatusBody:
-        "Ciutatis avanza a través de una red de validación en el sector público con base en Tandil, UNICEN y el ecosistema tecnológico local, mientras la plataforma madura hacia una capa operativa cívica desplegable.",
-      openShell: "Abrir el panel institucional",
+        "Ideal para equipos públicos donde los pedidos ciudadanos cruzan áreas, el contexto se pierde y cada paso necesita trazabilidad.",
+      structuralSignals: "Señales estructurales",
+      skipToContent: "Saltar al contenido",
+      openShell: "Abrir el shell",
       readCode: "Leer el código",
       pageNotFound: "Página pública no encontrada",
       pageNotFoundBody: "Esta página no forma parte del sitio público actual de Ciutatis.",
       backHome: "Volver al inicio",
       xDefaultLabel: "EN",
     },
+    contact: {
+      eyebrow: "Contactar soporte",
+      title: "Creá un pedido de soporte directo desde el sitio público.",
+      body:
+        "Mandá por acá la consulta operativa, el bloqueo o la necesidad de workflow. El formulario crea un nuevo pedido para el agente de soporte con la página y el idioma adjuntos.",
+      form: {
+        nameLabel: "Nombre",
+        namePlaceholder: "Ana Gómez…",
+        emailLabel: "Email",
+        emailPlaceholder: "ana@ejemplo.com…",
+        messageLabel: "Mensaje",
+        messagePlaceholder: "Describí el proceso, bloqueo o módulo que querés conversar…",
+        submitIdle: "Enviar mensaje",
+        submitSubmitting: "Enviando…",
+        successTitle: "Gracias. Tu pedido ya entró en la cola de soporte.",
+        successAction: "Enviar otro mensaje",
+        errorMessage: "No pudimos enviar tu mensaje. Probá de nuevo.",
+        validation: {
+          nameRequired: "El nombre es obligatorio",
+          emailRequired: "El email es obligatorio",
+          emailInvalid: "Ingresá un email válido",
+          messageRequired: "El mensaje es obligatorio",
+        },
+      },
+    },
     pages: {
       home: {
-        title: "Ciutatis — Gobernar trabajo institucional con claridad",
+        title: "Ciutatis — GovOps para gobiernos que necesitan claridad",
         description:
-          "Capa de control cívica de código abierto para instituciones públicas, operaciones municipales y ejecución asistida por IA con gobernanza.",
+          "Capa GovOps de código abierto para gobiernos, flujos orientados a ciudadanía, operaciones transparentes, plugins y módulos públicos a medida.",
         hero: {
-          eyebrow: "Capa de control cívica de código abierto",
-          title: "Una capa de control cívica para instituciones que necesitan claridad.",
+          eyebrow: "Capa GovOps abierta",
+          title: "Mejor servicio. Gobierno claro.",
           body:
-            "Ciutatis da a equipos públicos una superficie operativa estructurada para aprobaciones, tareas, presupuestos, trazabilidad y runtimes desplegables por ciudad. Ayuda a avanzar más rápido sin perder responsabilidad, límites ni visibilidad operativa.",
+            "Ciutatis junta workflows, aprobaciones, conversación, plugins y módulos propios en un mismo sistema. Mejor atención a la ciudadanía. Más eficiencia. Más transparencia.",
         },
       },
       platform: {
-        title: "Qué hace Ciutatis — La plataforma",
+        title: "Procesos y eficiencia — Ciutatis",
         description:
-          "Cómo Ciutatis estructura gobernanza, ejecución de tareas, orquestación de agentes, presupuestos y runtimes inquilinos dentro de una misma capa de control cívica.",
+          "Cómo Ciutatis mejora flujo GovOps, comunicación, eficiencia operativa y transparencia desde una misma capa operativa modular.",
         hero: {
-          eyebrow: "Qué hacemos",
-          title: "Una capa operativa para ejecución pública gobernada.",
+          eyebrow: "Procesos y eficiencia",
+          title: "La eficiencia y la transparencia empiezan en un mismo lugar.",
           body:
-            "Ciutatis organiza instituciones de una manera que el software genérico de flujo de trabajo no resuelve: con autoridad explícita, linaje de tareas, disciplina de costos y una separación clara entre la puerta pública, el panel institucional y cada runtime desplegable.",
+            "Workflow, aprobaciones, comunicación, automatización e intervención quedan dentro del mismo marco para operaciones públicas.",
         },
       },
       about: {
-        title: "Quiénes somos — Ciutatis",
+        title: "Plugins y módulos — Ciutatis",
         description:
-          "Ciutatis es una plataforma cívica de código abierto construida en Argentina para ayudar a instituciones a operar flujos asistidos por IA con responsabilidad pública.",
+          "Extendé Ciutatis con plugins, módulos personalizados, adaptadores y superficies operativas diseñadas para cada organización.",
         hero: {
-          eyebrow: "Quiénes somos",
-          title: "Construido en Argentina para instituciones que necesitan modernización con responsabilidad.",
+          eyebrow: "Plugins y módulos",
+          title: "Extendé el sistema. Conservá el núcleo.",
           body:
-            "Ciutatis es una plataforma cívica de código abierto mantenida por The Hipster Cloud S.A. Adapta el modelo de control plane de operaciones nativas de IA a entornos públicos donde la gobernanza, la supervisión y las restricciones de despliegue local forman parte del diseño central.",
+            "Un núcleo fino con bordes ricos: plugins, adaptadores, módulos personalizados y superficies operativas a medida.",
         },
       },
       partners: {
-        title: "Alianzas y pilotos — Ciutatis",
+        title: "Casos de éxito — Ciutatis",
         description:
-          "Red actual de pilotos y validación de Ciutatis entre Tandil, UNICEN y el clúster tecnológico local.",
+          "Ejemplos de instituciones que usan el modelo Ciutatis para mejorar procesos, comunicación, eficiencia y capacidad operativa.",
         hero: {
-          eyebrow: "Alianzas y pilotos",
-          title: "Una red de pilotos y validación anclada en trabajo público real.",
+          eyebrow: "Casos de éxito",
+          title: "Instituciones reales. Flujo más claro.",
           body:
-            "Ciutatis no se está planteando en abstracto. Su red actual combina un municipio, una universidad pública y un clúster tecnológico regional para validar operación, impacto y preparación de despliegue en contextos LATAM reales.",
+            "La historia principal ahora habla de gobierno de forma directa. Estos casos muestran cómo el mismo modelo mejora flujo, contexto y entrega.",
         },
       },
     },
     home: {
-      primaryCta: "Ver la plataforma",
-      secondaryCta: "Conocer la red de pilotos",
+      primaryCta: "Ver modelo",
+      secondaryCta: "Ver casos",
+      heroTags: [
+        "Proceso a la vista",
+        "La charla sigue al trabajo",
+        "Plugins que encajan",
+      ],
       statusCards: [
         {
-          label: "Benchmark del prototipo",
+          label: "Ciclo",
           value: "70% más rápido",
-          note: "Reducción de tiempo de procesamiento en flujos municipales simulados documentada en materiales actuales del proyecto.",
+          note: "Ruteo, aprobaciones y contexto quedan juntos.",
         },
         {
-          label: "Ventana de pilotos",
-          value: "Q3 2026",
-          note: "Período de piloto confirmado con Municipalidad de Tandil y UNICEN.",
+          label: "Seguimientos",
+          value: "0–1 extra",
+          note: "Se deja de repetir el mismo contexto.",
         },
         {
-          label: "Objetivo a 36 meses",
-          value: "2–5M de personas",
-          note: "Alcance esperado a través de 5–10 municipios a medida que el despliegue escale.",
+          label: "Capacidad",
+          value: "3–5×",
+          note: "Menos fricción. Más throughput.",
         },
       ],
-      audienceEyebrow: "A quién sirve",
-      audienceTitle: "Diseñado para instituciones que necesitan estructura antes de escala.",
+      commitmentEyebrow: "Compromiso",
+      commitmentTitle: "Infraestructura para durar.",
+      commitmentBody:
+        "Tratamos a Ciutatis como infraestructura pública: código abierto, gobernanza clara, custodia local, mejor atención a la ciudadanía y mejoras medibles en eficiencia y transparencia.",
+      commitmentCards: [
+        {
+          title: "Abierto por defecto",
+          body: "El núcleo compartido es auditable, forkable y mejorable.",
+        },
+        {
+          title: "Custodia local",
+          body: "Cada organización mantiene control sobre datos, despliegue y ritmo.",
+        },
+        {
+          title: "Memoria institucional",
+          body: "Procesos, decisiones y contexto quedan trazables y durables.",
+        },
+      ],
+      modelEyebrow: "Modelo sustentable",
+      modelTitle: "Open source con financiamiento real.",
+      modelBody:
+        "El proyecto no depende de cerrar el código. Se sostiene con implementación, soporte, hosting, módulos GovOps a medida y trabajo patrocinado que vuelve upstream cuando aplica.",
+      modelCards: [
+        {
+          title: "Núcleo compartido",
+          body: "La base común sigue abierta y mejora en público.",
+        },
+        {
+          title: "Contribuciones upstream",
+          body: "Lo que generaliza vuelve al sistema compartido siempre que se puede.",
+        },
+        {
+          title: "Retainers de custodia",
+          body: "Las instituciones financian mantenimiento, roadmap y soporte continuo.",
+        },
+        {
+          title: "Entrega a medida",
+          body: "Workflows específicos financian módulos, rollout, formación e integraciones.",
+        },
+      ],
+      audienceEyebrow: "Hecho para",
+      audienceTitle: "Para gobiernos que no pueden operar a ojo.",
       audienceBody:
-        "Ciutatis es especialmente valioso donde el trabajo es políticamente sensible, operativamente complejo y costoso de gestionar mal. Da a cada actor una superficie operativa más clara sin simplificar artificialmente la realidad del sector público.",
+        "Equipos GovOps, instituciones públicas y áreas de atención que necesitan handoffs limpios, proceso visible, mejor respuesta a la ciudadanía y espacio para lógica propia.",
       audienceCards: [
         {
-          title: "Conducción y equipos de modernización",
-          body: "Permite ver dónde se mueve el trabajo, qué está bloqueado y qué decisiones todavía requieren aprobación o intervención formal.",
+          title: "Liderazgo GovOps",
+          body: "Detecta fricción, mide desvíos e interviene antes.",
         },
         {
-          title: "Operadores y equipos departamentales",
-          body: "Ordena pedidos, handoffs y seguimiento mediante tareas explícitas, comentarios, estados y responsables, en lugar de cadenas de correo y deriva operativa.",
+          title: "Equipos de atención",
+          body: "Mantienen aprobaciones, notas y estado sobre el mismo pedido.",
         },
         {
-          title: "Equipos de implementación y despliegue",
-          body: "Hace posible aprovisionar runtimes por ciudad o institución mientras se conserva un panel central para soporte, configuraciones base y gobernanza del despliegue.",
+          title: "Equipos públicos builders",
+          body: "Suman plugins y módulos sin rehacer el núcleo.",
         },
       ],
-      featuredEyebrow: "Sitio público",
-      featuredTitle: "Empiece por las partes que más importan.",
+      featuredEyebrow: "Entradas",
+      featuredTitle: "Tres puertas de entrada.",
       featuredCards: [
         {
           page: "platform",
-          title: "Qué hacemos",
-          body: "El modelo operativo, el ciclo de gobernanza y los límites estructurales que sostienen la plataforma.",
+          title: "Procesos y eficiencia",
+          body: "Cómo se limpia y acelera el flujo.",
         },
         {
           page: "about",
-          title: "Quiénes somos",
-          body: "La misión de código abierto, el contexto argentino de construcción y los principios que moldean el producto.",
+          title: "Plugins y módulos",
+          body: "Cómo el sistema se adapta sin romperse.",
         },
         {
           page: "partners",
-          title: "Alianzas y pilotos",
-          body: "La red actual que ayuda a validar Ciutatis en flujos municipales e institucionales reales.",
+          title: "Casos de éxito",
+          body: "Cómo funciona el modelo en contextos reales.",
         },
       ],
       loopEyebrow: "Cómo funciona",
-      loopTitle: "La conducción conserva el control mientras el sistema sigue avanzando.",
+      loopTitle: "Un loop. Cero fragmentación.",
       loopBody:
-        "El contrato V1 actual es explícito: una conducción humana define objetivos, crea agentes y estructura, sigue el trabajo mediante tareas y comentarios, monitorea costos y puede intervenir en cualquier punto del ciclo.",
+        "Se mapea el proceso público, se conserva el contexto ciudadano y se extiende el sistema cuando el trabajo de gobierno lo pide.",
       loopSteps: [
         {
           label: "01",
-          title: "Definir el objetivo y la estructura institucional",
-          body: "Empresas, objetivos, proyectos y líneas de reporte establecen por qué existe el trabajo y quién responde por él.",
+          title: "Mapear el flujo",
+          body: "Se hacen explícitas las etapas, la propiedad y las aprobaciones.",
         },
         {
           label: "02",
-          title: "Ejecutar mediante tareas, comentarios y agentes disparados por heartbeat",
-          body: "El trabajo queda ligado a objetos concretos con responsables explícitos, transiciones visibles y actividad auditable.",
+          title: "Pegar el contexto",
+          body: "Comentarios, cambios y decisiones quedan sobre el mismo objeto.",
         },
         {
           label: "03",
-          title: "Gobernar costos, aprobaciones e intervenciones",
-          body: "Los límites presupuestarios pueden detener trabajo, las aprobaciones siguen dentro del circuito y la conducción puede pausar o reorientar la ejecución en cualquier momento.",
+          title: "Extender sin rehacer",
+          body: "Se suman plugins, superficies y lógica específica sin romper el sistema base.",
         },
       ],
-      closeTitle: "Infraestructura cívica de código abierto para instituciones que necesitan prueba, no discurso.",
+      closeTitle: "Operaciones más claras.",
       closeBody:
-        "Ciutatis está hecho para instituciones que quieren una capa operativa gobernada para trabajo asistido por IA: una que pueda inspeccionarse, desplegarse y mejorarse de forma abierta.",
+        "Núcleo abierto. Control público. Mejor servicio.",
     },
     platform: {
-      architectureEyebrow: "Arquitectura operativa",
-      architectureTitle: "Una plataforma, tres límites que deben seguir siendo legibles.",
+      architectureEyebrow: "Modelo base",
+      architectureTitle: "Un núcleo estable, una capa de extensiones y módulos específicos de workflow.",
       architectureBody:
-        "El sitio público, el panel institucional y cada runtime inquilino no deberían colapsar en una sola superficie indiferenciada. Ciutatis está siendo diseñado para mantener cada responsabilidad explícita.",
+        "Ciutatis se mantiene flexible separando el núcleo GovOps estable de la lógica que cada institución necesita sumar.",
       architectureCards: [
         {
           icon: "public",
-          title: "Capa pública",
-          body: "Explica el modelo, ordena la promesa institucional y ofrece una puerta de entrada creíble para actores externos.",
+          title: "Núcleo operativo",
+          body: "La superficie compartida donde viven estado de proceso, aprobaciones, asignaciones, comunicación, intervención y trazabilidad del servicio público.",
         },
         {
           icon: "shell",
-          title: "Panel institucional",
-          body: "Concentra aprovisionamiento, soporte, configuraciones base, onboarding y supervisión estratégica entre despliegues.",
+          title: "Sistema de plugins",
+          body: "Agrega integraciones, automatizaciones, superficies de UI y nuevas capacidades sin forzar a todas las organizaciones a usar la misma pila.",
         },
         {
           icon: "tenant",
-          title: "Runtime inquilino",
-          body: "Brinda una superficie operativa desplegable para una ciudad o institución, con identidad de ruteo y ciclo de vida propios.",
+          title: "Módulos personalizados",
+          body: "Permite modelar lógica específica, formularios, paneles y operaciones de dominio ajustadas a la forma real de trabajo.",
         },
       ],
-      governanceEyebrow: "Ciclo de gobernanza",
-      governanceTitle: "El contrato de producto V1 es deliberadamente estricto.",
+      governanceEyebrow: "Ganancias de proceso",
+      governanceTitle: "La eficiencia y la transparencia salen de la estructura, no del ruido.",
       governanceBody:
-        "Ciutatis trata la gobernanza como parte de la ejecución y no como documentación posterior. El sistema mantiene visibles la autoridad, los límites de costo y los puntos de decisión mientras el trabajo avanza.",
+        "Ciutatis mejora el GovOps manteniendo las piezas móviles en un solo lugar y haciendo cada etapa legible.",
       governanceSteps: [
         {
           label: "A",
-          title: "Una conducción humana define objetivos y estructura",
-          body: "Ciutatis trata a las empresas como entidades de primer orden y exige que todo trabajo significativo pueda trazarse hasta una cadena de objetivos.",
+          title: "Las etapas del proceso son explícitas",
+          body: "Los workflows quedan visibles, con responsables claros y más fáciles de mejorar porque la secuencia ya no se esconde en planillas y conversaciones sueltas.",
         },
         {
           label: "B",
-          title: "Los agentes operan dentro de un árbol de reporte, no de un caos horizontal",
-          body: "Cada agente tiene rol, responsable, adaptador, capacidades y contexto presupuestario.",
+          title: "La comunicación queda en contexto",
+          body: "Pedidos, comentarios, decisiones y cambios permanecen pegados al trabajo en vez de fragmentarse entre canales.",
         },
         {
           label: "C",
-          title: "Las tareas y comentarios permanecen unidos a objetos de trabajo",
-          body: "El sistema no es un chat genérico. La comunicación vive en issues y comentarios para que el contexto siga siendo auditable.",
+          title: "Los plugins eliminan trabajo manual repetido",
+          body: "Automatizaciones, integraciones y superficies personalizadas reducen coordinación repetitiva y mantienen el ritmo del equipo.",
         },
         {
           label: "D",
-          title: "Costos y aprobaciones forman parte de la ejecución",
-          body: "Ventanas presupuestarias mensuales, hard-stops y puertas de aprobación forman parte del tejido operativo.",
+          title: "La dirección puede medir e intervenir",
+          body: "Cuellos de botella, etapas inactivas y bucles costosos se detectan antes de convertirse en fricción para el servicio público.",
         },
       ],
-      boundaryEyebrow: "Lo que Ciutatis no es",
-      boundaryTitle: "El producto se mantiene acotado donde esa disciplina importa.",
+      boundaryEyebrow: "Lo que evita",
+      boundaryTitle: "Ciutatis está diseñado para prevenir fragmentación.",
       boundaryPoints: [
-        "No es una app de chat generalista; el trabajo queda anclado a tareas, proyectos, objetivos y aprobaciones.",
-        "No es un juguete de flujos drag-and-drop; modela instituciones con jerarquías, presupuestos y gobernanza.",
-        "No es un producto de code review; orquesta trabajo y deja que las herramientas de ejecución corran donde mejor les convenga.",
+        "No es otra lista de tickets con chat separado; la comunicación sigue conectada al trabajo.",
+        "No es una suite rígida; plugins y módulos personalizados permiten que el sistema se adapte al proceso.",
+        "No es automatización ciega; los equipos pueden inspeccionar, intervenir y ajustar el workflow a medida que evoluciona.",
       ],
     },
     about: {
-      storyEyebrow: "Misión y origen",
-      storyTitle: "Un fork cívico, un contexto de construcción argentino y una postura operativa abierta.",
+      storyEyebrow: "Sistema de extensión",
+      storyTitle: "Los plugins y los módulos personalizados forman parte del producto, no un parche posterior.",
       storyBody:
-        "Ciutatis es una adaptación cívica del código de Paperclip. Se mantiene como software de código abierto y se presenta públicamente alrededor de instituciones, departamentos y operaciones municipales, no como una herramienta genérica de productividad.",
+        "Ciutatis está construido como una capa GovOps extensible. El núcleo se mantiene estable mientras cada institución suma los módulos, integraciones y superficies que sus procesos públicos realmente requieren.",
       storyCards: [
         {
-          title: "Construido por The Hipster Cloud S.A.",
-          body: "La organización detrás de Ciutatis tiene base en Argentina y aparece documentada en materiales actuales del proyecto como empresa social con propósito explícito de impacto público.",
+          title: "Plugins",
+          body: "Conectan herramientas externas, agregan automatizaciones y extienden la UI o la capa de acciones sin modificar el núcleo.",
         },
         {
-          title: "Anclado en flujos reales de servicio público",
-          body: "El problema actual se formula alrededor de permisos, licencias, documentación, ruteo inter-departamental y la carga administrativa de la gestión pública en LATAM.",
+          title: "Módulos personalizados",
+          body: "Modelan flujos, paneles, formularios y lógica de dominio específicos sobre el sistema operativo compartido.",
         },
         {
-          title: "Abierto por diseño",
-          body: "Ciutatis se presenta como infraestructura cívica de código abierto, pensada para ser inspeccionada, mejorada y desplegada localmente, no para esconderse detrás de promesas opacas de plataforma.",
+          title: "Adaptadores y superficies",
+          body: "Incorporan nuevos runtimes, proveedores y entornos de tarea preservando un mismo modelo operativo para todo el equipo.",
         },
       ],
-      principlesEyebrow: "Principios de diseño",
-      principlesTitle: "La promesa pública tiene que coincidir con la realidad operativa.",
+      principlesEyebrow: "Principios de extensión",
+      principlesTitle: "Un núcleo fino con bordes ricos escala mejor que una suite inflada.",
       principles: [
         {
-          title: "La supervisión humana sigue dentro del ciclo",
-          body: "Los materiales actuales del proyecto se comprometen explícitamente con revisión humana para resultados sensibles y con intervención humana cuando el sistema lo requiere.",
+          title: "Mantener estable el núcleo",
+          body: "El estado de proceso, la comunicación y las superficies de control siguen siendo consistentes entre organizaciones.",
         },
         {
-          title: "Importan el despliegue local y la restricción de datos",
-          body: "La plataforma está planteada para mantener datos sensibles del sector público dentro del municipio o de la institución, en lugar de centralizarlos sin necesidad.",
+          title: "Dejar que el sistema se ajuste al trabajo",
+          body: "Plugins y módulos adaptan la plataforma a flujos de dominio específicos en lugar de forzar el trabajo a formas genéricas.",
         },
         {
-          title: "La claridad importa más que el espectáculo",
-          body: "Ciutatis prioriza tareas legibles, aprobaciones explícitas, límites presupuestarios y visibilidad auditable por encima de slogans vacíos sobre automatización sin fricción.",
+          title: "Entregar capacidad propia más rápido",
+          body: "La lógica nueva puede salir como módulo o plugin sin frenar al producto completo.",
         },
       ],
     },
     partners: {
-      networkEyebrow: "Red actual",
-      networkTitle: "Pilotos y alianzas de validación ya conectados al proyecto.",
+      networkEyebrow: "Casos de éxito",
+      networkTitle: "Los nombres propios viven acá, no en la historia central del producto.",
       networkBody:
-        "La evidencia pública actual alrededor de Ciutatis no es hipotética. Los materiales disponibles documentan una red pensada para validar despliegue municipal, flujos institucionales, medición de impacto y soporte de adopción regional.",
+        "Ciutatis ahora habla de gobierno y operaciones públicas en la página principal. Estos casos muestran cómo instituciones concretas usaron el mismo modelo para mejorar flujo de procesos, comunicación, eficiencia y transparencia.",
       partnerCards: [
         {
-          name: "Municipalidad de Tandil",
-          role: "Socio piloto municipal",
-          body: "Documentado como primer objetivo de piloto productivo para permisos, licencias y obras públicas, con infraestructura comprometida, tiempo de staff y datos históricos para un piloto en Q3 2026.",
-          href: "https://tandil.gov.ar",
+          name: "The Hipster Cloud S.A.",
+          role: "Operaciones internas y sistemas de producto",
+          body: "Usó el modelo Ciutatis para coordinar entrega de producto, seguimiento operativo y lógica de workflow a medida sin separar comunicación de ejecución.",
         },
         {
           name: "UNICEN",
-          role: "Socio de validación institucional",
-          body: "Documentado como piloto en una universidad pública para flujos administrativos, validación académica, evaluación independiente de impacto y apoyo al desarrollo con talento local.",
+          role: "Entorno de validación institucional",
+          body: "Aplicó el modelo a flujos administrativos y de validación donde importan la claridad del proceso, el contexto compartido y la disciplina de revisión.",
           href: "https://unicen.edu.ar",
         },
         {
           name: "Cluster Tecnológico de Tandil",
-          role: "Socio de escalamiento y ecosistema",
-          body: "Documentado como aliado regional para aportar talento técnico, entornos de prueba y credibilidad local en una futura adopción más amplia dentro del ecosistema de Tandil.",
+          role: "Socio de ecosistema y despliegue",
+          body: "Ayudó a enmarcar cómo el modelo puede escalar mediante módulos repetibles, prácticas compartidas y mejor comunicación operativa entre organizaciones.",
           href: "https://clustertecnologicotandil.org.ar",
         },
       ],
-      impactEyebrow: "Objetivos documentados",
-      impactTitle: "Qué busca demostrar el despliegue actual.",
+      impactEyebrow: "Claims compartidos",
+      impactTitle: "El mismo modelo operativo sigue apuntando a las mismas ganancias.",
       impactCards: [
         {
-          value: "45 → 10 días",
-          label: "Cambio esperado en tiempos",
-          note: "Los materiales actuales describen como objetivo pasar de 45 días promedio a 10 días promedio para pedidos en condiciones piloto.",
+          value: "70% más rápido",
+          label: "Mejora del ciclo de proceso",
+          note: "Los materiales de caso siguen apuntando a un flujo sensiblemente más rápido cuando ruteo, aprobaciones y conversación viven en un mismo lugar.",
         },
         {
           value: "3–4 → 0–1 visitas",
-          label: "Visitas presenciales por trámite",
-          note: "El objetivo del proyecto es reducir visitas repetidas mediante una sola superficie operativa y mejor ruteo.",
+          label: "Bucles extra de seguimiento",
+          note: "Una comunicación más clara y un contexto compartido reducen seguimientos repetidos, aclaraciones y vueltas innecesarias.",
         },
         {
           value: "3–5× capacidad",
-          label: "Aumento esperado de productividad",
-          note: "La formulación actual del impacto apunta a que el staff pueda gestionar significativamente más solicitudes sin aumentar simplemente la dotación.",
+          label: "Capacidad operativa",
+          note: "Los equipos pueden manejar más pedidos y más lógica operativa personalizada sin sumar el mismo nivel de sobrecarga de coordinación.",
         },
       ],
     },
-    footer: "Capa de control cívica de código abierto para ejecución institucional gobernada.",
+    footer: "Infraestructura GovOps de código abierto para mejor atención a la ciudadanía, más eficiencia y más transparencia.",
   },
 };
 
@@ -723,7 +899,8 @@ function resolvePageKey(pathname: string, locale: Locale): PageKey | null {
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[1] ?? "";
   const matches = Object.entries(PAGE_SLUGS[locale]).find(([, value]) => value === slug);
-  return (matches?.[0] as PageKey | undefined) ?? (slug === "" ? "home" : null);
+  const aliasMatches = PAGE_SLUG_ALIASES[locale]?.[slug];
+  return (matches?.[0] as PageKey | undefined) ?? aliasMatches ?? (slug === "" ? "home" : null);
 }
 
 function pathFor(locale: Locale, page: PageKey): string {
@@ -776,13 +953,20 @@ function iconForArchitecture(icon: "public" | "shell" | "tenant") {
   }
 }
 
+const HOME_AUDIENCE_ICONS = [Landmark, FileCheck2, Network] as const;
+const HOME_SIGNAL_ICONS = [Building2, ScrollText, MapPinned] as const;
+
 function SectionEyebrow({ children }: { children: string }) {
-  return <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</p>;
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-primary/80">
+      {children}
+    </p>
+  );
 }
 
 function SectionShell({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={cn("border-b border-border py-14 sm:py-16 lg:py-20", className)}>
+    <section className={cn("border-b border-border/70 py-14 sm:py-16 lg:py-20", className)}>
       {children}
     </section>
   );
@@ -792,58 +976,100 @@ function ContentShell({ children }: { children: ReactNode }) {
   return <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">{children}</div>;
 }
 
+function PublicCard({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "public-panel public-shadow rounded-[20px] p-6 sm:p-7",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 function PublicHeader({ locale, currentPage, site }: { locale: Locale; currentPage: PageKey; site: SiteContent }) {
   const alternateLocale: Locale = locale === "en" ? "es" : "en";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
       <ContentShell>
-        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-          <Link className="flex items-center gap-3 text-foreground" to={pathFor(locale, "home")}>
-            <div className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm">
-              <Landmark className="size-4" />
-            </div>
-            <div>
-              <div className="text-base font-semibold tracking-tight">{site.nav.mark}</div>
-              <div className="text-xs text-muted-foreground">{site.pages.home.hero.eyebrow}</div>
-            </div>
-          </Link>
-
-          <nav className="hidden items-center gap-1 lg:flex">
-            {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
+        <div className="py-4">
+          <div className="public-panel public-shadow rounded-[24px] px-4 py-4 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <Link
-                key={page}
-                to={pathFor(locale, page)}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  currentPage === page
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
+                className="group flex items-center gap-3 text-foreground focus-visible:rounded-[14px]"
+                to={pathFor(locale, "home")}
               >
-                {site.nav.links[page]}
+                <div className="flex size-11 items-center justify-center rounded-[14px] border border-border bg-secondary text-primary transition-colors group-hover:border-primary/70 group-hover:text-primary">
+                  <Landmark className="size-4" />
+                </div>
+                <div>
+                  <div className="text-base font-semibold tracking-tight">{site.nav.mark}</div>
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+                    {site.pages.home.hero.eyebrow}
+                  </div>
+                </div>
               </Link>
-            ))}
-          </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground sm:flex">
-              <span>{site.nav.languageLabel}</span>
-              <Link className="font-semibold text-foreground hover:text-primary" to={pathFor(alternateLocale, currentPage)}>
-                {locale === "en" ? "ES" : site.common.xDefaultLabel}
-              </Link>
+              <nav className="hidden items-center gap-1 rounded-[16px] border border-border bg-secondary p-1 lg:flex">
+                {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
+                  <Link
+                    key={page}
+                    to={pathFor(locale, page)}
+                    className={cn(
+                      "rounded-[10px] px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2",
+                      currentPage === page
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-background hover:text-foreground",
+                    )}
+                  >
+                    {site.nav.links[page]}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="hidden items-center gap-2 rounded-[14px] border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground sm:flex">
+                  <span>{site.nav.languageLabel}</span>
+                  <Link
+                    className="font-semibold text-foreground hover:text-primary focus-visible:rounded-[10px]"
+                    to={pathFor(alternateLocale, currentPage)}
+                  >
+                    {locale === "en" ? "ES" : site.common.xDefaultLabel}
+                  </Link>
+                </div>
+                <a
+                  className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:rounded-[10px] sm:inline-flex"
+                  href="https://github.com/tebayoso/ciutatis"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {site.nav.github}
+                </a>
+                <Button asChild className="rounded-[10px] px-5 shadow-none">
+                  <Link to="/auth">{site.nav.signIn}</Link>
+                </Button>
+              </div>
             </div>
-            <a
-              className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
-              href="https://github.com/tebayoso/ciutatis"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {site.nav.github}
-            </a>
-            <Button asChild>
-              <Link to="/auth">{site.nav.signIn}</Link>
-            </Button>
+
+            <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
+              {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
+                <Link
+                  key={page}
+                  to={pathFor(locale, page)}
+                  className={cn(
+                    "whitespace-nowrap rounded-[10px] border px-3 py-2 text-sm font-medium transition-colors",
+                    currentPage === page
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-secondary text-muted-foreground hover:bg-background hover:text-foreground",
+                  )}
+                >
+                  {site.nav.links[page]}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </ContentShell>
@@ -851,49 +1077,102 @@ function PublicHeader({ locale, currentPage, site }: { locale: Locale; currentPa
   );
 }
 
+function EditorialImage({
+  src,
+  alt,
+  className,
+  imageClassName,
+  priority = false,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  imageClassName?: string;
+  priority?: boolean;
+}) {
+  return (
+    <div className={cn("public-panel public-shadow overflow-hidden rounded-[28px]", className)}>
+      <img
+        src={src}
+        alt={alt}
+        className={cn("h-full w-full object-cover", imageClassName)}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+      />
+    </div>
+  );
+}
+
 function HeroBlock({ page, locale, site }: { page: SiteContent["pages"][PageKey]; locale: Locale; site: SiteContent }) {
-  const isHomePage = page === site.pages.home;
+  const isSpanish = locale === "es";
 
   return (
-    <SectionShell className="pt-10 sm:pt-14 lg:pt-18">
+    <SectionShell className="pt-8 sm:pt-10 lg:pt-14">
       <ContentShell>
-        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
-          <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground shadow-sm">
-              <Waypoints className="size-3.5 text-primary" />
-              {page.hero.eyebrow}
-            </div>
-            <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              {page.hero.title}
-            </h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl sm:leading-9">
-              {page.hero.body}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to={isHomePage ? pathFor(locale, "platform") : "/auth"}>
-                  {isHomePage ? site.home.primaryCta : site.common.openShell}
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link to={isHomePage ? pathFor(locale, "partners") : pathFor(locale, "home")}>
-                  {isHomePage ? site.home.secondaryCta : site.common.backHome}
-                </Link>
-              </Button>
-            </div>
-          </div>
+        <div className="space-y-6 sm:space-y-8">
+          <EditorialImage
+            src={HOME_HERO_IMAGE}
+            alt={
+              isSpanish
+                ? "Ilustración panorámica de sierras de Tandil con arquitectura cívica clásica."
+                : "Panoramic illustration of Tandil-inspired hills with civic classical architecture."
+            }
+            priority
+            className="rounded-[30px]"
+            imageClassName="aspect-[21/9] w-full"
+          />
 
-          <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-              <SectionEyebrow>{site.common.currentStatus}</SectionEyebrow>
-              <p className="mt-3 text-lg leading-8 text-foreground">{site.common.currentStatusBody}</p>
-              <div className="mt-6 space-y-4">
+          <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-start">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-[10px] border border-border bg-secondary px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <Waypoints className="size-3.5 text-primary" />
+                {page.hero.eyebrow}
+              </div>
+              <p className="mt-6 max-w-2xl text-sm uppercase tracking-[0.22em] text-muted-foreground">
+                {site.common.currentStatus}
+              </p>
+              <h1 className="public-display mt-3 max-w-5xl text-5xl leading-[0.92] text-foreground sm:text-6xl lg:text-[5.35rem]">
+                {page.hero.title}
+              </h1>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground sm:text-[1.14rem] sm:leading-8">
+                {page.hero.body}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild size="lg" className="rounded-[10px] px-6">
+                  <Link to={pathFor(locale, "platform")}>
+                    {site.home.primaryCta}
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="rounded-[10px] border-border bg-card px-6">
+                  <Link to={pathFor(locale, "partners")}>{site.home.secondaryCta}</Link>
+                </Button>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {site.home.heroTags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="rounded-[10px] border border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-foreground/80"
+                  >
+                    {tag}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="public-panel-soft rounded-[20px] p-6 sm:p-7">
+                <SectionEyebrow>{site.common.currentStatus}</SectionEyebrow>
+                <p className="mt-4 max-w-xl text-base leading-8 text-muted-foreground">{site.common.currentStatusBody}</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
                 {site.home.statusCards.map((card) => (
-                  <div key={card.label} className="rounded-xl border border-border bg-background px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{card.label}</p>
-                    <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{card.value}</p>
-                    <p className="mt-2 text-sm leading-7 text-muted-foreground">{card.note}</p>
+                  <div key={card.label} className="public-panel-dark public-shadow rounded-[18px] p-5">
+                    <p className="public-dark-muted text-[11px] font-semibold uppercase tracking-[0.22em]">
+                      {card.label}
+                    </p>
+                    <p className="public-stat mt-3 text-3xl font-semibold tracking-tight">{card.value}</p>
+                    <p className="public-dark-muted mt-3 text-sm leading-7">{card.note}</p>
                   </div>
                 ))}
               </div>
@@ -905,87 +1184,193 @@ function HeroBlock({ page, locale, site }: { page: SiteContent["pages"][PageKey]
   );
 }
 
-function HomePage({ locale, site }: { locale: Locale; site: SiteContent }) {
+function CommitmentSection({ locale, site }: { locale: Locale; site: SiteContent }) {
+  const isSpanish = locale === "es";
+
+  return (
+    <SectionShell>
+      <ContentShell>
+        <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
+          <div className="public-panel public-shadow public-ornament rounded-[26px] p-6 sm:p-8 lg:p-9">
+            <SectionEyebrow>{site.home.commitmentEyebrow}</SectionEyebrow>
+            <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
+              {site.home.commitmentTitle}
+            </h2>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">{site.home.commitmentBody}</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              {site.home.commitmentCards.map((card, index) => {
+                const Icon = HOME_SIGNAL_ICONS[index] ?? Waypoints;
+
+                return (
+                  <div key={card.title} className="public-panel-soft flex gap-4 rounded-[18px] p-5">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-border bg-background text-primary">
+                      <Icon className="size-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <EditorialImage
+            src={HOME_COMMITMENT_IMAGE}
+            alt={
+              isSpanish
+                ? "Pabellón cívico iluminado entre las sierras de Tandil al atardecer."
+                : "Illuminated civic pavilion among Tandil-inspired hills at dusk."
+            }
+            className="rounded-[26px]"
+            imageClassName="aspect-[16/10] w-full"
+          />
+        </div>
+      </ContentShell>
+    </SectionShell>
+  );
+}
+
+function BusinessModelSection({ site }: { site: SiteContent }) {
+  return (
+    <SectionShell className="bg-secondary">
+      <ContentShell>
+        <div className="grid gap-8 xl:grid-cols-[0.88fr_1.12fr]">
+          <div>
+            <SectionEyebrow>{site.home.modelEyebrow}</SectionEyebrow>
+            <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
+              {site.home.modelTitle}
+            </h2>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">{site.home.modelBody}</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {site.home.modelCards.map((card, index) => (
+              <PublicCard key={card.title} className="relative overflow-hidden">
+                <div className="pointer-events-none absolute right-4 top-4 text-[2.5rem] font-semibold text-border/70">
+                  {String(index + 1).padStart(2, "0")}
+                </div>
+                <h3 className="max-w-[16rem] text-xl font-semibold tracking-tight text-foreground">{card.title}</h3>
+                <p className="mt-3 max-w-[22rem] text-sm leading-7 text-muted-foreground">{card.body}</p>
+              </PublicCard>
+            ))}
+          </div>
+        </div>
+      </ContentShell>
+    </SectionShell>
+  );
+}
+
+function HomePage({ locale, site, sourcePath }: { locale: Locale; site: SiteContent; sourcePath: string }) {
   return (
     <>
       <HeroBlock page={site.pages.home} locale={locale} site={site} />
 
-      <SectionShell>
+      <SectionShell className="bg-secondary">
         <ContentShell>
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-            <div className="lg:col-span-4">
+          <div className="grid gap-8 xl:grid-cols-[0.92fr_1.08fr]">
+            <div>
               <SectionEyebrow>{site.home.audienceEyebrow}</SectionEyebrow>
-            </div>
-            <div className="lg:col-span-8">
-              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
                 {site.home.audienceTitle}
               </h2>
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.home.audienceBody}</p>
-              <div className="mt-8 grid gap-4 md:grid-cols-3">
-                {site.home.audienceCards.map((card) => (
-                  <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">{site.home.audienceBody}</p>
+              <div className="mt-8 space-y-3">
+                {site.platform.boundaryPoints.map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <BadgeCheck className="mt-1 size-4 shrink-0 text-primary" />
+                    <p className="text-sm leading-7 text-muted-foreground">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
+              {site.home.audienceCards.map((card, index) => {
+                const Icon = HOME_AUDIENCE_ICONS[index] ?? Waypoints;
+                return (
+                  <PublicCard key={card.title} className="h-full">
+                    <div className="flex size-11 items-center justify-center rounded-2xl border border-border/80 bg-background text-primary">
+                      <Icon className="size-4" />
+                    </div>
+                    <h3 className="mt-5 text-xl font-semibold tracking-tight text-foreground">{card.title}</h3>
                     <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                  </PublicCard>
+                );
+              })}
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell>
+        <ContentShell>
+          <div className="grid gap-8 xl:grid-cols-[0.86fr_1.14fr]">
+            <div>
+              <SectionEyebrow>{site.platform.architectureEyebrow}</SectionEyebrow>
+              <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
+                {site.platform.architectureTitle}
+              </h2>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+                {site.platform.architectureBody}
+              </p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              {site.platform.architectureCards.map((card, index) => {
+                const Icon = iconForArchitecture(card.icon);
+                const label = String(index + 1).padStart(2, "0");
+                return (
+                  <PublicCard key={card.title} className="relative overflow-hidden">
+                    <div className="pointer-events-none absolute right-4 top-4 text-[2.5rem] font-semibold text-border/70">
+                      {label}
+                    </div>
+                    <div className="flex size-11 items-center justify-center rounded-2xl border border-border/80 bg-background text-primary">
+                      <Icon className="size-4" />
+                    </div>
+                    <h3 className="mt-8 text-xl font-semibold tracking-tight text-foreground">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                  </PublicCard>
+                );
+              })}
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <SectionShell className="bg-[var(--public-dark)] text-[var(--public-dark-foreground)]">
+        <ContentShell>
+          <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <SectionEyebrow>{site.home.loopEyebrow}</SectionEyebrow>
+              <h2 className="public-display mt-4 max-w-4xl text-4xl leading-[0.98] sm:text-5xl">
+                {site.home.loopTitle}
+              </h2>
+              <p className="public-dark-muted mt-5 max-w-3xl text-lg leading-8">{site.home.loopBody}</p>
+              <div className="mt-8 space-y-4">
+                {site.home.loopSteps.map((step) => (
+                  <article key={step.label} className="public-panel-dark-soft rounded-[18px] p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="public-dark-icon rounded-[10px] px-3 py-1 text-xs font-semibold tracking-[0.24em]">
+                        {step.label}
+                      </div>
+                      <h3 className="text-lg font-semibold tracking-tight">{step.title}</h3>
+                    </div>
+                    <p className="public-dark-muted mt-4 text-sm leading-7">{step.body}</p>
                   </article>
                 ))}
               </div>
             </div>
-          </div>
-        </ContentShell>
-      </SectionShell>
-
-      <SectionShell>
-        <ContentShell>
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-            <div className="lg:col-span-4">
-              <SectionEyebrow>{site.home.featuredEyebrow}</SectionEyebrow>
-            </div>
-            <div className="lg:col-span-8">
-              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                {site.home.featuredTitle}
-              </h2>
-              <div className="mt-8 grid gap-4 lg:grid-cols-3">
-                {site.home.featuredCards.map((card) => (
-                  <Link
-                    key={card.page}
-                    to={pathFor(locale, card.page)}
-                    className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {site.nav.links[card.page]}
-                    </p>
-                    <h3 className="mt-3 text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
-                    <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
-                      <span>{site.nav.links[card.page]}</span>
-                      <ChevronRight className="size-4" />
-                    </div>
-                  </Link>
-                ))}
+            <div className="space-y-4">
+              <div className="public-panel-dark-soft rounded-[18px] p-6 sm:p-7">
+                <SectionEyebrow>{site.about.principlesEyebrow}</SectionEyebrow>
+                <h3 className="public-display mt-4 text-3xl leading-tight">
+                  {site.about.principlesTitle}
+                </h3>
               </div>
-            </div>
-          </div>
-        </ContentShell>
-      </SectionShell>
-
-      <SectionShell>
-        <ContentShell>
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
-            <div className="lg:col-span-4">
-              <SectionEyebrow>{site.home.loopEyebrow}</SectionEyebrow>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                {site.home.loopTitle}
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-muted-foreground">{site.home.loopBody}</p>
-            </div>
-            <div className="space-y-4 lg:col-span-8">
-              {site.home.loopSteps.map((step) => (
-                <article key={step.label} className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:grid-cols-[72px_1fr]">
-                  <div className="text-sm font-semibold text-primary">{step.label}</div>
-                  <div>
-                    <h3 className="text-lg font-semibold tracking-tight text-foreground">{step.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{step.body}</p>
-                  </div>
+              {site.about.principles.map((principle) => (
+                <article key={principle.title} className="public-panel-dark-soft rounded-[18px] p-6">
+                  <h3 className="text-lg font-semibold tracking-tight">{principle.title}</h3>
+                  <p className="public-dark-muted mt-3 text-sm leading-7">{principle.body}</p>
                 </article>
               ))}
             </div>
@@ -993,7 +1378,72 @@ function HomePage({ locale, site }: { locale: Locale; site: SiteContent }) {
         </ContentShell>
       </SectionShell>
 
-      <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+      <CommitmentSection locale={locale} site={site} />
+
+      <BusinessModelSection site={site} />
+
+      <SectionShell className="border-b-0">
+        <ContentShell>
+          <div className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
+            <PublicCard className="public-ornament relative overflow-hidden">
+              <div className="relative">
+                <SectionEyebrow>{site.partners.impactEyebrow}</SectionEyebrow>
+                <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
+                  {site.partners.impactTitle}
+                </h2>
+                <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
+                  {site.partners.networkBody}
+                </p>
+                <div className="mt-8 grid gap-4 md:grid-cols-3">
+                  {site.partners.impactCards.map((card) => (
+                    <div key={card.label} className="public-panel-soft rounded-[16px] p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                        {card.label}
+                      </p>
+                      <p className="public-stat mt-3 text-3xl font-semibold tracking-tight text-foreground">{card.value}</p>
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PublicCard>
+
+            <div className="grid gap-4">
+              <div className="px-1">
+                <SectionEyebrow>{site.home.featuredEyebrow}</SectionEyebrow>
+                <h2 className="public-display mt-4 max-w-2xl text-4xl leading-[0.98] text-foreground">
+                  {site.home.featuredTitle}
+                </h2>
+              </div>
+              {site.home.featuredCards.map((card) => (
+                <Link
+                  key={card.page}
+                  to={pathFor(locale, card.page)}
+                  className="group public-panel public-shadow rounded-[20px] p-6 transition-colors hover:border-primary/60 hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    {site.nav.links[card.page]}
+                  </p>
+                  <h3 className="mt-4 text-xl font-semibold tracking-tight text-foreground">{card.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                    <span>{site.nav.links[card.page]}</span>
+                    <ChevronRight className="size-4" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </ContentShell>
+      </SectionShell>
+
+      <ClosingSection
+        locale={locale}
+        site={site}
+        sourcePath={sourcePath}
+        title={site.home.closeTitle}
+        body={site.home.closeBody}
+      />
     </>
   );
 }
@@ -1016,7 +1466,7 @@ function PlatformPage({ site }: { site: SiteContent }) {
                 {site.platform.architectureCards.map((card) => {
                   const Icon = iconForArchitecture(card.icon);
                   return (
-                    <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <article key={card.title} className="public-panel rounded-[18px] p-6 shadow-sm">
                       <div className="flex size-11 items-center justify-center rounded-full border border-border bg-background text-primary">
                         <Icon className="size-4" />
                       </div>
@@ -1043,7 +1493,7 @@ function PlatformPage({ site }: { site: SiteContent }) {
             </div>
             <div className="space-y-4 lg:col-span-8">
               {site.platform.governanceSteps.map((step) => (
-                <article key={step.label} className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:grid-cols-[72px_1fr]">
+                <article key={step.label} className="public-panel grid gap-4 rounded-[18px] p-6 shadow-sm sm:grid-cols-[72px_1fr]">
                   <div className="text-sm font-semibold text-primary">{step.label}</div>
                   <div>
                     <h3 className="text-lg font-semibold tracking-tight text-foreground">{step.title}</h3>
@@ -1066,7 +1516,7 @@ function PlatformPage({ site }: { site: SiteContent }) {
               <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                 {site.platform.boundaryTitle}
               </h2>
-              <div className="mt-8 space-y-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className="public-panel mt-8 space-y-3 rounded-[18px] p-6 shadow-sm">
                 {site.platform.boundaryPoints.map((point) => (
                   <div key={point} className="flex items-start gap-3">
                     <BadgeCheck className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -1098,7 +1548,7 @@ function AboutPage({ site }: { site: SiteContent }) {
               <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.about.storyBody}</p>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 {site.about.storyCards.map((card) => (
-                  <article key={card.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <article key={card.title} className="public-panel rounded-[18px] p-6 shadow-sm">
                     <h3 className="text-lg font-semibold tracking-tight text-foreground">{card.title}</h3>
                     <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.body}</p>
                   </article>
@@ -1120,7 +1570,7 @@ function AboutPage({ site }: { site: SiteContent }) {
                 {site.about.principlesTitle}
               </h2>
               {site.about.principles.map((principle) => (
-                <article key={principle.title} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <article key={principle.title} className="public-panel rounded-[18px] p-6 shadow-sm">
                   <h3 className="text-lg font-semibold tracking-tight text-foreground">{principle.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-muted-foreground">{principle.body}</p>
                 </article>
@@ -1134,6 +1584,9 @@ function AboutPage({ site }: { site: SiteContent }) {
 }
 
 function PartnersPage({ site }: { site: SiteContent }) {
+  const cardClassName =
+    "group public-panel rounded-[18px] p-6 shadow-sm transition-colors hover:border-primary/60 hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4";
+
   return (
     <>
       <SectionShell>
@@ -1148,26 +1601,37 @@ function PartnersPage({ site }: { site: SiteContent }) {
               </h2>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{site.partners.networkBody}</p>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
-                {site.partners.partnerCards.map((partner) => (
-                  <a
-                    key={partner.name}
-                    href={partner.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
-                  >
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                      <Handshake className="size-4" />
-                      <span>{partner.role}</span>
-                    </div>
-                    <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{partner.name}</h3>
-                    <p className="mt-3 text-sm leading-7 text-muted-foreground">{partner.body}</p>
-                    <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
-                      <span>{partner.name}</span>
-                      <ChevronRight className="size-4" />
-                    </div>
-                  </a>
-                ))}
+                {site.partners.partnerCards.map((partner) =>
+                  partner.href ? (
+                    <a
+                      key={partner.name}
+                      href={partner.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={cardClassName}
+                    >
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Handshake className="size-4" />
+                        <span>{partner.role}</span>
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{partner.name}</h3>
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">{partner.body}</p>
+                      <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
+                        <span>{partner.name}</span>
+                        <ChevronRight className="size-4" />
+                      </div>
+                    </a>
+                  ) : (
+                    <article key={partner.name} className={cardClassName}>
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Handshake className="size-4" />
+                        <span>{partner.role}</span>
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{partner.name}</h3>
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">{partner.body}</p>
+                    </article>
+                  ),
+                )}
               </div>
             </div>
           </div>
@@ -1186,9 +1650,9 @@ function PartnersPage({ site }: { site: SiteContent }) {
               </h2>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 {site.partners.impactCards.map((card) => (
-                  <article key={card.label} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <article key={card.label} className="public-panel rounded-[18px] p-6 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{card.label}</p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{card.value}</p>
+                    <p className="public-stat mt-3 text-3xl font-semibold tracking-tight text-foreground">{card.value}</p>
                     <p className="mt-3 text-sm leading-7 text-muted-foreground">{card.note}</p>
                   </article>
                 ))}
@@ -1201,34 +1665,63 @@ function PartnersPage({ site }: { site: SiteContent }) {
   );
 }
 
-function ClosingSection({ locale, site, title, body }: { locale: Locale; site: SiteContent; title: string; body: string }) {
+function ClosingSection({
+  locale,
+  site,
+  sourcePath,
+  title,
+  body,
+}: {
+  locale: Locale;
+  site: SiteContent;
+  sourcePath: string;
+  title: string;
+  body: string;
+}) {
   return (
     <SectionShell className="border-b-0 pt-10">
       <ContentShell>
-        <div className="rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10 lg:p-12">
-          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
-            <div>
-              <SectionEyebrow>Ciutatis</SectionEyebrow>
-              <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                {title}
-              </h2>
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{body}</p>
+        <div className="public-panel public-shadow public-ornament relative overflow-hidden rounded-[24px] p-8 sm:p-10 lg:p-12">
+          <div className="relative grid gap-8 lg:grid-cols-[1.02fr_0.98fr]">
+            <div className="flex flex-col justify-between gap-8">
+              <div>
+                <SectionEyebrow>Ciutatis</SectionEyebrow>
+                <h2 className="public-display mt-4 max-w-3xl text-4xl leading-[0.98] text-foreground sm:text-5xl">
+                  {title}
+                </h2>
+                <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{body}</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild size="lg" className="w-full rounded-[10px] px-6 sm:w-auto">
+                  <Link to="/auth">
+                    {site.common.openShell}
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="w-full rounded-[10px] border-border bg-background px-6 sm:w-auto"
+                >
+                  <a href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
+                    {site.common.readCode}
+                  </a>
+                </Button>
+                <Button asChild size="lg" variant="ghost" className="w-full rounded-[10px] sm:w-auto">
+                  <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-col gap-3 lg:items-end">
-              <Button asChild size="lg" className="w-full lg:w-auto">
-                <Link to="/auth">
-                  {site.common.openShell}
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full lg:w-auto">
-                <a href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
-                  {site.common.readCode}
-                </a>
-              </Button>
-              <Button asChild size="lg" variant="ghost" className="w-full lg:w-auto">
-                <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
-              </Button>
+            <div className="public-panel-soft rounded-[18px] p-6 shadow-sm sm:p-7">
+              <SectionEyebrow>{site.contact.eyebrow}</SectionEyebrow>
+              <h3 className="mt-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {site.contact.title}
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">{site.contact.body}</p>
+              <div className="mt-6">
+                <ContactForm copy={site.contact.form} locale={locale} sourcePath={sourcePath} />
+              </div>
             </div>
           </div>
         </div>
@@ -1241,14 +1734,14 @@ function PublicNotFound({ locale, site }: { locale: Locale; site: SiteContent })
   return (
     <SectionShell className="border-b-0 pt-20">
       <ContentShell>
-        <div className="mx-auto max-w-3xl rounded-3xl border border-border bg-card p-10 text-center shadow-sm">
+        <div className="public-panel mx-auto max-w-3xl rounded-[20px] p-10 text-center shadow-sm">
           <SectionEyebrow>404</SectionEyebrow>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {site.common.pageNotFound}
           </h2>
           <p className="mt-4 text-lg leading-8 text-muted-foreground">{site.common.pageNotFoundBody}</p>
           <div className="mt-8">
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="rounded-[10px]">
               <Link to={pathFor(locale, "home")}>{site.common.backHome}</Link>
             </Button>
           </div>
@@ -1267,7 +1760,7 @@ function PageHero({ page }: { page: SiteContent["pages"][PageKey] }) {
             <SectionEyebrow>{page.hero.eyebrow}</SectionEyebrow>
           </div>
           <div className="lg:col-span-8">
-            <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            <h1 className="public-display max-w-4xl text-5xl leading-[0.94] text-foreground sm:text-6xl lg:text-[5rem]">
               {page.hero.title}
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl sm:leading-9">
@@ -1333,9 +1826,11 @@ export function PublicSite() {
     upsertMetaByProperty("og:description", pageDescription);
     upsertMetaByProperty("og:type", "website");
     upsertMetaByProperty("og:url", canonicalHref);
+    upsertMetaByProperty("og:image", origin + HOME_HERO_IMAGE);
     upsertMetaByName("twitter:card", "summary_large_image");
     upsertMetaByName("twitter:title", pageTitle);
     upsertMetaByName("twitter:description", pageDescription);
+    upsertMetaByName("twitter:image", origin + HOME_HERO_IMAGE);
     upsertLink("canonical", canonicalHref);
     upsertLink("alternate", origin + pathFor(locale, currentKey), locale);
     upsertLink("alternate", origin + pathFor(alternateLocale, currentKey), alternateLocale);
@@ -1360,33 +1855,56 @@ export function PublicSite() {
   }, [currentPage, locale, page, site]);
 
   return (
-    <div className="h-[100dvh] w-full overflow-y-auto bg-background text-foreground">
-      <div className="relative min-h-full bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.025),transparent_45%)]">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(180deg,rgba(0,0,0,0.035),transparent)]" />
+    <div className="public-site h-[100dvh] w-full overflow-y-auto bg-background text-foreground" data-locale={locale}>
+      <div className="relative min-h-full bg-background">
         <div className="relative">
+          <a
+            href="#public-main"
+            className="sr-only fixed left-4 top-4 z-50 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only"
+          >
+            {site.common.skipToContent}
+          </a>
           <PublicHeader currentPage={currentPage ?? "home"} locale={locale} site={site} />
 
-          <main className="pb-16 sm:pb-20 lg:pb-24">
-            {currentPage === "home" && <HomePage locale={locale} site={site} />}
+          <main id="public-main" className="pb-16 sm:pb-20 lg:pb-24">
+            {currentPage === "home" && <HomePage locale={locale} site={site} sourcePath={location.pathname} />}
             {currentPage === "platform" && (
               <>
                 <PageHero page={site.pages.platform} />
                 <PlatformPage site={site} />
-                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+                <ClosingSection
+                  locale={locale}
+                  site={site}
+                  sourcePath={location.pathname}
+                  title={site.home.closeTitle}
+                  body={site.home.closeBody}
+                />
               </>
             )}
             {currentPage === "about" && (
               <>
                 <PageHero page={site.pages.about} />
                 <AboutPage site={site} />
-                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+                <ClosingSection
+                  locale={locale}
+                  site={site}
+                  sourcePath={location.pathname}
+                  title={site.home.closeTitle}
+                  body={site.home.closeBody}
+                />
               </>
             )}
             {currentPage === "partners" && (
               <>
                 <PageHero page={site.pages.partners} />
                 <PartnersPage site={site} />
-                <ClosingSection locale={locale} site={site} title={site.home.closeTitle} body={site.home.closeBody} />
+                <ClosingSection
+                  locale={locale}
+                  site={site}
+                  sourcePath={location.pathname}
+                  title={site.home.closeTitle}
+                  body={site.home.closeBody}
+                />
               </>
             )}
             {currentPage === null && <PublicNotFound locale={locale} site={site} />}

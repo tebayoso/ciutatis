@@ -1,9 +1,12 @@
 import type { Db } from "@ciutatis/db";
 import { companies, instanceSettings } from "@ciutatis/db";
 import {
+  cloudflareProvisioningSettingsSchema,
+  type CloudflareProvisioningSettings,
   instanceExperimentalSettingsSchema,
   type InstanceExperimentalSettings,
   type InstanceSettings,
+  type PatchCloudflareProvisioningSettings,
   type PatchInstanceExperimentalSettings,
   tenantProvisioningSettingsSchema,
   type PatchTenantProvisioningSettings,
@@ -12,6 +15,10 @@ import {
 import { eq } from "drizzle-orm";
 
 const DEFAULT_SINGLETON_KEY = "default";
+
+function asRecord(value: unknown) {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+}
 
 function normalizeExperimentalSettings(raw: unknown): InstanceExperimentalSettings {
   const parsed = instanceExperimentalSettingsSchema.safeParse(raw ?? {});
@@ -31,14 +38,25 @@ function normalizeTenantProvisioningSettings(raw: unknown): TenantProvisioningSe
   return tenantProvisioningSettingsSchema.parse({});
 }
 
+function normalizeCloudflareProvisioningSettings(raw: unknown): CloudflareProvisioningSettings {
+  const parsed = cloudflareProvisioningSettingsSchema.safeParse(raw ?? {});
+  if (parsed.success) return parsed.data;
+  return cloudflareProvisioningSettingsSchema.parse({});
+}
+
 function toInstanceSettings(row: typeof instanceSettings.$inferSelect): InstanceSettings {
-  const experimentalRecord = typeof row.experimental === "object" && row.experimental !== null
-    ? (row.experimental as Record<string, unknown>)
-    : {};
+  const experimentalRecord = asRecord(row.experimental);
+  const tenantProvisioningRecord = Object.keys(asRecord(row.tenantProvisioning)).length > 0
+    ? asRecord(row.tenantProvisioning)
+    : asRecord(experimentalRecord.tenantProvisioning);
+  const cloudflareProvisioningRecord = Object.keys(asRecord(row.cloudflareProvisioning)).length > 0
+    ? asRecord(row.cloudflareProvisioning)
+    : asRecord(experimentalRecord.cloudflareProvisioning);
   return {
     id: row.id,
     experimental: normalizeExperimentalSettings(experimentalRecord),
-    tenantProvisioning: normalizeTenantProvisioningSettings(experimentalRecord.tenantProvisioning),
+    tenantProvisioning: normalizeTenantProvisioningSettings(tenantProvisioningRecord),
+    cloudflareProvisioning: normalizeCloudflareProvisioningSettings(cloudflareProvisioningRecord),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -55,13 +73,15 @@ export function instanceSettingsService(db: Db) {
 
     const now = new Date();
     const [created] = await db
-      .insert(instanceSettings)
-      .values({
-        singletonKey: DEFAULT_SINGLETON_KEY,
-        experimental: {},
-        createdAt: now,
-        updatedAt: now,
-      })
+        .insert(instanceSettings)
+        .values({
+          singletonKey: DEFAULT_SINGLETON_KEY,
+          experimental: {},
+          tenantProvisioning: {},
+          cloudflareProvisioning: {},
+          createdAt: now,
+          updatedAt: now,
+        })
       .onConflictDoUpdate({
         target: [instanceSettings.singletonKey],
         set: {
@@ -101,29 +121,87 @@ export function instanceSettingsService(db: Db) {
 
     getTenantProvisioning: async (): Promise<TenantProvisioningSettings> => {
       const row = await getOrCreateRow();
-      const experimental = typeof row.experimental === "object" && row.experimental !== null
-        ? (row.experimental as Record<string, unknown>)
-        : {};
-      return normalizeTenantProvisioningSettings(experimental.tenantProvisioning);
+      const tenantProvisioning = Object.keys(asRecord(row.tenantProvisioning)).length > 0
+        ? row.tenantProvisioning
+        : asRecord(row.experimental).tenantProvisioning;
+      return normalizeTenantProvisioningSettings(tenantProvisioning);
     },
 
     updateTenantProvisioning: async (patch: PatchTenantProvisioningSettings): Promise<InstanceSettings> => {
       const current = await getOrCreateRow();
-      const experimental = typeof current.experimental === "object" && current.experimental !== null
-        ? (current.experimental as Record<string, unknown>)
-        : {};
+      const experimental = asRecord(current.experimental);
       const nextTenantProvisioning = normalizeTenantProvisioningSettings({
-        ...normalizeTenantProvisioningSettings(experimental.tenantProvisioning),
+        ...normalizeTenantProvisioningSettings(
+          Object.keys(asRecord(current.tenantProvisioning)).length > 0
+            ? current.tenantProvisioning
+            : experimental.tenantProvisioning,
+        ),
         ...patch,
       });
       const now = new Date();
       const [updated] = await db
         .update(instanceSettings)
         .set({
-          experimental: {
-            ...experimental,
-            tenantProvisioning: nextTenantProvisioning,
-          },
+          experimental,
+          tenantProvisioning: nextTenantProvisioning,
+          updatedAt: now,
+        })
+        .where(eq(instanceSettings.id, current.id))
+        .returning();
+      return toInstanceSettings(updated ?? current);
+    },
+
+    getCloudflareProvisioning: async (): Promise<CloudflareProvisioningSettings> => {
+      const row = await getOrCreateRow();
+      const cloudflareProvisioning = Object.keys(asRecord(row.cloudflareProvisioning)).length > 0
+        ? row.cloudflareProvisioning
+        : asRecord(row.experimental).cloudflareProvisioning;
+      return normalizeCloudflareProvisioningSettings(cloudflareProvisioning);
+    },
+
+    updateCloudflareProvisioning: async (patch: PatchCloudflareProvisioningSettings): Promise<InstanceSettings> => {
+      const current = await getOrCreateRow();
+      const experimental = asRecord(current.experimental);
+      const nextCloudflareProvisioning = normalizeCloudflareProvisioningSettings({
+        ...normalizeCloudflareProvisioningSettings(
+          Object.keys(asRecord(current.cloudflareProvisioning)).length > 0
+            ? current.cloudflareProvisioning
+            : experimental.cloudflareProvisioning,
+        ),
+        ...patch,
+      });
+      const now = new Date();
+      const [updated] = await db
+        .update(instanceSettings)
+        .set({
+          experimental,
+          cloudflareProvisioning: nextCloudflareProvisioning as unknown as Record<string, unknown>,
+          updatedAt: now,
+        })
+        .where(eq(instanceSettings.id, current.id))
+        .returning();
+      return toInstanceSettings(updated ?? current);
+    },
+
+    recordCloudflareValidation: async (
+      patch: Pick<CloudflareProvisioningSettings, "apiTokenConfigured" | "lastValidatedAt" | "lastValidationError">,
+    ): Promise<InstanceSettings> => {
+      const current = await getOrCreateRow();
+      const experimental = asRecord(current.experimental);
+      const nextCloudflareProvisioning = normalizeCloudflareProvisioningSettings({
+        ...normalizeCloudflareProvisioningSettings(
+          Object.keys(asRecord(current.cloudflareProvisioning)).length > 0
+            ? current.cloudflareProvisioning
+            : experimental.cloudflareProvisioning,
+        ),
+        ...patch,
+      });
+      const now = new Date();
+      const [updated] = await db
+        .update(instanceSettings)
+        .set({
+          experimental,
+          cloudflareProvisioning: nextCloudflareProvisioning as unknown as Record<string, unknown>,
           updatedAt: now,
         })
         .where(eq(instanceSettings.id, current.id))

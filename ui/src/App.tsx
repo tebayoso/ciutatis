@@ -6,7 +6,6 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { authApi } from "./api/auth";
 import { healthApi } from "./api/health";
 import { Dashboard } from "./pages/Dashboard";
-import { PublicSite } from "./pages/PublicSite";
 import { Institutions } from "./pages/Institutions";
 import { Agents } from "./pages/Agents";
 import { AgentDetail } from "./pages/AgentDetail";
@@ -25,7 +24,9 @@ import { Inbox } from "./pages/Inbox";
 import { InstitutionSettings } from "./pages/InstitutionSettings";
 import { DesignGuide } from "./pages/DesignGuide";
 import { InstanceSettings } from "./pages/InstanceSettings";
+import { InstanceAdminOverview } from "./pages/InstanceAdminOverview";
 import { InstanceTenants } from "./pages/InstanceTenants";
+import { InstanceCloudflareSettings } from "./pages/InstanceCloudflareSettings";
 import { InstanceExperimentalSettings } from "./pages/InstanceExperimentalSettings";
 import { PluginManager } from "./pages/PluginManager";
 import { PluginSettings } from "./pages/PluginSettings";
@@ -37,7 +38,9 @@ import { AuthPage } from "./pages/Auth";
 import { CouncilClaimPage } from "./pages/CouncilClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
+import { PublicSite } from "./pages/PublicSite";
 import { queryKeys } from "./lib/queryKeys";
+import { isPublicSitePath } from "./lib/public-site-paths";
 import { useCompany, useOptionalCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
@@ -214,7 +217,7 @@ function InboxRootRedirect() {
 
 function LegacySettingsRedirect() {
   const location = useLocation();
-  return <Navigate to={`/instance/settings/heartbeats${location.search}${location.hash}`} replace />;
+  return <Navigate to={`/instance/settings/overview${location.search}${location.hash}`} replace />;
 }
 
 function OnboardingRoutePage() {
@@ -367,17 +370,25 @@ function NoCompaniesStartPage() {
 }
 
 export function App() {
+  const location = useLocation();
   const companyContext = useOptionalCompany();
+  const isPublicRoute = isPublicSitePath(location.pathname);
 
   return (
     <>
       <Routes>
         <Route path="/" element={<PublicSite />} />
+        <Route path="platform" element={<PublicSite />} />
+        <Route path="about" element={<PublicSite />} />
+        <Route path="partners" element={<PublicSite />} />
         <Route path="en" element={<PublicSite />} />
         <Route path="en/platform" element={<PublicSite />} />
         <Route path="en/about" element={<PublicSite />} />
         <Route path="en/partners" element={<PublicSite />} />
         <Route path="es" element={<PublicSite />} />
+        <Route path="es/procesos" element={<PublicSite />} />
+        <Route path="es/modulos" element={<PublicSite />} />
+        <Route path="es/casos" element={<PublicSite />} />
         <Route path="es/plataforma" element={<PublicSite />} />
         <Route path="es/nosotros" element={<PublicSite />} />
         <Route path="es/alianzas" element={<PublicSite />} />
@@ -388,11 +399,13 @@ export function App() {
 
         <Route element={<CloudAccessGate />}>
           <Route path="onboarding" element={<OnboardingRoutePage />} />
-          <Route path="instance" element={<Navigate to="/instance/settings/heartbeats" replace />} />
+          <Route path="instance" element={<Navigate to="/instance/settings/overview" replace />} />
           <Route path="instance/settings" element={<Layout />}>
-            <Route index element={<Navigate to="heartbeats" replace />} />
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<InstanceAdminOverview />} />
             <Route path="heartbeats" element={<InstanceSettings />} />
             <Route path="tenants" element={<InstanceTenants />} />
+            <Route path="cloudflare" element={<InstanceCloudflareSettings />} />
             <Route path="experimental" element={<InstanceExperimentalSettings />} />
             <Route path="plugins" element={<PluginManager />} />
             <Route path="plugins/:pluginId" element={<PluginSettings />} />
@@ -420,7 +433,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
-      {companyContext ? <OnboardingWizard /> : null}
+      {companyContext && !isPublicRoute ? <OnboardingWizard /> : null}
     </>
   );
 }

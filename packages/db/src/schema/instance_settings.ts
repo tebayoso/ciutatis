@@ -6,6 +6,8 @@ export const instanceSettings = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     singletonKey: text("singleton_key").notNull().default("default"),
     experimental: jsonb("experimental").$type<Record<string, unknown>>().notNull().default({}),
+    tenantProvisioning: jsonb("tenant_provisioning").$type<Record<string, unknown>>().notNull().default({}),
+    cloudflareProvisioning: jsonb("cloudflare_provisioning").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

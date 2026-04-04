@@ -3,12 +3,23 @@ export {
   patchInstanceExperimentalSettingsSchema,
   tenantProvisioningSettingsSchema,
   patchTenantProvisioningSettingsSchema,
+  cloudflareProvisioningSettingsSchema,
+  patchCloudflareProvisioningSettingsSchema,
+  cloudflareProvisioningValidationResultSchema,
   tenantInstanceStatusSchema,
   type InstanceExperimentalSettings,
   type PatchInstanceExperimentalSettings,
   type TenantProvisioningSettings,
   type PatchTenantProvisioningSettings,
+  type CloudflareProvisioningSettings,
+  type PatchCloudflareProvisioningSettings,
+  type CloudflareProvisioningValidationResult,
 } from "./instance.js";
+
+export {
+  publicContactSubmissionSchema,
+  type PublicContactSubmissionInput,
+} from "./public-contact.js";
 
 export {
   upsertBudgetPolicySchema,
@@ -28,7 +39,10 @@ export {
 export {
   createTenantInstanceSchema,
   updateTenantInstanceSchema,
+  tenantBootstrapStatusSchema,
+  tenantProvisioningJobSchema,
   type CreateTenantInstance,
+  type TenantProvisioningJobInput,
   type UpdateTenantInstance,
 } from "./tenant-instance.js";
 

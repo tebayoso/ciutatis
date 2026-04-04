@@ -15,6 +15,13 @@
       "when": 1775211000000,
       "tag": "0001_tenant_instances",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775295600000,
+      "tag": "0002_instance_admin_cloudflare",
+      "breakpoints": true
     }
   ]
 }

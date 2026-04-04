@@ -68,10 +68,13 @@ export const queryKeys = {
     session: ["auth", "session"] as const,
   },
   instance: {
+    adminOverview: ["instance", "admin-overview"] as const,
     schedulerHeartbeats: ["instance", "scheduler-heartbeats"] as const,
     experimentalSettings: ["instance", "experimental-settings"] as const,
     tenantProvisioning: ["instance", "tenant-provisioning"] as const,
+    cloudflareProvisioning: ["instance", "cloudflare-provisioning"] as const,
     tenants: ["instance", "tenants"] as const,
+    tenantJobs: (tenantId: string) => ["instance", "tenant-jobs", tenantId] as const,
   },
   health: ["health"] as const,
   secrets: {

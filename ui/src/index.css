@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Marcellus&family=Space+Grotesk:wght@400;500;700&display=swap");
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -317,6 +318,138 @@
 .paperclip-edit-in-place-content {
   font-size: 0.9375rem;
   line-height: 1.75rem;
+}
+
+.public-site {
+  --background: oklch(0.988 0.004 96.2);
+  --foreground: oklch(0.27 0.015 41.6);
+  --card: oklch(0.997 0.002 95.4);
+  --card-foreground: oklch(0.27 0.015 41.6);
+  --popover: oklch(0.997 0.002 95.4);
+  --popover-foreground: oklch(0.27 0.015 41.6);
+  --primary: oklch(0.435 0.05 34.8);
+  --primary-foreground: oklch(0.988 0.002 95.4);
+  --secondary: oklch(0.956 0.006 89.4);
+  --secondary-foreground: oklch(0.31 0.015 41.6);
+  --muted: oklch(0.959 0.004 91.5);
+  --muted-foreground: oklch(0.47 0.012 41.6);
+  --accent: oklch(0.887 0.026 73.2);
+  --accent-foreground: oklch(0.29 0.016 41.6);
+  --border: oklch(0.867 0.012 84.1);
+  --input: oklch(0.867 0.012 84.1);
+  --ring: oklch(0.435 0.05 34.8 / 0.9);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --public-font-sans: "Space Grotesk", "Helvetica Neue", sans-serif;
+  --public-font-display: "Marcellus", Georgia, serif;
+  --public-shadow: 0 18px 40px -28px color-mix(in oklab, var(--foreground) 36%, transparent);
+  --public-panel-border: color-mix(in oklab, var(--primary) 18%, var(--border));
+  --public-panel-soft: oklch(0.964 0.006 89.4);
+  --public-dark: oklch(0.23 0.014 41.6);
+  --public-dark-foreground: oklch(0.977 0.002 95.4);
+  --public-dark-muted: oklch(0.83 0.008 84.4);
+  --public-dark-border: color-mix(in oklab, var(--accent) 18%, var(--public-dark));
+  color-scheme: light;
+  font-family: var(--public-font-sans);
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
+}
+
+.public-site .public-display {
+  font-family: var(--public-font-display);
+  letter-spacing: -0.03em;
+}
+
+.public-site .public-shadow {
+  box-shadow: var(--public-shadow);
+}
+
+.public-site .public-grid {
+  background: none;
+}
+
+.public-site .public-panel {
+  background: var(--card);
+  border: 1px solid var(--public-panel-border);
+}
+
+.public-site .public-panel-soft {
+  background: var(--public-panel-soft);
+  border: 1px solid var(--public-panel-border);
+}
+
+.public-site .public-panel-dark {
+  background: var(--public-dark);
+  border: 1px solid var(--public-dark-border);
+  color: var(--public-dark-foreground);
+}
+
+.public-site .public-panel-dark-soft {
+  background: color-mix(in oklab, var(--public-dark) 90%, white 10%);
+  border: 1px solid color-mix(in oklab, var(--public-dark-foreground) 12%, transparent);
+}
+
+.public-site .public-dark-icon {
+  background: color-mix(in oklab, var(--public-dark) 86%, white 14%);
+  border: 1px solid color-mix(in oklab, var(--public-dark-foreground) 14%, transparent);
+  color: var(--accent);
+}
+
+.public-site .public-dark-muted {
+  color: var(--public-dark-muted);
+}
+
+.public-site .public-stat {
+  font-variant-numeric: tabular-nums;
+}
+
+.public-site .public-ornament {
+  position: relative;
+}
+
+.public-site .public-ornament::after {
+  content: "";
+  position: absolute;
+  inset: 0.75rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, var(--border));
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.public-site .public-panel-dark.public-ornament::after {
+  border-color: color-mix(in oklab, var(--accent) 22%, var(--public-dark-foreground));
+}
+
+.public-site a:focus-visible,
+.public-site input:focus-visible,
+.public-site textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.public-site input,
+.public-site textarea {
+  background: var(--background);
+  color: var(--foreground);
+  border-color: var(--public-panel-border);
+}
+
+.public-site input::placeholder,
+.public-site textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+
+.public-site label {
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .paperclip-mdxeditor-content > *:first-child {

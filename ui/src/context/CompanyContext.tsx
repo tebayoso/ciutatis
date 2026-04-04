@@ -9,10 +9,12 @@ import {
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Company } from "@ciutatis/shared";
+import { useLocation } from "@/lib/router";
 import { companiesApi } from "../api/companies";
 import { ApiError } from "../api/client";
 import { queryKeys } from "../lib/queryKeys";
 import type { CompanySelectionSource } from "../lib/company-selection";
+import { isPublicSitePath } from "../lib/public-site-paths";
 type CompanySelectionOptions = { source?: CompanySelectionSource };
 
 interface CompanyContextValue {
@@ -36,9 +38,11 @@ const STORAGE_KEY = "paperclip.selectedCompanyId";
 const CompanyContext = createContext<CompanyContextValue | null>(null);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [selectionSource, setSelectionSource] = useState<CompanySelectionSource>("bootstrap");
   const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const isPublicRoute = isPublicSitePath(location.pathname);
 
   const { data: companies = [], isLoading, error } = useQuery({
     queryKey: queryKeys.companies.all,
@@ -52,6 +56,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
+    enabled: !isPublicRoute,
     retry: false,
   });
   const sidebarCompanies = useMemo(

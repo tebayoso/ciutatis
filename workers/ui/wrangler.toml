@@ -1,5 +1,5 @@
-# Cloudflare Pages - Ciutatis UI
-name = "ciutatis-ui"
+# Cloudflare Pages - Ciutatis Admin Shell
+name = "ciutatis-admin-ui"
 compatibility_date = "2025-01-01"
 
 # Account configuration
@@ -12,11 +12,11 @@ directory = "dist"
 
 # Environment variables for build
 [vars]
-VITE_API_BASE_URL = "https://api.ciutatis.com"
+VITE_API_BASE_URL = "https://admin.ciutatis.com/api"
 
 # Environment-specific configs
 [env.production]
-name = "ciutatis-ui"
+name = "ciutatis-admin-ui"
 
 [env.staging]
-name = "ciutatis-ui-staging"
+name = "ciutatis-admin-ui-staging"

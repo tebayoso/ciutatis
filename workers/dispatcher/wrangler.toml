@@ -1,0 +1,28 @@
+name = "ciutatis-dispatcher"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+[[routes]]
+pattern = "ciutatis.com/*"
+zone_name = "ciutatis.com"
+
+[[routes]]
+pattern = "www.ciutatis.com/*"
+zone_name = "ciutatis.com"
+
+[vars]
+LANDING_ORIGIN = "https://ciutatis.com"
+
+[[kv_namespaces]]
+binding = "ROUTING_CACHE"
+id = "9e5684759e4c44c9afb714a552f709b0"
+
+[[dispatch_namespaces]]
+binding = "TENANT_RUNTIME"
+namespace = "ciutatis-tenants"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

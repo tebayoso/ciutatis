@@ -1,4 +1,5 @@
-import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@ciutatis/shared";
 
 export const tenantInstances = sqliteTable(
   "tenant_instances",
@@ -9,18 +10,31 @@ export const tenantInstances = sqliteTable(
     countryCode: text("country_code").notNull(),
     citySlug: text("city_slug").notNull(),
     shortCode: text("short_code").notNull(),
-    routingMode: text("routing_mode").notNull().default("path"),
-    status: text("status").notNull().default("draft"),
+    routingMode: text("routing_mode").$type<TenantRoutingMode>().notNull().default("path"),
+    status: text("status").$type<TenantInstanceStatus>().notNull().default("draft"),
     pathPrefix: text("path_prefix").notNull(),
+    dispatcherKey: text("dispatcher_key").notNull(),
     hostname: text("hostname"),
     workerName: text("worker_name").notNull(),
+    dispatchScriptName: text("dispatch_script_name"),
+    tenantD1DatabaseId: text("tenant_d1_database_id"),
+    tenantD1DatabaseName: text("tenant_d1_database_name"),
+    tenantKvNamespaceId: text("tenant_kv_namespace_id"),
+    tenantKvNamespaceTitle: text("tenant_kv_namespace_title"),
+    tenantR2BucketName: text("tenant_r2_bucket_name"),
+    bootstrapStatus: text("bootstrap_status").$type<TenantBootstrapStatus>().notNull().default("pending"),
+    lastDeploymentStartedAt: text("last_deployment_started_at"),
+    lastDeploymentFinishedAt: text("last_deployment_finished_at"),
+    lastDeploymentError: text("last_deployment_error"),
     notes: text("notes"),
     createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
   },
   (table) => ({
     pathPrefixIdx: uniqueIndex("tenant_instances_path_prefix_idx").on(table.pathPrefix),
+    dispatcherKeyIdx: uniqueIndex("tenant_instances_dispatcher_key_idx").on(table.dispatcherKey),
     hostnameIdx: uniqueIndex("tenant_instances_hostname_idx").on(table.hostname),
     workerNameIdx: uniqueIndex("tenant_instances_worker_name_idx").on(table.workerName),
+    statusIdx: index("tenant_instances_status_idx").on(table.status),
   }),
 );

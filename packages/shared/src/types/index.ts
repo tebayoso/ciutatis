@@ -2,6 +2,7 @@
 export type { Institution } from "./institution.js";
 export type { TenantInstance } from "./tenant-instance.js";
 export type { Objective } from "./objective.js";
+export type { PublicContactSubmission, PublicContactLocale } from "./public-contact.js";
 export type {
   Request,
   RequestAncestorProject,
@@ -89,6 +90,13 @@ export type {
 
 // Unchanged exports
 export type { InstanceExperimentalSettings, InstanceSettings } from "./instance.js";
+export type {
+  CloudflareProvisioningSettings,
+  CloudflareProvisioningValidationResult,
+  InstanceAdminOverview,
+} from "./instance.js";
+export type { TenantProvisioningJobSummary } from "./tenant-instance.js";
+export type { TenantProvisioningJob } from "./tenant-provisioning-job.js";
 export type {
   Agent,
   AgentPermissions,

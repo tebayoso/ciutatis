@@ -16,6 +16,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initPluginBridge } from "./plugins/bridge-init";
 import { PluginLauncherProvider } from "./plugins/launchers";
+import { getRuntimeBasename } from "./lib/runtime-config";
 import "@mdxeditor/editor/style.css";
 import "./index.css";
 
@@ -23,7 +24,8 @@ initPluginBridge(React, ReactDOM);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
+    const basename = getRuntimeBasename().replace(/\/$/, "");
+    navigator.serviceWorker.register(`${basename || ""}/sw.js`);
   });
 }
 
@@ -35,14 +37,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function PublicProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <TooltipProvider>
-      <DialogProvider>{children}</DialogProvider>
-    </TooltipProvider>
-  );
-}
 
 function ShellProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -67,26 +61,8 @@ function ShellProviders({ children }: { children: React.ReactNode }) {
 }
 
 function AppProviders() {
-  const pathname = window.location.pathname;
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname === "/en" ||
-    pathname.startsWith("/en/") ||
-    pathname === "/es" ||
-    pathname.startsWith("/es/");
-
-  if (isPublicRoute) {
-    return (
-      <BrowserRouter>
-        <PublicProviders>
-          <App />
-        </PublicProviders>
-      </BrowserRouter>
-    );
-  }
-
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={getRuntimeBasename()}>
       <ShellProviders>
         <App />
       </ShellProviders>

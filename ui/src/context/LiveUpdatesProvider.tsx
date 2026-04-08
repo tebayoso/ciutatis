@@ -1,10 +1,13 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { Agent, Issue, LiveEvent } from "@ciutatis/shared";
+import { useLocation } from "@/lib/router";
 import { authApi } from "../api/auth";
+import { healthApi } from "../api/health";
 import { useCompany } from "./CompanyContext";
 import type { ToastInput } from "./ToastContext";
 import { useToast } from "./ToastContext";
+import { isPublicSitePath } from "../lib/public-site-paths";
 import { queryKeys } from "../lib/queryKeys";
 
 const TOAST_COOLDOWN_WINDOW_MS = 10_000;
@@ -511,19 +514,31 @@ function handleLiveEvent(
 }
 
 export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const { selectedCompanyId } = useCompany();
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
   const gateRef = useRef<ToastGate>({ cooldownHits: new Map(), suppressUntil: 0 });
+  const isPublicRoute = isPublicSitePath(location.pathname);
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
     retry: false,
+    enabled: !isPublicRoute,
+  });
+  const { data: health } = useQuery({
+    queryKey: queryKeys.health,
+    queryFn: () => healthApi.get(),
+    staleTime: Infinity,
+    retry: false,
+    enabled: !isPublicRoute,
   });
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
 
   useEffect(() => {
-    if (!selectedCompanyId) return;
+    if (isPublicRoute) return;
+    if (!selectedCompanyId || !health) return;
+    if (health.runtime === "cloudflare-workers") return;
 
     let closed = false;
     let reconnectAttempt = 0;
@@ -598,7 +613,7 @@ export function LiveUpdatesProvider({ children }: { children: ReactNode }) {
         socket.close(1000, "provider_unmount");
       }
     };
-  }, [queryClient, selectedCompanyId, pushToast, currentUserId]);
+  }, [isPublicRoute, queryClient, selectedCompanyId, pushToast, currentUserId, health?.runtime]);
 
   return <>{children}</>;
 }

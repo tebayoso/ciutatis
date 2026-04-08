@@ -22,23 +22,23 @@ describe("PublicSite contact section", () => {
 
     for (const pathname of pages) {
       const html = renderPublicSite(pathname);
-      expect(html).toContain("Create a support request directly from the public site.");
-      expect(html).toContain("Contact support");
+      expect(html).toContain("Report a civic issue or ask the proper office a clear question.");
+      expect(html).toContain("Citizen reporting desk");
       expect(html).toContain("Name");
       expect(html).toContain("Email");
-      expect(html).toContain("Message");
-      expect(html).toContain("Send message");
+      expect(html).toContain("Question or report");
+      expect(html).toContain("Send civic request");
     }
   });
 
   it("switches the contact copy and labels for the Spanish public site", () => {
     const html = renderPublicSite("/es/casos");
 
-    expect(html).toContain("Creá un pedido de soporte directo desde el sitio público.");
-    expect(html).toContain("Contactar soporte");
+    expect(html).toContain("Reporta un problema civico o haz una pregunta clara al area correcta.");
+    expect(html).toContain("Mesa ciudadana");
     expect(html).toContain("Nombre");
     expect(html).toContain("Email");
-    expect(html).toContain("Mensaje");
-    expect(html).toContain("Enviar mensaje");
+    expect(html).toContain("Consulta o reporte");
+    expect(html).toContain("Enviar pedido civico");
   });
 });

@@ -40,6 +40,7 @@ interface ContactFormProps {
   copy: ContactFormCopy;
   locale: PublicContactLocale;
   sourcePath: string;
+  variant?: "default" | "publicSite";
 }
 
 const EMPTY_FORM: ContactFormState = {
@@ -85,10 +86,11 @@ export function validateContactForm(form: ContactFormState, copy: ContactFormCop
   return errors;
 }
 
-export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
+export function ContactForm({ copy, locale, sourcePath, variant = "default" }: ContactFormProps) {
   const [form, setForm] = useState<ContactFormState>(EMPTY_FORM);
   const [status, setStatus] = useState<FormStatus>("idle");
   const [fieldErrors, setFieldErrors] = useState<ContactFormErrors>({});
+  const isPublicSite = variant === "publicSite";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,7 +128,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
   if (status === "success") {
     return (
       <div
-        className="rounded-[18px] border border-emerald-300/70 bg-emerald-50 p-6 text-center"
+        className={
+          isPublicSite
+            ? "rounded-[18px] border border-emerald-500/30 bg-emerald-50/90 p-6 text-center shadow-sm"
+            : "rounded-[18px] border border-emerald-300/70 bg-emerald-50 p-6 text-center"
+        }
         role="status"
         aria-live="polite"
       >
@@ -146,7 +152,7 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit} className={isPublicSite ? "space-y-5" : "space-y-4"} noValidate>
       <div className="space-y-2">
         <Label htmlFor="contact-name">{copy.nameLabel}</Label>
         <Input
@@ -159,6 +165,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
           onChange={(event) => handleChange("name", event.target.value)}
           aria-invalid={fieldErrors.name ? "true" : "false"}
           disabled={status === "submitting"}
+          className={
+            isPublicSite
+              ? "h-11 rounded-[12px] border-[color:var(--public-panel-border)] bg-background/88 px-4 shadow-none"
+              : undefined
+          }
         />
         {fieldErrors.name ? (
           <p className="text-sm text-destructive" aria-live="polite">
@@ -180,6 +191,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
           aria-invalid={fieldErrors.email ? "true" : "false"}
           spellCheck={false}
           disabled={status === "submitting"}
+          className={
+            isPublicSite
+              ? "h-11 rounded-[12px] border-[color:var(--public-panel-border)] bg-background/88 px-4 shadow-none"
+              : undefined
+          }
         />
         {fieldErrors.email ? (
           <p className="text-sm text-destructive" aria-live="polite">
@@ -200,6 +216,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
           onChange={(event) => handleChange("message", event.target.value)}
           aria-invalid={fieldErrors.message ? "true" : "false"}
           disabled={status === "submitting"}
+          className={
+            isPublicSite
+              ? "min-h-32 rounded-[12px] border-[color:var(--public-panel-border)] bg-background/88 px-4 py-3 shadow-none"
+              : undefined
+          }
         />
         {fieldErrors.message ? (
           <p className="text-sm text-destructive" aria-live="polite">
@@ -210,7 +231,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
 
       {status === "error" ? (
         <div
-          className="rounded-[14px] border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          className={
+            isPublicSite
+              ? "rounded-[14px] border border-destructive/25 bg-destructive/6 p-3 text-sm text-destructive"
+              : "rounded-[14px] border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          }
           role="status"
           aria-live="polite"
         >
@@ -218,7 +243,11 @@ export function ContactForm({ copy, locale, sourcePath }: ContactFormProps) {
         </div>
       ) : null}
 
-      <Button type="submit" className="w-full rounded-[10px]" disabled={status === "submitting"}>
+      <Button
+        type="submit"
+        className={isPublicSite ? "h-11 w-full rounded-[12px]" : "w-full rounded-[10px]"}
+        disabled={status === "submitting"}
+      >
         {status === "submitting" ? copy.submitSubmitting : copy.submitIdle}
       </Button>
     </form>

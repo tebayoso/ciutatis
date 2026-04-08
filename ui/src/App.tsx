@@ -40,7 +40,7 @@ import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
 import { PublicSite } from "./pages/PublicSite";
 import { queryKeys } from "./lib/queryKeys";
-import { isPublicSitePath } from "./lib/public-site-paths";
+import { isAdminHostname, isPublicSitePath } from "./lib/public-site-paths";
 import { useCompany, useOptionalCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
@@ -189,6 +189,8 @@ function councilRoutes() {
       <Route path="requests/done" element={<Navigate to="/requests" replace />} />
       <Route path="requests/recent" element={<Navigate to="/requests" replace />} />
       <Route path="requests/:issueId" element={<RequestDetail />} />
+      <Route path="issues" element={<Navigate to="/requests" replace />} />
+      <Route path="issues/:issueId" element={<RequestDetail />} />
       <Route path="execution-workspaces/:workspaceId" element={<ExecutionWorkspaceDetail />} />
       <Route path="objectives" element={<Objectives />} />
       <Route path="objectives/:goalId" element={<ObjectiveDetail />} />
@@ -372,26 +374,29 @@ function NoCompaniesStartPage() {
 export function App() {
   const location = useLocation();
   const companyContext = useOptionalCompany();
-  const isPublicRoute = isPublicSitePath(location.pathname);
+  const currentHostname = globalThis.location?.hostname ?? null;
+  const isAdminHost = isAdminHostname(currentHostname);
+  const isPublicRoute = isPublicSitePath(location.pathname, currentHostname);
+  const publicEntryElement = isAdminHost ? <ShellEntryRedirect /> : <PublicSite />;
 
   return (
     <>
       <Routes>
-        <Route path="/" element={<PublicSite />} />
-        <Route path="platform" element={<PublicSite />} />
-        <Route path="about" element={<PublicSite />} />
-        <Route path="partners" element={<PublicSite />} />
-        <Route path="en" element={<PublicSite />} />
-        <Route path="en/platform" element={<PublicSite />} />
-        <Route path="en/about" element={<PublicSite />} />
-        <Route path="en/partners" element={<PublicSite />} />
-        <Route path="es" element={<PublicSite />} />
-        <Route path="es/procesos" element={<PublicSite />} />
-        <Route path="es/modulos" element={<PublicSite />} />
-        <Route path="es/casos" element={<PublicSite />} />
-        <Route path="es/plataforma" element={<PublicSite />} />
-        <Route path="es/nosotros" element={<PublicSite />} />
-        <Route path="es/alianzas" element={<PublicSite />} />
+        <Route path="/" element={publicEntryElement} />
+        <Route path="platform" element={publicEntryElement} />
+        <Route path="about" element={publicEntryElement} />
+        <Route path="partners" element={publicEntryElement} />
+        <Route path="en" element={publicEntryElement} />
+        <Route path="en/platform" element={publicEntryElement} />
+        <Route path="en/about" element={publicEntryElement} />
+        <Route path="en/partners" element={publicEntryElement} />
+        <Route path="es" element={publicEntryElement} />
+        <Route path="es/procesos" element={publicEntryElement} />
+        <Route path="es/modulos" element={publicEntryElement} />
+        <Route path="es/casos" element={publicEntryElement} />
+        <Route path="es/plataforma" element={publicEntryElement} />
+        <Route path="es/nosotros" element={publicEntryElement} />
+        <Route path="es/alianzas" element={publicEntryElement} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="app" element={<ShellEntryRedirect />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />
@@ -413,6 +418,8 @@ export function App() {
           <Route path="institutions" element={<UnprefixedBoardRedirect />} />
           <Route path="requests" element={<UnprefixedBoardRedirect />} />
           <Route path="requests/:issueId" element={<UnprefixedBoardRedirect />} />
+          <Route path="issues" element={<UnprefixedBoardRedirect />} />
+          <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
           <Route path="settings" element={<LegacySettingsRedirect />} />
           <Route path="settings/*" element={<LegacySettingsRedirect />} />
           <Route path="agents" element={<UnprefixedBoardRedirect />} />

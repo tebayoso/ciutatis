@@ -1,17 +1,20 @@
 import { Hono } from "hono";
-import { and, eq, gte, lte, desc, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import {
   agents,
   budgetIncidents,
-  budgetPolicies,
   companies,
   costEvents,
   financeEvents,
+  projects,
 } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "../lib/authz.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { logActivity } from "../lib/activity.js";
+
+const METERED_BILLING_TYPE = "metered_api";
+const SUBSCRIPTION_BILLING_TYPES = ["subscription_included", "subscription_overage"] as const;
 
 function parseDateRange(c: { req: { query(k: string): string | undefined } }) {
   const fromRaw = c.req.query("from");
@@ -40,7 +43,7 @@ function financeDateConditions(table: typeof financeEvents, range?: { from?: Dat
 export function costCompanyRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.post("/cost-events", async (c) => {
+  app.post("/companies/:companyId/cost-events", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -63,7 +66,7 @@ export function costCompanyRoutes() {
       heartbeatRunId: body.heartbeatRunId ?? null,
       billingCode: body.billingCode ?? null,
       provider: body.provider,
-      biller: body.biller ?? "unknown",
+      biller: body.biller ?? body.provider ?? "unknown",
       billingType: body.billingType ?? "unknown",
       model: body.model,
       inputTokens: body.inputTokens ?? 0,
@@ -91,7 +94,7 @@ export function costCompanyRoutes() {
     return c.json(event, 201);
   });
 
-  app.post("/finance-events", async (c) => {
+  app.post("/companies/:companyId/finance-events", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertBoard(c);
     assertCompanyAccess(c, companyId);
@@ -112,7 +115,7 @@ export function costCompanyRoutes() {
     return c.json(event, 201);
   });
 
-  app.get("/costs/summary", async (c) => {
+  app.get("/companies/:companyId/costs/summary", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -131,17 +134,18 @@ export function costCompanyRoutes() {
       .where(eq(companies.id, companyId))
       .then((rows) => rows[0] ?? null);
 
-    const totalCents = Number(result?.total ?? 0);
+    const spendCents = Number(result?.total ?? 0);
     const budgetCents = company?.budgetMonthlyCents ?? 0;
 
     return c.json({
-      totalCents,
+      companyId,
+      spendCents,
       budgetCents,
-      utilization: budgetCents > 0 ? Number(((totalCents / budgetCents) * 100).toFixed(2)) : 0,
+      utilizationPercent: budgetCents > 0 ? Number(((spendCents / budgetCents) * 100).toFixed(2)) : 0,
     });
   });
 
-  app.get("/costs/by-agent", async (c) => {
+  app.get("/companies/:companyId/costs/by-agent", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -153,18 +157,32 @@ export function costCompanyRoutes() {
       .select({
         agentId: costEvents.agentId,
         agentName: agents.name,
-        totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
-        eventCount: sql<number>`count(*)`,
+        agentStatus: agents.status,
+        costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+        inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+        cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+        outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
+        apiRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} = ${METERED_BILLING_TYPE} then ${costEvents.heartbeatRunId} end)`,
+        subscriptionRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.heartbeatRunId} end)`,
+        subscriptionCachedInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.cachedInputTokens} else 0 end), 0)`,
+        subscriptionInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.inputTokens} else 0 end), 0)`,
+        subscriptionOutputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.outputTokens} else 0 end), 0)`,
       })
       .from(costEvents)
       .leftJoin(agents, eq(costEvents.agentId, agents.id))
       .where(and(...conditions))
-      .groupBy(costEvents.agentId, agents.name);
+      .groupBy(costEvents.agentId, agents.name, agents.status)
+      .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)`));
 
     return c.json(rows);
   });
 
-  app.get("/costs/by-provider", async (c) => {
+  app.get("/companies/:companyId/costs/by-provider", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -178,17 +196,30 @@ export function costCompanyRoutes() {
         biller: costEvents.biller,
         billingType: costEvents.billingType,
         model: costEvents.model,
-        totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
-        eventCount: sql<number>`count(*)`,
+        costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+        inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+        cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+        outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
+        apiRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} = ${METERED_BILLING_TYPE} then ${costEvents.heartbeatRunId} end)`,
+        subscriptionRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.heartbeatRunId} end)`,
+        subscriptionCachedInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.cachedInputTokens} else 0 end), 0)`,
+        subscriptionInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.inputTokens} else 0 end), 0)`,
+        subscriptionOutputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.outputTokens} else 0 end), 0)`,
       })
       .from(costEvents)
       .where(and(...conditions))
-      .groupBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model);
+      .groupBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model)
+      .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)`));
 
     return c.json(rows);
   });
 
-  app.get("/costs/by-biller", async (c) => {
+  app.get("/companies/:companyId/costs/by-biller", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -199,17 +230,32 @@ export function costCompanyRoutes() {
     const rows = await db
       .select({
         biller: costEvents.biller,
-        totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
-        eventCount: sql<number>`count(*)`,
+        costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+        inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+        cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+        outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
+        apiRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} = ${METERED_BILLING_TYPE} then ${costEvents.heartbeatRunId} end)`,
+        subscriptionRunCount:
+          sql<number>`count(distinct case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.heartbeatRunId} end)`,
+        subscriptionCachedInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.cachedInputTokens} else 0 end), 0)`,
+        subscriptionInputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.inputTokens} else 0 end), 0)`,
+        subscriptionOutputTokens:
+          sql<number>`coalesce(sum(case when ${costEvents.billingType} in (${sql.join(SUBSCRIPTION_BILLING_TYPES.map((value) => sql`${value}`), sql`, `)}) then ${costEvents.outputTokens} else 0 end), 0)`,
+        providerCount: sql<number>`count(distinct ${costEvents.provider})`,
+        modelCount: sql<number>`count(distinct ${costEvents.model})`,
       })
       .from(costEvents)
       .where(and(...conditions))
-      .groupBy(costEvents.biller);
+      .groupBy(costEvents.biller)
+      .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)`));
 
     return c.json(rows);
   });
 
-  app.get("/costs/by-agent-model", async (c) => {
+  app.get("/companies/:companyId/costs/by-agent-model", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -225,8 +271,10 @@ export function costCompanyRoutes() {
         biller: costEvents.biller,
         billingType: costEvents.billingType,
         model: costEvents.model,
-        totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
-        eventCount: sql<number>`count(*)`,
+        costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+        inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+        cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+        outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
       })
       .from(costEvents)
       .leftJoin(agents, eq(costEvents.agentId, agents.id))
@@ -238,12 +286,13 @@ export function costCompanyRoutes() {
         costEvents.biller,
         costEvents.billingType,
         costEvents.model,
-      );
+      )
+      .orderBy(costEvents.provider, costEvents.biller, costEvents.billingType, costEvents.model);
 
     return c.json(rows);
   });
 
-  app.get("/costs/finance-summary", async (c) => {
+  app.get("/companies/:companyId/costs/finance-summary", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -266,7 +315,7 @@ export function costCompanyRoutes() {
     });
   });
 
-  app.get("/costs/finance-by-biller", async (c) => {
+  app.get("/companies/:companyId/costs/finance-by-biller", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -287,7 +336,7 @@ export function costCompanyRoutes() {
     return c.json(rows);
   });
 
-  app.get("/costs/finance-by-kind", async (c) => {
+  app.get("/companies/:companyId/costs/finance-by-kind", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -308,7 +357,7 @@ export function costCompanyRoutes() {
     return c.json(rows);
   });
 
-  app.get("/costs/finance-events", async (c) => {
+  app.get("/companies/:companyId/costs/finance-events", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -328,46 +377,61 @@ export function costCompanyRoutes() {
     return c.json(rows);
   });
 
-  app.get("/costs/window-spend", async (c) => {
+  app.get("/companies/:companyId/costs/window-spend", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
 
-    const now = new Date();
     const windows = [
-      { label: "5h", ms: 5 * 60 * 60 * 1000 },
-      { label: "24h", ms: 24 * 60 * 60 * 1000 },
-      { label: "7d", ms: 7 * 24 * 60 * 60 * 1000 },
-    ];
+      { label: "5h", hours: 5 },
+      { label: "24h", hours: 24 },
+      { label: "7d", hours: 168 },
+    ] as const;
 
     const results = await Promise.all(
-      windows.map(async (w) => {
-        const from = new Date(now.getTime() - w.ms).toISOString();
-        const [row] = await db
-          .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)` })
+      windows.map(async ({ label, hours }) => {
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        const rows = await db
+          .select({
+            provider: costEvents.provider,
+            biller: sql<string>`case when count(distinct ${costEvents.biller}) = 1 then min(${costEvents.biller}) else 'mixed' end`,
+            costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+            inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+            cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+            outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
+          })
           .from(costEvents)
-          .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, from)));
-        return { window: w.label, totalCents: Number(row?.total ?? 0) };
+          .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)))
+          .groupBy(costEvents.provider)
+          .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)`));
+
+        return rows.map((row) => ({
+          provider: row.provider,
+          biller: row.biller,
+          window: label,
+          windowHours: hours,
+          costCents: row.costCents,
+          inputTokens: row.inputTokens,
+          cachedInputTokens: row.cachedInputTokens,
+          outputTokens: row.outputTokens,
+        }));
       }),
     );
 
-    return c.json(results);
+    return c.json(results.flat());
   });
 
-  app.get("/budgets/overview", async (c) => {
+  app.get("/companies/:companyId/costs/quota-windows", async (c) => {
+    const companyId = c.req.param("companyId")!;
+    assertBoard(c);
+    assertCompanyAccess(c, companyId);
+    return c.json([]);
+  });
+
+  app.get("/companies/:companyId/budgets/overview", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
-
-    const policies = await db
-      .select()
-      .from(budgetPolicies)
-      .where(eq(budgetPolicies.companyId, companyId));
-
-    const incidents = await db
-      .select()
-      .from(budgetIncidents)
-      .where(and(eq(budgetIncidents.companyId, companyId), eq(budgetIncidents.status, "open")));
 
     const pausedAgentCount = await db
       .select({ count: sql<number>`count(*)` })
@@ -375,16 +439,24 @@ export function costCompanyRoutes() {
       .where(and(eq(agents.companyId, companyId), eq(agents.status, "paused")))
       .then((rows) => Number(rows[0]?.count ?? 0));
 
+    const openIncidentCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(budgetIncidents)
+      .where(and(eq(budgetIncidents.companyId, companyId), eq(budgetIncidents.status, "open")))
+      .then((rows) => Number(rows[0]?.count ?? 0));
+
     return c.json({
-      policies,
-      activeIncidents: incidents,
+      companyId,
+      policies: [],
+      activeIncidents: [],
       pendingApprovalCount: 0,
       pausedAgentCount,
       pausedProjectCount: 0,
+      openIncidentCount,
     });
   });
 
-  app.patch("/budgets", async (c) => {
+  app.patch("/companies/:companyId/budgets", async (c) => {
     assertBoard(c);
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
@@ -413,7 +485,7 @@ export function costCompanyRoutes() {
     return c.json(updated);
   });
 
-  app.get("/costs/by-project", async (c) => {
+  app.get("/companies/:companyId/costs/by-project", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -424,12 +496,17 @@ export function costCompanyRoutes() {
     const rows = await db
       .select({
         projectId: costEvents.projectId,
-        totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
-        eventCount: sql<number>`count(*)`,
+        projectName: projects.name,
+        costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)`,
+        inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)`,
+        cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)`,
+        outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)`,
       })
       .from(costEvents)
+      .leftJoin(projects, eq(costEvents.projectId, projects.id))
       .where(and(...conditions))
-      .groupBy(costEvents.projectId);
+      .groupBy(costEvents.projectId, projects.name)
+      .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)`));
 
     return c.json(rows);
   });
@@ -440,7 +517,7 @@ export function costCompanyRoutes() {
 export function agentBudgetRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.patch("/:agentId/budgets", async (c) => {
+  app.patch("/agents/:agentId/budgets", async (c) => {
     const agentId = c.req.param("agentId")!;
     const db = c.get("db");
     const actor = c.get("actor");

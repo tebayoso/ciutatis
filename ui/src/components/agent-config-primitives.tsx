@@ -58,6 +58,7 @@ export const help: Record<string, string> = {
 };
 
 export const adapterLabels: Record<string, string> = {
+  cloudflare_workers_ai: "Cloudflare Workers AI",
   claude_local: "Claude (local)",
   codex_local: "Codex (local)",
   gemini_local: "Gemini CLI (local)",

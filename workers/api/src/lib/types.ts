@@ -17,6 +17,7 @@ export interface Env {
   PAPERCLIP_AGENT_JWT_TTL_SECONDS?: string;
   PAPERCLIP_AGENT_JWT_ISSUER?: string;
   PAPERCLIP_AGENT_JWT_AUDIENCE?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_API_TOKEN?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;

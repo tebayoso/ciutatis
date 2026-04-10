@@ -14,8 +14,9 @@ export const configMetaSchema = z.object({
 });
 
 export const llmConfigSchema = z.object({
-  provider: z.enum(["claude", "openai", "gemini"]),
+  provider: z.enum(["claude", "openai", "gemini", "cloudflare_workers_ai"]),
   apiKey: z.string().optional(),
+  accountId: z.string().optional(),
 });
 
 export const databaseBackupConfigSchema = z.object({

@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import path from "node:path";
 import pc from "picocolors";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 import {
   AUTH_BASE_URL_MODES,
   DEPLOYMENT_EXPOSURES,
@@ -318,20 +319,36 @@ export async function onboard(opts: OnboardOptions): Promise<void> {
 
     if (llm?.apiKey) {
       const s = p.spinner();
-      s.start("Validating API key...");
+      s.start("Validating LLM credentials...");
       try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${llm.apiKey}`,
-        );
+        const res =
+          llm.provider === "cloudflare_workers_ai" && llm.accountId
+            ? await fetch(
+                `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(llm.accountId)}/ai/run/${DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL}`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${llm.apiKey}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    messages: [{ role: "user", content: "Respond with hello." }],
+                    max_tokens: 16,
+                  }),
+                },
+              )
+            : await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models?key=${llm.apiKey}`,
+              );
         if (res.ok) {
-          s.stop("API key is valid");
+          s.stop("LLM credentials are valid");
         } else if (res.status === 401 || res.status === 403) {
-          s.stop(pc.yellow("API key appears invalid — you can update it later"));
+          s.stop(pc.yellow("LLM credentials appear invalid — you can update them later"));
         } else {
-          s.stop(pc.yellow("Could not validate API key — continuing anyway"));
+          s.stop(pc.yellow("Could not validate LLM credentials — continuing anyway"));
         }
       } catch {
-        s.stop(pc.yellow("Could not reach API — continuing anyway"));
+        s.stop(pc.yellow("Could not reach the LLM API — continuing anyway"));
       }
     }
 

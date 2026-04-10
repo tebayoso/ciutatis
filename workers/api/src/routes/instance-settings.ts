@@ -11,6 +11,7 @@ import {
   deriveTenantUrl,
   deriveTenantWorkerName,
   patchCloudflareProvisioningSettingsSchema,
+  patchInstanceExperimentalSettingsSchema,
   patchTenantProvisioningSettingsSchema,
   tenantProvisioningSettingsSchema,
   updateTenantInstanceSchema,
@@ -56,6 +57,13 @@ function normalizeCloudflareSettings(raw: unknown) {
   const parsed = cloudflareProvisioningSettingsSchema.safeParse(raw ?? {});
   if (parsed.success) return parsed.data;
   return cloudflareProvisioningSettingsSchema.parse({});
+}
+
+function normalizeExperimentalSettings(raw: unknown) {
+  const record = asRecord(raw);
+  return {
+    enableIsolatedWorkspaces: record.enableIsolatedWorkspaces === true,
+  };
 }
 
 function toTenantProvisioningJob(row: TenantProvisioningJobRow): TenantProvisioningJob {
@@ -522,6 +530,33 @@ export function instanceSettingsRoutes() {
       })),
     };
     return c.json(overview);
+  });
+
+  app.get("/instance/settings/experimental", async (c) => {
+    assertBoard(c);
+    const db = c.get("db");
+    const settings = await getOrCreateSettingsRow(db);
+    return c.json(normalizeExperimentalSettings(settings.experimental));
+  });
+
+  app.patch("/instance/settings/experimental", async (c) => {
+    assertBoard(c);
+    const db = c.get("db");
+    const patch = patchInstanceExperimentalSettingsSchema.parse(await c.req.json());
+    const current = await getOrCreateSettingsRow(db);
+    const next = normalizeExperimentalSettings({
+      ...normalizeExperimentalSettings(current.experimental),
+      ...patch,
+    });
+    const [updated] = await db
+      .update(instanceSettings)
+      .set({
+        experimental: next as unknown as Record<string, unknown>,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(instanceSettings.id, current.id))
+      .returning();
+    return c.json(normalizeExperimentalSettings(updated?.experimental ?? next));
   });
 
   app.get("/instance/settings/tenant-provisioning", async (c) => {

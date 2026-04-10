@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
+    "@ciutatis/adapter-cloudflare-workers-ai": "workspace:*",
     "@ciutatis/adapter-gemini-local": "workspace:*",
     "@ciutatis/adapter-utils": "workspace:*",
     "@ciutatis/db": "workspace:*",

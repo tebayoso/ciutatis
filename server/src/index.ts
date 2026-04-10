@@ -23,6 +23,7 @@ import {
 } from "@ciutatis/db";
 import detectPort from "detect-port";
 import { createApp } from "./app.js";
+import { readConfigFile } from "./config-file.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
@@ -70,6 +71,7 @@ export interface StartedServer {
 
 export async function startServer(): Promise<StartedServer> {
   const config = loadConfig();
+  const fileConfig = readConfigFile();
   if (process.env.PAPERCLIP_SECRETS_PROVIDER === undefined) {
     process.env.PAPERCLIP_SECRETS_PROVIDER = config.secretsProvider;
   }
@@ -78,6 +80,22 @@ export async function startServer(): Promise<StartedServer> {
   }
   if (process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE === undefined) {
     process.env.PAPERCLIP_SECRETS_MASTER_KEY_FILE = config.secretsMasterKeyFilePath;
+  }
+  if (
+    fileConfig?.llm?.provider === "cloudflare_workers_ai" &&
+    typeof fileConfig.llm.apiKey === "string" &&
+    fileConfig.llm.apiKey.trim().length > 0
+  ) {
+    if (process.env.CLOUDFLARE_API_TOKEN === undefined) {
+      process.env.CLOUDFLARE_API_TOKEN = fileConfig.llm.apiKey.trim();
+    }
+    if (
+      process.env.CLOUDFLARE_ACCOUNT_ID === undefined &&
+      typeof fileConfig.llm.accountId === "string" &&
+      fileConfig.llm.accountId.trim().length > 0
+    ) {
+      process.env.CLOUDFLARE_ACCOUNT_ID = fileConfig.llm.accountId.trim();
+    }
   }
   
   type MigrationSummary =

@@ -146,6 +146,9 @@ export async function createApp(
       companyDeletionEnabled: opts.companyDeletionEnabled,
     }),
   );
+  // The UI and shared API contract use `/api/companies`; keep the legacy
+  // `/api/institutions` mount as a compatibility alias.
+  api.use("/companies", institutionRoutes(db));
   api.use("/institutions", institutionRoutes(db));
   api.use(agentRoutes(db));
   api.use(assetRoutes(db, opts.storageService));

@@ -40,12 +40,18 @@ describe("institution routes malformed request path guard", () => {
       };
       next();
     });
+    app.use("/api/companies", institutionRoutes({} as any));
     app.use("/api/institutions", institutionRoutes({} as any));
 
-    const res = await request(app).get("/api/institutions/issues");
+    const companiesRes = await request(app).get("/api/companies/issues");
+    const institutionsRes = await request(app).get("/api/institutions/issues");
 
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({
+    expect(companiesRes.status).toBe(400);
+    expect(companiesRes.body).toEqual({
+      error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
+    });
+    expect(institutionsRes.status).toBe(400);
+    expect(institutionsRes.body).toEqual({
       error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
     });
   });

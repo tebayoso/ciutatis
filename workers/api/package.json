@@ -11,6 +11,7 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
+    "@ciutatis/adapter-cloudflare-workers-ai": "workspace:*",
     "@ciutatis/db-cloudflare": "workspace:*",
     "@ciutatis/shared": "workspace:*",
     "@hono/zod-validator": "^0.4.3",

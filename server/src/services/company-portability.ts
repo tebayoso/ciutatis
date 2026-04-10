@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 import type { Db } from "@ciutatis/db";
 import type {
   CompanyPortabilityAgentManifestEntry,
@@ -66,6 +67,10 @@ const RUNTIME_DEFAULT_RULES: Array<{ path: string[]; value: unknown }> = [
 ];
 
 const ADAPTER_DEFAULT_RULES_BY_TYPE: Record<string, Array<{ path: string[]; value: unknown }>> = {
+  cloudflare_workers_ai: [
+    { path: ["timeoutSec"], value: 120 },
+    { path: ["model"], value: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL },
+  ],
   codex_local: [
     { path: ["timeoutSec"], value: 0 },
     { path: ["graceSec"], value: 15 },

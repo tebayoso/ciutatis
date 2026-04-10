@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { eq, and, desc } from "drizzle-orm";
-import { approvals, approvalComments } from "@ciutatis/db-cloudflare";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { approvals, approvalComments, issueApprovals, issues } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "../lib/authz.js";
 import { notFound, forbidden } from "../lib/errors.js";
@@ -30,7 +30,7 @@ function redactPayload(payload: Record<string, unknown> | null): Record<string, 
 export function approvalCompanyRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.get("/", async (c) => {
+  app.get("/companies/:companyId/approvals", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
@@ -48,12 +48,16 @@ export function approvalCompanyRoutes() {
     return c.json(rows.map((r) => ({ ...r, payload: redactPayload(r.payload as Record<string, unknown>) })));
   });
 
-  app.post("/", async (c) => {
+  app.post("/companies/:companyId/approvals", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
     const body = await c.req.json();
     const actor = getActorInfo(c);
+    const rawIssueIds: unknown = body.issueIds;
+    const issueIds = Array.isArray(rawIssueIds)
+      ? Array.from(new Set(rawIssueIds.filter((value): value is string => typeof value === "string")))
+      : [];
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -69,6 +73,19 @@ export function approvalCompanyRoutes() {
       updatedAt: now,
     });
 
+    if (issueIds.length > 0) {
+      await db.insert(issueApprovals).values(
+        issueIds.map((issueId) => ({
+          companyId,
+          issueId,
+          approvalId: id,
+          linkedByAgentId: actor.agentId ?? null,
+          linkedByUserId: actor.actorType === "user" ? actor.actorId : null,
+          createdAt: now,
+        })),
+      );
+    }
+
     const [approval] = await db.select().from(approvals).where(eq(approvals.id, id));
 
     await logActivity(db, {
@@ -79,7 +96,7 @@ export function approvalCompanyRoutes() {
       action: "approval.created",
       entityType: "approval",
       entityId: approval.id,
-      details: { type: approval.type },
+      details: { type: approval.type, issueIds },
     });
 
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) }, 201);
@@ -91,7 +108,7 @@ export function approvalCompanyRoutes() {
 export function approvalByIdRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.get("/:id", async (c) => {
+  app.get("/approvals/:id", async (c) => {
     const id = c.req.param("id")!;
     const db = c.get("db");
     const approval = await db
@@ -104,7 +121,7 @@ export function approvalByIdRoutes() {
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) });
   });
 
-  app.post("/:id/approve", async (c) => {
+  app.post("/approvals/:id/approve", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");
@@ -146,7 +163,7 @@ export function approvalByIdRoutes() {
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) });
   });
 
-  app.post("/:id/reject", async (c) => {
+  app.post("/approvals/:id/reject", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");
@@ -188,7 +205,7 @@ export function approvalByIdRoutes() {
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) });
   });
 
-  app.post("/:id/request-revision", async (c) => {
+  app.post("/approvals/:id/request-revision", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");
@@ -218,7 +235,7 @@ export function approvalByIdRoutes() {
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) });
   });
 
-  app.post("/:id/resubmit", async (c) => {
+  app.post("/approvals/:id/resubmit", async (c) => {
     const id = c.req.param("id")!;
     const db = c.get("db");
     const body = await c.req.json();
@@ -251,7 +268,7 @@ export function approvalByIdRoutes() {
     return c.json({ ...approval, payload: redactPayload(approval.payload as Record<string, unknown>) });
   });
 
-  app.get("/:id/comments", async (c) => {
+  app.get("/approvals/:id/comments", async (c) => {
     const id = c.req.param("id")!;
     const db = c.get("db");
     const approval = await db
@@ -271,7 +288,25 @@ export function approvalByIdRoutes() {
     return c.json(comments);
   });
 
-  app.post("/:id/comments", async (c) => {
+  app.get("/approvals/:id/issues", async (c) => {
+    const id = c.req.param("id")!;
+    const db = c.get("db");
+    const approval = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, id))
+      .then((rows) => rows[0] ?? null);
+    if (!approval) throw notFound("Approval not found");
+    assertCompanyAccess(c, approval.companyId);
+
+    const links = await db.select().from(issueApprovals).where(eq(issueApprovals.approvalId, id));
+    if (links.length === 0) return c.json([]);
+
+    const issueRows = await db.select().from(issues).where(inArray(issues.id, links.map((link) => link.issueId)));
+    return c.json(issueRows);
+  });
+
+  app.post("/approvals/:id/comments", async (c) => {
     const id = c.req.param("id")!;
     const db = c.get("db");
     const body = await c.req.json();

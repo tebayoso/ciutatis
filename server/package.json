@@ -43,13 +43,15 @@
     "typecheck": "pnpm --filter @ciutatis/plugin-sdk build && tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0",
     "@ciutatis/adapter-claude-local": "workspace:*",
+    "@ciutatis/adapter-cloudflare-workers-ai": "workspace:*",
     "@ciutatis/adapter-codex-local": "workspace:*",
     "@ciutatis/adapter-cursor-local": "workspace:*",
-    "@aws-sdk/client-s3": "^3.888.0",
     "@ciutatis/adapter-gemini-local": "workspace:*",
     "@ciutatis/adapter-openclaw-gateway": "workspace:*",
     "@ciutatis/adapter-opencode-local": "workspace:*",
+    "@ciutatis/adapter-pi-local": "workspace:^",
     "@ciutatis/adapter-utils": "workspace:*",
     "@ciutatis/db": "workspace:*",
     "@ciutatis/plugin-sdk": "workspace:*",

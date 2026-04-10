@@ -19,7 +19,7 @@ import { AgentConfigForm, type CreateConfigValues } from "../components/AgentCon
 import { defaultCreateValues } from "../components/agent-config-defaults";
 import { getUIAdapter } from "../adapters";
 import { AgentIcon } from "../components/AgentIconPicker";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 
 export function NewAgent() {
   const { selectedCompanyId } = useCompany();
@@ -33,8 +33,8 @@ export function NewAgent() {
   const [reportsTo, setReportsTo] = useState("");
   const [configValues, setConfigValues] = useState<CreateConfigValues>({
     ...defaultCreateValues,
-    adapterType: "gemini_local",
-    model: DEFAULT_GEMINI_LOCAL_MODEL,
+    adapterType: "cloudflare_workers_ai",
+    model: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
   });
   const [roleOpen, setRoleOpen] = useState(false);
   const [reportsToOpen, setReportsToOpen] = useState(false);
@@ -73,15 +73,14 @@ export function NewAgent() {
     }
   }, [isFirstAgent]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Lock adapter type to gemini_local - ignore any preset from query params
-  // This enforces Gemini-only policy for new agents
+  // Lock adapter type to Cloudflare Workers AI for new agents.
   useEffect(() => {
     setConfigValues((prev) => {
-      if (prev.adapterType === "gemini_local") return prev;
+      if (prev.adapterType === "cloudflare_workers_ai") return prev;
       return {
         ...prev,
-        adapterType: "gemini_local",
-        model: DEFAULT_GEMINI_LOCAL_MODEL,
+        adapterType: "cloudflare_workers_ai",
+        model: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
       };
     });
   }, []);

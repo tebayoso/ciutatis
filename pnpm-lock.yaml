@@ -26,6 +26,9 @@ importers:
 
   cli:
     dependencies:
+      '@ciutatis/adapter-cloudflare-workers-ai':
+        specifier: workspace:*
+        version: link:../packages/adapters/cloudflare-workers-ai
       '@ciutatis/adapter-gemini-local':
         specifier: workspace:*
         version: link:../packages/adapters/gemini-local
@@ -114,6 +117,22 @@ importers:
         version: 5.9.3
 
   packages/adapters/claude-local:
+    dependencies:
+      '@ciutatis/adapter-utils':
+        specifier: workspace:*
+        version: link:../../adapter-utils
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
+    devDependencies:
+      '@types/node':
+        specifier: ^24.6.0
+        version: 24.12.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/adapters/cloudflare-workers-ai:
     dependencies:
       '@ciutatis/adapter-utils':
         specifier: workspace:*
@@ -482,6 +501,9 @@ importers:
       '@ciutatis/adapter-claude-local':
         specifier: workspace:*
         version: link:../packages/adapters/claude-local
+      '@ciutatis/adapter-cloudflare-workers-ai':
+        specifier: workspace:*
+        version: link:../packages/adapters/cloudflare-workers-ai
       '@ciutatis/adapter-codex-local':
         specifier: workspace:*
         version: link:../packages/adapters/codex-local
@@ -497,6 +519,9 @@ importers:
       '@ciutatis/adapter-opencode-local':
         specifier: workspace:*
         version: link:../packages/adapters/opencode-local
+      '@ciutatis/adapter-pi-local':
+        specifier: workspace:^
+        version: link:../packages/adapters/pi-local
       '@ciutatis/adapter-utils':
         specifier: workspace:*
         version: link:../packages/adapter-utils
@@ -609,6 +634,9 @@ importers:
       '@ciutatis/adapter-claude-local':
         specifier: workspace:*
         version: link:../packages/adapters/claude-local
+      '@ciutatis/adapter-cloudflare-workers-ai':
+        specifier: workspace:*
+        version: link:../packages/adapters/cloudflare-workers-ai
       '@ciutatis/adapter-codex-local':
         specifier: workspace:*
         version: link:../packages/adapters/codex-local
@@ -721,6 +749,9 @@ importers:
 
   workers/api:
     dependencies:
+      '@ciutatis/adapter-cloudflare-workers-ai':
+        specifier: workspace:*
+        version: link:../../packages/adapters/cloudflare-workers-ai
       '@ciutatis/db-cloudflare':
         specifier: workspace:*
         version: link:../../packages/db-cloudflare

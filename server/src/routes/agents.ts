@@ -37,6 +37,7 @@ import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
 import { runClaudeLogin } from "@ciutatis/adapter-claude-local/server";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
@@ -47,6 +48,7 @@ import { ensureOpenCodeModelConfiguredAndAvailable } from "@ciutatis/adapter-ope
 
 export function agentRoutes(db: Db) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
+    cloudflare_workers_ai: "instructionsFilePath",
     claude_local: "instructionsFilePath",
     codex_local: "instructionsFilePath",
     gemini_local: "instructionsFilePath",
@@ -254,6 +256,10 @@ export function agentRoutes(db: Db) {
       if (!hasBypassFlag) {
         next.dangerouslyBypassApprovalsAndSandbox = DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX;
       }
+      return ensureGatewayDeviceKey(adapterType, next);
+    }
+    if (adapterType === "cloudflare_workers_ai" && !asNonEmptyString(next.model)) {
+      next.model = DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL;
       return ensureGatewayDeviceKey(adapterType, next);
     }
     if (adapterType === "gemini_local" && !asNonEmptyString(next.model)) {

@@ -21,6 +21,7 @@ import { Bot, Plus, List, GitBranch, SlidersHorizontal } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@ciutatis/shared";
 
 const adapterLabels: Record<string, string> = {
+  cloudflare_workers_ai: "Cloudflare",
   claude_local: "Claude",
   codex_local: "Codex",
   gemini_local: "Gemini",

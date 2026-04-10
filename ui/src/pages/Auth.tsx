@@ -7,10 +7,15 @@ import { Button } from "@/components/ui/button";
 import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
 import { Sparkles } from "lucide-react";
 
+type AuthMode = "sign_in" | "sign_up";
+
 export function AuthPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const requestedMode = searchParams.get("mode") === "signup" ? "sign_up" : "sign_in";
+  const [mode, setMode] = useState<AuthMode>(requestedMode);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +33,20 @@ export function AuthPage() {
     }
   }, [session, navigate, nextPath]);
 
+  useEffect(() => {
+    setMode(requestedMode);
+  }, [requestedMode]);
+
   const mutation = useMutation({
     mutationFn: async () => {
+      if (mode === "sign_up") {
+        await authApi.signUpEmail({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        });
+        return;
+      }
       await authApi.signInEmail({ email: email.trim(), password });
     },
     onSuccess: async () => {
@@ -43,7 +60,10 @@ export function AuthPage() {
     },
   });
 
-  const canSubmit = email.trim().length > 0 && password.trim().length > 0;
+  const canSubmit =
+    email.trim().length > 0 &&
+    password.trim().length > 0 &&
+    (mode === "sign_in" || name.trim().length > 0);
 
   if (isSessionLoading) {
     return (
@@ -63,9 +83,44 @@ export function AuthPage() {
             <span className="text-sm font-medium">Ciutatis</span>
           </div>
 
-          <h1 className="text-xl font-semibold">Sign in to Ciutatis</h1>
+          <div className="inline-flex rounded-md border border-border p-1">
+            <button
+              type="button"
+              className={`rounded px-3 py-1.5 text-sm transition-colors ${
+                mode === "sign_in"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => {
+                setMode("sign_in");
+                setError(null);
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className={`rounded px-3 py-1.5 text-sm transition-colors ${
+                mode === "sign_up"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => {
+                setMode("sign_up");
+                setError(null);
+              }}
+            >
+              Create account
+            </button>
+          </div>
+
+          <h1 className="mt-6 text-xl font-semibold">
+            {mode === "sign_up" ? "Create your Ciutatis account" : "Sign in to Ciutatis"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Use your email and password to access this instance.
+            {mode === "sign_up"
+              ? "Create an email/password account to access this instance."
+              : "Use your email and password to access this instance."}
           </p>
 
           <form
@@ -80,6 +135,19 @@ export function AuthPage() {
               mutation.mutate();
             }}
           >
+            {mode === "sign_up" && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                <input
+                  className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  autoComplete="name"
+                  autoFocus
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Email</label>
               <input
@@ -88,7 +156,7 @@ export function AuthPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
-                autoFocus
+                autoFocus={mode === "sign_in"}
               />
             </div>
             <div>
@@ -98,7 +166,7 @@ export function AuthPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
+                autoComplete={mode === "sign_up" ? "new-password" : "current-password"}
               />
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
@@ -108,7 +176,7 @@ export function AuthPage() {
               aria-disabled={!canSubmit || mutation.isPending}
               className={`w-full ${!canSubmit && !mutation.isPending ? "opacity-50" : ""}`}
             >
-              {mutation.isPending ? "Working…" : "Sign In"}
+              {mutation.isPending ? "Working…" : mode === "sign_up" ? "Create account" : "Sign In"}
             </Button>
           </form>
 

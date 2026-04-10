@@ -1,7 +1,13 @@
 import type { CLIAdapterModule } from "@ciutatis/adapter-utils";
+import { printCloudflareWorkersAiStreamEvent } from "@ciutatis/adapter-cloudflare-workers-ai/cli";
 import { printGeminiStreamEvent } from "@ciutatis/adapter-gemini-local/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
+
+const cloudflareWorkersAiCLIAdapter: CLIAdapterModule = {
+  type: "cloudflare_workers_ai",
+  formatStdoutEvent: printCloudflareWorkersAiStreamEvent,
+};
 
 const geminiLocalCLIAdapter: CLIAdapterModule = {
   type: "gemini_local",
@@ -10,6 +16,7 @@ const geminiLocalCLIAdapter: CLIAdapterModule = {
 
 const adaptersByType = new Map<string, CLIAdapterModule>(
   [
+    cloudflareWorkersAiCLIAdapter,
     geminiLocalCLIAdapter,
     processCLIAdapter,
     httpCLIAdapter,

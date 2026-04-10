@@ -143,16 +143,18 @@ export function loadConfig(): Config {
       ? (authBaseUrlModeFromEnvRaw as AuthBaseUrlMode)
       : null;
   const publicUrlFromEnv = process.env.PAPERCLIP_PUBLIC_URL;
-  const authPublicBaseUrlRaw =
+  const authPublicBaseUrlFromEnvRaw =
     process.env.PAPERCLIP_AUTH_PUBLIC_BASE_URL ??
     process.env.BETTER_AUTH_URL ??
     process.env.BETTER_AUTH_BASE_URL ??
-    publicUrlFromEnv ??
-    fileConfig?.auth?.publicBaseUrl;
-  const authPublicBaseUrl = authPublicBaseUrlRaw?.trim() || undefined;
+    publicUrlFromEnv;
+  const authPublicBaseUrlFromEnv = authPublicBaseUrlFromEnvRaw?.trim() || undefined;
+  const authPublicBaseUrl =
+    authPublicBaseUrlFromEnv ??
+    (fileConfig?.auth?.publicBaseUrl?.trim() || undefined);
   const authBaseUrlMode: AuthBaseUrlMode =
     authBaseUrlModeFromEnv ??
-    fileConfig?.auth?.baseUrlMode ??
+    (authPublicBaseUrlFromEnv ? "explicit" : fileConfig?.auth?.baseUrlMode) ??
     (authPublicBaseUrl ? "explicit" : "auto");
   const disableSignUpFromEnv = process.env.PAPERCLIP_AUTH_DISABLE_SIGN_UP;
   const authDisableSignUp: boolean =

@@ -5,7 +5,7 @@ import { forbidden } from "../errors.js";
 import { listServerAdapters } from "../adapters/index.js";
 import { agentService } from "../services/agents.js";
 
-const LLM_ADAPTER_TYPES = new Set(["gemini_local"]);
+const LLM_ADAPTER_TYPES = new Set(["cloudflare_workers_ai"]);
 
 function hasCreatePermission(agent: { role: string; permissions: Record<string, unknown> | null | undefined }) {
   if (!agent.permissions || typeof agent.permissions !== "object") return false;

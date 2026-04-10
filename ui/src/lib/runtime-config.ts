@@ -8,9 +8,11 @@ function readWindow() {
 }
 
 export function getRuntimeApiBase() {
-  return readWindow().__CIUTATIS_API_BASE ?? "/api";
+  const apiBase = readWindow().__CIUTATIS_API_BASE;
+  return typeof apiBase === "string" && apiBase.trim().length > 0 ? apiBase : "/api";
 }
 
 export function getRuntimeBasename() {
-  return readWindow().__CIUTATIS_BASENAME ?? "/";
+  const basename = readWindow().__CIUTATIS_BASENAME;
+  return typeof basename === "string" && basename.trim().length > 0 ? basename : "/";
 }

@@ -11,6 +11,7 @@ import type { AdapterModel } from "../api/agents";
 import { agentsApi } from "../api/agents";
 import { secretsApi } from "../api/secrets";
 import { assetsApi } from "../api/assets";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
 import {
   Popover,
@@ -281,6 +282,12 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     adapterType === "gemini_local" ||
     adapterType === "opencode_local" ||
     adapterType === "cursor";
+  const supportsHostedModelConfig = adapterType === "cloudflare_workers_ai";
+  const supportsPromptTemplate = isLocal || supportsHostedModelConfig;
+  const supportsEnvironmentBindings = isLocal || supportsHostedModelConfig;
+  const supportsModelSelection = isLocal || supportsHostedModelConfig;
+  const supportsCommandConfig = isLocal;
+  const supportsWorkingDirectory = isLocal;
   const uiAdapter = useMemo(() => getUIAdapter(adapterType), [adapterType]);
 
   // Fetch adapter models for the effective adapter type
@@ -374,7 +381,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       : adapterType === "opencode_local"
         ? eff("adapterConfig", "variant", String(config.variant ?? ""))
       : eff("adapterConfig", "effort", String(config.effort ?? ""));
-  const showThinkingEffort = adapterType !== "gemini_local";
+  const showThinkingEffort = supportsModelSelection && adapterType !== "gemini_local";
   const codexSearchEnabled = adapterType === "codex_local"
     ? (isCreate ? Boolean(val!.search) : eff("adapterConfig", "search", Boolean(config.search)))
     : false;
@@ -457,7 +464,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 }}
               />
             </Field>
-            {isLocal && (
+            {supportsPromptTemplate && (
               <>
                 <Field label="Prompt Template" hint={help.promptTemplate}>
                   <MarkdownEditor
@@ -504,23 +511,32 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
           </Button>
         </div>
         <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
-          {/* Adapter type dropdown - hidden in create mode since adapter is locked to gemini_local */}
+          {/* Adapter type dropdown - hidden in create mode since adapter is locked to the default hosted adapter */}
           {!isCreate && (
             <Field label="Adapter type" hint={help.adapterType}>
               <AdapterTypeDropdown
                 value={adapterType}
                 onChange={(t) => {
-                  // Only gemini_local is supported - set Gemini-specific defaults
+                  const nextAdapterDefaults =
+                    t === "cloudflare_workers_ai"
+                      ? {
+                          model: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
+                          effort: "",
+                          modelReasoningEffort: "",
+                          variant: "",
+                          mode: "",
+                        }
+                      : {
+                          model: DEFAULT_GEMINI_LOCAL_MODEL,
+                          effort: "",
+                          modelReasoningEffort: "",
+                          variant: "",
+                          mode: "",
+                        };
                   setOverlay((prev) => ({
                     ...prev,
                     adapterType: t,
-                    adapterConfig: {
-                      model: DEFAULT_GEMINI_LOCAL_MODEL,
-                      effort: "",
-                      modelReasoningEffort: "",
-                      variant: "",
-                      mode: "",
-                    },
+                    adapterConfig: nextAdapterDefaults,
                   }));
                 }}
               />
@@ -540,7 +556,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
           )}
 
           {/* Working directory */}
-          {isLocal && (
+          {supportsWorkingDirectory && (
             <Field label="Working directory" hint={help.cwd}>
               <div className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5">
                 <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -565,7 +581,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
           )}
 
           {/* Prompt template (create mode only — edit mode shows this in Identity) */}
-          {isLocal && isCreate && (
+          {supportsPromptTemplate && isCreate && (
             <>
               <Field label="Prompt Template" hint={help.promptTemplate}>
                 <MarkdownEditor
@@ -593,61 +609,67 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       </div>
 
       {/* ---- Permissions & Configuration ---- */}
-      {isLocal && (
+      {(supportsModelSelection || supportsEnvironmentBindings || supportsCommandConfig) && (
         <div className={cn(!cards && "border-b border-border")}>
           {cards
             ? <h3 className="text-sm font-medium mb-3">Permissions &amp; Configuration</h3>
             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Permissions &amp; Configuration</div>
           }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
-              <Field label="Command" hint={help.localCommand}>
-                <DraftInput
-                  value={
-                    isCreate
-                      ? val!.command
-                      : eff("adapterConfig", "command", String(config.command ?? ""))
-                  }
-                  onCommit={(v) =>
-                    isCreate
-                      ? set!({ command: v })
-                      : mark("adapterConfig", "command", v || undefined)
-                  }
-                  immediate
-                  className={inputClass}
-                  placeholder={
-                    adapterType === "codex_local"
-                      ? "codex"
-                      : adapterType === "gemini_local"
-                        ? "gemini"
-                      : adapterType === "cursor"
-                        ? "agent"
-                        : adapterType === "opencode_local"
-                          ? "opencode"
-                          : "claude"
-                  }
-                />
-              </Field>
+              {supportsCommandConfig && (
+                <Field label="Command" hint={help.localCommand}>
+                  <DraftInput
+                    value={
+                      isCreate
+                        ? val!.command
+                        : eff("adapterConfig", "command", String(config.command ?? ""))
+                    }
+                    onCommit={(v) =>
+                      isCreate
+                        ? set!({ command: v })
+                        : mark("adapterConfig", "command", v || undefined)
+                    }
+                    immediate
+                    className={inputClass}
+                    placeholder={
+                      adapterType === "codex_local"
+                        ? "codex"
+                        : adapterType === "gemini_local"
+                          ? "gemini"
+                          : adapterType === "cursor"
+                            ? "agent"
+                            : adapterType === "opencode_local"
+                              ? "opencode"
+                              : "claude"
+                    }
+                  />
+                </Field>
+              )}
 
-              <ModelDropdown
-                models={models}
-                value={currentModelId}
-                onChange={(v) =>
-                  isCreate
-                    ? set!({ model: v })
-                    : mark("adapterConfig", "model", v || undefined)
-                }
-                open={modelOpen}
-                onOpenChange={setModelOpen}
-                allowDefault={adapterType !== "opencode_local"}
-                required={adapterType === "opencode_local"}
-                groupByProvider={adapterType === "opencode_local"}
-              />
-              {fetchedModelsError && (
-                <p className="text-xs text-destructive">
-                  {fetchedModelsError instanceof Error
-                    ? fetchedModelsError.message
-                    : "Failed to load adapter models."}
-                </p>
+              {supportsModelSelection && (
+                <>
+                  <ModelDropdown
+                    models={models}
+                    value={currentModelId}
+                    onChange={(v) =>
+                      isCreate
+                        ? set!({ model: v })
+                        : mark("adapterConfig", "model", v || undefined)
+                    }
+                    open={modelOpen}
+                    onOpenChange={setModelOpen}
+                    allowDefault={adapterType !== "opencode_local"}
+                    required={adapterType === "opencode_local"}
+                    groupByProvider={adapterType === "opencode_local"}
+                  />
+                  {fetchedModelsError && (
+                    <p className="text-xs text-destructive">
+                      {fetchedModelsError instanceof Error
+                        ? fetchedModelsError.message
+                        : "Failed to load adapter models."}
+                    </p>
+                  )}
+                </>
               )}
 
               {showThinkingEffort && (
@@ -702,44 +724,48 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 <ClaudeLocalAdvancedFields {...adapterFieldProps} />
               )}
 
-              <Field label="Extra args (comma-separated)" hint={help.extraArgs}>
-                <DraftInput
-                  value={
-                    isCreate
-                      ? val!.extraArgs
-                      : eff("adapterConfig", "extraArgs", formatArgList(config.extraArgs))
-                  }
-                  onCommit={(v) =>
-                    isCreate
-                      ? set!({ extraArgs: v })
-                      : mark("adapterConfig", "extraArgs", v ? parseCommaArgs(v) : undefined)
-                  }
-                  immediate
-                  className={inputClass}
-                  placeholder="e.g. --verbose, --foo=bar"
-                />
-              </Field>
+              {supportsCommandConfig && (
+                <Field label="Extra args (comma-separated)" hint={help.extraArgs}>
+                  <DraftInput
+                    value={
+                      isCreate
+                        ? val!.extraArgs
+                        : eff("adapterConfig", "extraArgs", formatArgList(config.extraArgs))
+                    }
+                    onCommit={(v) =>
+                      isCreate
+                        ? set!({ extraArgs: v })
+                        : mark("adapterConfig", "extraArgs", v ? parseCommaArgs(v) : undefined)
+                    }
+                    immediate
+                    className={inputClass}
+                    placeholder="e.g. --verbose, --foo=bar"
+                  />
+                </Field>
+              )}
 
-              <Field label="Environment variables" hint={help.envVars}>
-                <EnvVarEditor
-                  value={
-                    isCreate
-                      ? ((val!.envBindings ?? EMPTY_ENV) as Record<string, EnvBinding>)
-                      : ((eff("adapterConfig", "env", (config.env ?? EMPTY_ENV) as Record<string, EnvBinding>))
-                      )
-                  }
-                  secrets={availableSecrets}
-                  onCreateSecret={async (name, value) => {
-                    const created = await createSecret.mutateAsync({ name, value });
-                    return created;
-                  }}
-                  onChange={(env) =>
-                    isCreate
-                      ? set!({ envBindings: env ?? {}, envVars: "" })
-                      : mark("adapterConfig", "env", env)
-                  }
-                />
-              </Field>
+              {supportsEnvironmentBindings && (
+                <Field label="Environment variables" hint={help.envVars}>
+                  <EnvVarEditor
+                    value={
+                      isCreate
+                        ? ((val!.envBindings ?? EMPTY_ENV) as Record<string, EnvBinding>)
+                        : ((eff("adapterConfig", "env", (config.env ?? EMPTY_ENV) as Record<string, EnvBinding>))
+                        )
+                    }
+                    secrets={availableSecrets}
+                    onCreateSecret={async (name, value) => {
+                      const created = await createSecret.mutateAsync({ name, value });
+                      return created;
+                    }}
+                    onChange={(env) =>
+                      isCreate
+                        ? set!({ envBindings: env ?? {}, envVars: "" })
+                        : mark("adapterConfig", "env", env)
+                    }
+                  />
+                </Field>
+              )}
 
               {/* Edit-only: timeout + grace period */}
               {!isCreate && (
@@ -905,7 +931,17 @@ function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmentTestRe
 
 /* ---- Internal sub-components ---- */
 
-const ENABLED_ADAPTER_TYPES = new Set(["gemini_local"]);
+const ENABLED_ADAPTER_TYPES = new Set([
+  "cloudflare_workers_ai",
+  "claude_local",
+  "codex_local",
+  "cursor",
+  "gemini_local",
+  "openclaw_gateway",
+  "opencode_local",
+  "process",
+  "http",
+]);
 
 /** Display list includes all real adapter types plus UI-only coming-soon entries. */
 const ADAPTER_DISPLAY_LIST: { value: string; label: string; comingSoon: boolean }[] = [

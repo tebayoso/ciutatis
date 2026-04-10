@@ -11,16 +11,14 @@ account_id = "b9f5ebc6c05975fab56f056782461b77"
 pattern = "admin.ciutatis.com/api/*"
 zone_name = "ciutatis.com"
 
-[[routes]]
-pattern = "www.admin.ciutatis.com/api/*"
-zone_name = "ciutatis.com"
-
 # Plain-text environment variables (safe to commit)
 [vars]
 # "local_trusted" (no login) or "authenticated" (login required)
 DEPLOYMENT_MODE = "authenticated"
 # Disables new user registrations in authenticated mode
 AUTH_DISABLE_SIGNUP = "true"
+# Account ID used by hosted Workers AI adapter probes
+CLOUDFLARE_ACCOUNT_ID = "b9f5ebc6c05975fab56f056782461b77"
 
 # Secrets — values must be set via: wrangler secret put <NAME>
 # BETTER_AUTH_SECRET   — session signing secret (required for authenticated mode)

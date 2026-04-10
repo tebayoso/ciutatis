@@ -39,7 +39,7 @@ export function NewAgentDialog() {
 
   function handleAdvancedConfig() {
     closeNewAgent();
-    navigate(`/agents/new?adapterType=${encodeURIComponent("gemini_local")}`);
+    navigate(`/agents/new?adapterType=${encodeURIComponent("cloudflare_workers_ai")}`);
   }
 
   return (

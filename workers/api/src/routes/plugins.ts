@@ -14,6 +14,9 @@ function stub(c: Context<AppEnv>) {
 export function pluginRoutes() {
   const app = new Hono<AppEnv>();
 
+  app.get("/plugins", (c) => c.json([]));
+  app.get("/plugins/examples", (c) => c.json([]));
+  app.get("/plugins/ui-contributions", (c) => c.json([]));
   app.get("/companies/:companyId/plugins", (c) => stub(c));
   app.post("/companies/:companyId/plugins/install", (c) => stub(c));
   app.post("/plugins/:pluginId/uninstall", (c) => stub(c));

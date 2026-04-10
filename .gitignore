@@ -57,3 +57,5 @@ tests/release-smoke/playwright-report/
 
 # Seed credentials (local reference only — DO NOT COMMIT)
 doc/SEED-CREDENTIALS.md
+.aidesigner/*
+!.aidesigner/.gitkeep

@@ -11,7 +11,7 @@ import { test, expect } from "@playwright/test";
  *
  * By default this runs in skip_llm mode: we do NOT assert that an LLM
  * heartbeat fires. Set PAPERCLIP_E2E_SKIP_LLM=false to enable LLM-dependent
- * assertions (requires a valid ANTHROPIC_API_KEY).
+ * assertions.
  */
 
 const SKIP_LLM = process.env.PAPERCLIP_E2E_SKIP_LLM !== "false";
@@ -19,10 +19,9 @@ const SKIP_LLM = process.env.PAPERCLIP_E2E_SKIP_LLM !== "false";
 const COMPANY_NAME = `E2E-Test-${Date.now()}`;
 const AGENT_NAME = "CEO";
 const TASK_TITLE = "E2E test task";
-
 test.describe("Onboarding wizard", () => {
   test("completes full wizard flow", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
 
     const wizardHeading = page.locator("h3", { hasText: "Name your company" });
     const newCompanyBtn = page.getByRole("button", { name: "New Company" });
@@ -50,19 +49,7 @@ test.describe("Onboarding wizard", () => {
     const agentNameInput = page.locator('input[placeholder="CEO"]');
     await expect(agentNameInput).toHaveValue(AGENT_NAME);
 
-    await expect(
-      page.locator("button", { hasText: "Claude Code" }).locator("..")
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: "More Agent Adapter Types" }).click();
-    await page.getByRole("button", { name: "Process" }).click();
-
-    const commandInput = page.locator('input[placeholder="e.g. node, python"]');
-    await commandInput.fill("echo");
-    const argsInput = page.locator(
-      'input[placeholder="e.g. script.js, --flag"]'
-    );
-    await argsInput.fill("hello");
+    await expect(page.getByText("Cloudflare Workers AI")).toBeVisible();
 
     await page.getByRole("button", { name: "Next" }).click();
 
@@ -110,7 +97,7 @@ test.describe("Onboarding wizard", () => {
     );
     expect(ceoAgent).toBeTruthy();
     expect(ceoAgent.role).toBe("ceo");
-    expect(ceoAgent.adapterType).toBe("process");
+    expect(ceoAgent.adapterType).toBe("cloudflare_workers_ai");
 
     const issuesRes = await page.request.get(
       `${baseUrl}/api/companies/${company.id}/issues`

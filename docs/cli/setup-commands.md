@@ -36,7 +36,7 @@ pnpm ciutatis onboard
 First prompt:
 
 1. `Quickstart` (recommended): local defaults (embedded database, no LLM provider, local disk storage, default secrets)
-2. `Advanced setup`: full interactive configuration
+2. `Advanced setup`: full interactive configuration, including optional Cloudflare Workers AI account ID + API token
 
 Start immediately after onboarding:
 

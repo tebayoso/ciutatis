@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { eq } from "drizzle-orm";
+import { agentConfigurationDoc } from "@ciutatis/adapter-cloudflare-workers-ai";
 import { agents } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 import { forbidden } from "../lib/errors.js";
@@ -30,6 +31,10 @@ async function assertCanRead(c: Context<AppEnv>) {
   }
 }
 
+function normalizeAdapterTypeSegment(value: string) {
+  return value.endsWith(".txt") ? value.slice(0, -4) : value;
+}
+
 export function llmRoutes() {
   const app = new Hono<AppEnv>();
 
@@ -38,16 +43,16 @@ export function llmRoutes() {
     const lines = [
       "# Ciutatis Agent Configuration Index (Workers)",
       "",
-      "Agent adapters are managed through the main server deployment.",
+      "Hosted adapters available in this deployment:",
+      "- cloudflare_workers_ai",
       "",
-      "Related API endpoints:",
-      "- GET /api/companies/:companyId/agent-configurations",
-      "- GET /api/agents/:id/configuration",
-      "- POST /api/companies/:companyId/agent-hires",
+      "Adapter configuration docs:",
+      "- GET /llms/agent-configuration/cloudflare_workers_ai.txt",
       "",
       "Agent identity references:",
       "- GET /llms/agent-icons.txt",
       "",
+      "Local CLI adapters are not available in the Workers deployment.",
     ];
     return c.text(lines.join("\n"));
   });
@@ -64,9 +69,17 @@ export function llmRoutes() {
     return c.text(lines.join("\n"));
   });
 
-  app.get("/llms/agent-configuration/:adapterType.txt", async (c) => {
+  app.get("/llms/agent-configuration/cloudflare_workers_ai.txt", async (c) => {
     await assertCanRead(c);
-    const adapterType = c.req.param("adapterType");
+    return c.text(agentConfigurationDoc);
+  });
+
+  app.get("/llms/agent-configuration/:adapterType", async (c) => {
+    await assertCanRead(c);
+    const adapterType = normalizeAdapterTypeSegment(c.req.param("adapterType"));
+    if (adapterType === "cloudflare_workers_ai") {
+      return c.text(agentConfigurationDoc);
+    }
     return c.text(
       `# ${adapterType} agent configuration\n\nLocal adapters are not available in the Workers deployment.\nUse the main server for adapter-specific configuration.`,
       404,

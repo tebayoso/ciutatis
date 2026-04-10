@@ -7,7 +7,6 @@ import { healthApi } from "../api/health";
 import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import type { AgentAdapterType, JoinRequest } from "@ciutatis/shared";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
 
 type JoinType = "human" | "agent";
 
@@ -30,13 +29,13 @@ export function InviteLandingPage() {
   const token = (params.token ?? "").trim();
   const [joinType, setJoinType] = useState<JoinType>("human");
   const [agentName, setAgentName] = useState("");
-  const [adapterType, setAdapterType] = useState<AgentAdapterType>("gemini_local");
+  const [adapterType, setAdapterType] = useState<AgentAdapterType>("cloudflare_workers_ai");
   const [capabilities, setCapabilities] = useState("");
   const [result, setResult] = useState<{ kind: "bootstrap" | "join"; payload: unknown } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setAdapterType("gemini_local");
+    setAdapterType("cloudflare_workers_ai");
   }, []);
 
   const healthQuery = useQuery({
@@ -94,6 +93,7 @@ export function InviteLandingPage() {
     onSuccess: async (payload) => {
       setError(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.session });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.health });
       await queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       const asBootstrap =
         payload && typeof payload === "object" && "bootstrapAccepted" in (payload as Record<string, unknown>);
@@ -265,7 +265,7 @@ export function InviteLandingPage() {
             Sign in or create an account before submitting a human join request.
             <div className="mt-2">
               <Button asChild size="sm" variant="outline">
-                <Link to={`/auth?next=${encodeURIComponent(`/invite/${token}`)}`}>Sign in / Create account</Link>
+                <Link to={`/auth?mode=signup&next=${encodeURIComponent(`/invite/${token}`)}`}>Sign in / Create account</Link>
               </Button>
             </div>
           </div>

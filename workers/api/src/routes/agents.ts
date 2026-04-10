@@ -1,5 +1,7 @@
 import { Hono } from "hono";
-import { eq, and, desc, inArray, not, sql } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { models as cloudflareWorkersAiModels } from "@ciutatis/adapter-cloudflare-workers-ai";
+import { testEnvironment as testCloudflareWorkersAiEnvironment } from "@ciutatis/adapter-cloudflare-workers-ai/server";
 import {
   agents,
   companies,
@@ -9,17 +11,19 @@ import {
   agentConfigRevisions,
   agentRuntimeState,
   agentTaskSessions,
-  agentWakeupRequests,
   approvals,
   issues,
   principalPermissionGrants,
   workspaceOperations,
 } from "@ciutatis/db-cloudflare";
-import type { AppEnv } from "../lib/types.js";
+import { isUuidLike, normalizeAgentUrlKey } from "@ciutatis/shared";
+import type { AppContext, AppEnv } from "../lib/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "../lib/authz.js";
 import { notFound, forbidden, conflict, unprocessable, badRequest } from "../lib/errors.js";
 import { logActivity } from "../lib/activity.js";
 import { hashToken } from "../lib/crypto.js";
+import { resolveIssueByRef } from "../lib/issues.js";
+import { enqueueHostedHeartbeatRun, readInlineHeartbeatRunLog } from "../lib/hosted-heartbeats.js";
 import { sanitizeRecord } from "../lib/sanitize.js";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -70,19 +74,188 @@ function toLeanOrgNode(node: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function normalizeAgentPermissions(permissions: unknown, role: string) {
+  if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
+    return { canCreateAgents: role === "ceo" };
+  }
+
+  const record = permissions as Record<string, unknown>;
+  return {
+    canCreateAgents:
+      typeof record.canCreateAgents === "boolean"
+        ? record.canCreateAgents
+        : role === "ceo",
+  };
+}
+
+function canCreateAgents(agent: { role: string; permissions: unknown }) {
+  if (!agent.permissions || typeof agent.permissions !== "object") return false;
+  return Boolean((agent.permissions as Record<string, unknown>).canCreateAgents);
+}
+
+function sanitizeAdapterEnv(input: unknown): Record<string, string> {
+  const record = asRecord(input) ?? {};
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      env[key] = value.trim();
+    }
+  }
+  return env;
+}
+
+function workerAdapterEnv(c: AppContext): Record<string, string> {
+  const env: Record<string, string> = {};
+  if (typeof c.env.CLOUDFLARE_ACCOUNT_ID === "string" && c.env.CLOUDFLARE_ACCOUNT_ID.trim()) {
+    env.CLOUDFLARE_ACCOUNT_ID = c.env.CLOUDFLARE_ACCOUNT_ID.trim();
+  }
+  if (typeof c.env.CLOUDFLARE_API_TOKEN === "string" && c.env.CLOUDFLARE_API_TOKEN.trim()) {
+    env.CLOUDFLARE_API_TOKEN = c.env.CLOUDFLARE_API_TOKEN.trim();
+  }
+  return env;
+}
+
+async function hasPermissionGrant(
+  c: AppContext,
+  companyId: string,
+  principalType: "user" | "agent",
+  principalId: string,
+  permissionKey: string,
+) {
+  const db = c.get("db");
+  const grant = await db
+    .select({ companyId: principalPermissionGrants.companyId })
+    .from(principalPermissionGrants)
+    .where(
+      and(
+        eq(principalPermissionGrants.companyId, companyId),
+        eq(principalPermissionGrants.principalType, principalType),
+        eq(principalPermissionGrants.principalId, principalId),
+        eq(principalPermissionGrants.permissionKey, permissionKey),
+      ),
+    )
+    .then((rows) => rows[0] ?? null);
+  return Boolean(grant);
+}
+
+async function assertCanReadConfigurations(c: AppContext, companyId: string) {
+  assertCompanyAccess(c, companyId);
+  const actor = c.get("actor");
+  if (actor.type === "board") {
+    if (actor.source === "local_implicit" || actor.isInstanceAdmin) return;
+    const allowed = await hasPermissionGrant(c, companyId, "user", actor.userId, "agents:create");
+    if (!allowed) throw forbidden("Missing permission: agents:create");
+    return;
+  }
+  if (actor.type !== "agent" || !actor.agentId) {
+    throw forbidden("Board or permitted agent authentication required");
+  }
+  const db = c.get("db");
+  const actorAgent = await db
+    .select({
+      id: agents.id,
+      companyId: agents.companyId,
+      role: agents.role,
+      permissions: agents.permissions,
+    })
+    .from(agents)
+    .where(eq(agents.id, actor.agentId))
+    .then((rows) => rows[0] ?? null);
+  if (!actorAgent || actorAgent.companyId !== companyId) {
+    throw forbidden("Agent key cannot access another company");
+  }
+  const allowedByGrant = await hasPermissionGrant(c, companyId, "agent", actorAgent.id, "agents:create");
+  if (!allowedByGrant && !canCreateAgents(actorAgent)) {
+    throw forbidden("Missing permission: can create agents");
+  }
+}
+
+function toAgentResponse<T extends { id: string; name: string; role: string; permissions: unknown }>(row: T) {
+  return {
+    ...row,
+    urlKey: normalizeAgentUrlKey(row.name) ?? row.id,
+    permissions: normalizeAgentPermissions(row.permissions, row.role),
+  };
+}
+
+async function resolveCompanyIdForAgentReference(c: Parameters<typeof assertBoard>[0]): Promise<string | null> {
+  const companyIdQuery = c.req.query("companyId");
+  const requestedCompanyId = typeof companyIdQuery === "string" && companyIdQuery.trim().length > 0
+    ? companyIdQuery.trim()
+    : null;
+  if (requestedCompanyId) {
+    assertCompanyAccess(c, requestedCompanyId);
+    return requestedCompanyId;
+  }
+  const actor = c.get("actor");
+  if (actor.type === "agent" && actor.companyId) {
+    return actor.companyId;
+  }
+  return null;
+}
+
+async function resolveAgentId(c: Parameters<typeof assertBoard>[0], rawId: string) {
+  const raw = rawId.trim();
+  if (isUuidLike(raw)) return raw;
+
+  const companyId = await resolveCompanyIdForAgentReference(c);
+  if (!companyId) {
+    throw unprocessable("Agent shortname lookup requires companyId query parameter");
+  }
+
+  const urlKey = normalizeAgentUrlKey(raw);
+  if (!urlKey) throw notFound("Agent not found");
+
+  const db = c.get("db");
+  const rows = await db.select().from(agents).where(eq(agents.companyId, companyId));
+  const matches = rows.filter(
+    (agent) => agent.status !== "terminated" && normalizeAgentUrlKey(agent.name) === urlKey,
+  );
+  if (matches.length > 1) {
+    throw conflict("Agent shortname is ambiguous in this company. Use the agent ID.");
+  }
+  const match = matches[0];
+  if (!match) throw notFound("Agent not found");
+  return match.id;
+}
+
 export function agentRoutes() {
   const app = new Hono<AppEnv>();
 
-  // GET /companies/:companyId/adapters/:type/models — STUBBED (Node.js adapters)
   app.get("/companies/:companyId/adapters/:type/models", async (c) => {
     assertCompanyAccess(c, c.req.param("companyId")!);
+    const type = c.req.param("type")!;
+    if (type === "cloudflare_workers_ai") {
+      return c.json(cloudflareWorkersAiModels);
+    }
     return c.json([]);
   });
 
-  // POST /companies/:companyId/adapters/:type/test-environment — STUBBED
   app.post("/companies/:companyId/adapters/:type/test-environment", async (c) => {
-    assertCompanyAccess(c, c.req.param("companyId")!);
-    return c.json({ error: "Adapter testing not available in Workers runtime" }, 501);
+    const companyId = c.req.param("companyId")!;
+    const type = c.req.param("type")!;
+    await assertCanReadConfigurations(c, companyId);
+
+    if (type !== "cloudflare_workers_ai") {
+      return c.json({ error: `Unknown adapter type: ${type}` }, 404);
+    }
+
+    const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+    const adapterConfig = asRecord(body.adapterConfig) ?? {};
+    const requestEnv = sanitizeAdapterEnv(adapterConfig.env);
+    const result = await testCloudflareWorkersAiEnvironment({
+      companyId,
+      adapterType: type,
+      config: {
+        ...adapterConfig,
+        env: {
+          ...workerAdapterEnv(c),
+          ...requestEnv,
+        },
+      },
+    });
+
+    return c.json(result);
   });
 
   // GET /companies/:companyId/agents
@@ -91,7 +264,7 @@ export function agentRoutes() {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const rows = await db.select().from(agents).where(eq(agents.companyId, companyId)).orderBy(agents.name);
-    return c.json(rows);
+    return c.json(rows.map(toAgentResponse));
   });
 
   // GET /instance/scheduler-heartbeats
@@ -237,7 +410,7 @@ export function agentRoutes() {
     if (actor.type !== "agent" || !actor.agentId) return c.json({ error: "Agent authentication required" }, 401);
     const agent = await db.select().from(agents).where(eq(agents.id, actor.agentId)).then((r: any[]) => r[0] ?? null);
     if (!agent) throw notFound("Agent not found");
-    return c.json(agent);
+    return c.json(toAgentResponse(agent));
   });
 
   // GET /agents/me/inbox-lite
@@ -275,11 +448,11 @@ export function agentRoutes() {
   // GET /agents/:id
   app.get("/agents/:id", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
+    const id = await resolveAgentId(c, c.req.param("id")!);
     const agent = await db.select().from(agents).where(eq(agents.id, id)).then((r: any[]) => r[0] ?? null);
     if (!agent) throw notFound("Agent not found");
     assertCompanyAccess(c, agent.companyId);
-    return c.json(agent);
+    return c.json(toAgentResponse(agent));
   });
 
   // GET /agents/:id/configuration
@@ -825,36 +998,92 @@ export function agentRoutes() {
     const agent = await db.select().from(agents).where(eq(agents.id, id)).then((r: any[]) => r[0] ?? null);
     if (!agent) throw notFound("Agent not found");
     assertCompanyAccess(c, agent.companyId);
+    const actor = c.get("actor");
+    if (actor.type === "agent" && actor.agentId !== id) {
+      throw forbidden("Agent can only invoke itself");
+    }
     const body = await c.req.json().catch(() => ({}));
-    const wakeupId = crypto.randomUUID();
-    const now = new Date().toISOString();
-    await db.insert(agentWakeupRequests).values({
-      agentId: id,
-      companyId: agent.companyId,
-      source: "manual",
-      reason: body.reason ?? "manual",
-      status: "queued",
-      requestedByActorType: getActorInfo(c).actorType,
-      requestedByActorId: getActorInfo(c).actorId,
-    });
     const actorInfo = getActorInfo(c);
+    const run = await enqueueHostedHeartbeatRun({
+      db,
+      env: c.env,
+      executionCtx: c.executionCtx,
+      agentId: id,
+      source: body.source,
+      triggerDetail: body.triggerDetail ?? "manual",
+      reason: body.reason ?? null,
+      payload: asRecord(body.payload) ?? null,
+      idempotencyKey: typeof body.idempotencyKey === "string" ? body.idempotencyKey : null,
+      requestedByActorType: actorInfo.actorType,
+      requestedByActorId: actorInfo.actorId,
+      contextSnapshot: {
+        triggeredBy: actor.type,
+        actorId: actor.type === "agent" ? actor.agentId : actor.type === "board" ? actor.userId : null,
+        forceFreshSession: body.forceFreshSession === true,
+      },
+    });
+    if (!run) {
+      return c.json({ status: "skipped" }, 202);
+    }
     await logActivity(db, {
       companyId: agent.companyId,
       actorType: actorInfo.actorType,
       actorId: actorInfo.actorId,
       agentId: actorInfo.agentId,
       runId: actorInfo.runId,
-      action: "agent.wakeup_requested",
-      entityType: "agent",
-      entityId: id,
-      details: { wakeupId, reason: body.reason ?? "manual" },
+      action: "heartbeat.invoked",
+      entityType: "heartbeat_run",
+      entityId: run.id,
+      details: { agentId: id },
     });
-    return c.json({ id: wakeupId, status: "pending" }, 201);
+    return c.json(run, 202);
   });
 
-  // POST /agents/:id/heartbeat/invoke — STUBBED (requires local adapter)
+  // POST /agents/:id/heartbeat/invoke
   app.post("/agents/:id/heartbeat/invoke", async (c) => {
-    return c.json({ error: "Heartbeat invocation not available in Workers runtime" }, 501);
+    const db = c.get("db");
+    const id = c.req.param("id")!;
+    const agent = await db.select().from(agents).where(eq(agents.id, id)).then((r: any[]) => r[0] ?? null);
+    if (!agent) throw notFound("Agent not found");
+    assertCompanyAccess(c, agent.companyId);
+    const actor = c.get("actor");
+    if (actor.type === "agent" && actor.agentId !== id) {
+      throw forbidden("Agent can only invoke itself");
+    }
+
+    const actorInfo = getActorInfo(c);
+    const run = await enqueueHostedHeartbeatRun({
+      db,
+      env: c.env,
+      executionCtx: c.executionCtx,
+      agentId: id,
+      source: "on_demand",
+      triggerDetail: "manual",
+      reason: "manual",
+      requestedByActorType: actorInfo.actorType,
+      requestedByActorId: actorInfo.actorId,
+      contextSnapshot: {
+        triggeredBy: actor.type,
+        actorId: actor.type === "agent" ? actor.agentId : actor.type === "board" ? actor.userId : null,
+      },
+    });
+    if (!run) {
+      return c.json({ status: "skipped" }, 202);
+    }
+
+    await logActivity(db, {
+      companyId: agent.companyId,
+      actorType: actorInfo.actorType,
+      actorId: actorInfo.actorId,
+      agentId: actorInfo.agentId,
+      runId: actorInfo.runId,
+      action: "heartbeat.invoked",
+      entityType: "heartbeat_run",
+      entityId: run.id,
+      details: { agentId: id },
+    });
+
+    return c.json(run, 202);
   });
 
   // POST /agents/:id/claude-login — STUBBED (requires Node.js)
@@ -877,18 +1106,24 @@ export function agentRoutes() {
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
     const rows = await db
-      .select()
+      .select({
+        id: heartbeatRuns.id,
+        status: heartbeatRuns.status,
+        invocationSource: heartbeatRuns.invocationSource,
+        triggerDetail: heartbeatRuns.triggerDetail,
+        startedAt: heartbeatRuns.startedAt,
+        finishedAt: heartbeatRuns.finishedAt,
+        createdAt: heartbeatRuns.createdAt,
+        agentId: heartbeatRuns.agentId,
+        agentName: agents.name,
+        adapterType: agents.adapterType,
+        issueId: sql<string | null>`${heartbeatRuns.contextSnapshot} ->> 'issueId'`.as("issueId"),
+      })
       .from(heartbeatRuns)
-      .where(and(eq(heartbeatRuns.companyId, companyId), eq(heartbeatRuns.status, "running")))
-      .orderBy(desc(heartbeatRuns.startedAt));
-
-    const enriched = await Promise.all(
-      rows.map(async (run) => {
-        const agent = await db.select().from(agents).where(eq(agents.id, run.agentId)).then((r: any[]) => r[0] ?? null);
-        return { ...run, agentName: agent?.name ?? null, agentRole: agent?.role ?? null };
-      }),
-    );
-    return c.json(enriched);
+      .innerJoin(agents, eq(heartbeatRuns.agentId, agents.id))
+      .where(and(eq(heartbeatRuns.companyId, companyId), inArray(heartbeatRuns.status, ["queued", "running"])))
+      .orderBy(desc(heartbeatRuns.createdAt));
+    return c.json(rows);
   });
 
   // GET /heartbeat-runs/:runId
@@ -920,11 +1155,19 @@ export function agentRoutes() {
     const run = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, runId)).then((r: any[]) => r[0] ?? null);
     if (!run) throw notFound("Run not found");
     assertCompanyAccess(c, run.companyId);
+    const afterSeq = Number(c.req.query("afterSeq") ?? 0);
+    const limit = Number(c.req.query("limit") ?? 200);
     const events = await db
       .select()
       .from(heartbeatRunEvents)
-      .where(eq(heartbeatRunEvents.runId, runId))
-      .orderBy(heartbeatRunEvents.createdAt);
+      .where(
+        and(
+          eq(heartbeatRunEvents.runId, runId),
+          sql`${heartbeatRunEvents.seq} > ${Number.isFinite(afterSeq) ? afterSeq : 0}`,
+        ),
+      )
+      .orderBy(heartbeatRunEvents.seq)
+      .limit(Number.isFinite(limit) ? Math.max(1, Math.min(limit, 200)) : 200);
     return c.json(events.map((e) => ({ ...e, payload: redactPayload(e.payload) })));
   });
 
@@ -935,12 +1178,16 @@ export function agentRoutes() {
     const run = await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, runId)).then((r: any[]) => r[0] ?? null);
     if (!run) throw notFound("Run not found");
     assertCompanyAccess(c, run.companyId);
-    const events = await db
-      .select()
-      .from(heartbeatRunEvents)
-      .where(eq(heartbeatRunEvents.runId, runId))
-      .orderBy(heartbeatRunEvents.createdAt);
-    return c.json(events);
+    const offset = Number(c.req.query("offset") ?? 0);
+    const limitBytes = Number(c.req.query("limitBytes") ?? 256000);
+    return c.json(
+      await readInlineHeartbeatRunLog(
+        db,
+        runId,
+        Number.isFinite(offset) ? offset : 0,
+        Number.isFinite(limitBytes) ? limitBytes : 256000,
+      ),
+    );
   });
 
   // GET /heartbeat-runs/:runId/workspace-operations
@@ -974,38 +1221,83 @@ export function agentRoutes() {
   // GET /issues/:issueId/live-runs
   app.get("/issues/:issueId/live-runs", async (c) => {
     const db = c.get("db");
-    const issueId = c.req.param("issueId")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, issueId)).then((r: any[]) => r[0] ?? null);
+    const rawIssueId = c.req.param("issueId")!;
+    const issue = await resolveIssueByRef(db, rawIssueId);
     if (!issue) throw notFound("Issue not found");
     assertCompanyAccess(c, issue.companyId);
-    // heartbeatRuns has no issueId column; find runs linked via issues.checkoutRunId/executionRunId
-    const runIds = [issue.checkoutRunId, issue.executionRunId].filter(Boolean) as string[];
-    if (runIds.length === 0) return c.json([]);
     const rows = await db
-      .select()
+      .select({
+        id: heartbeatRuns.id,
+        status: heartbeatRuns.status,
+        invocationSource: heartbeatRuns.invocationSource,
+        triggerDetail: heartbeatRuns.triggerDetail,
+        startedAt: heartbeatRuns.startedAt,
+        finishedAt: heartbeatRuns.finishedAt,
+        createdAt: heartbeatRuns.createdAt,
+        agentId: heartbeatRuns.agentId,
+        agentName: agents.name,
+        adapterType: agents.adapterType,
+      })
       .from(heartbeatRuns)
-      .where(and(inArray(heartbeatRuns.id, runIds), eq(heartbeatRuns.status, "running")))
-      .orderBy(desc(heartbeatRuns.startedAt));
+      .innerJoin(agents, eq(heartbeatRuns.agentId, agents.id))
+      .where(
+        and(
+          eq(heartbeatRuns.companyId, issue.companyId),
+          inArray(heartbeatRuns.status, ["queued", "running"]),
+          sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
+        ),
+      )
+      .orderBy(desc(heartbeatRuns.createdAt));
     return c.json(rows);
   });
 
   // GET /issues/:issueId/active-run
   app.get("/issues/:issueId/active-run", async (c) => {
     const db = c.get("db");
-    const issueId = c.req.param("issueId")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, issueId)).then((r: any[]) => r[0] ?? null);
+    const rawIssueId = c.req.param("issueId")!;
+    const issue = await resolveIssueByRef(db, rawIssueId);
     if (!issue) throw notFound("Issue not found");
     assertCompanyAccess(c, issue.companyId);
-    const runIds = [issue.checkoutRunId, issue.executionRunId].filter(Boolean) as string[];
-    if (runIds.length === 0) return c.json(null);
-    const run = await db
-      .select()
-      .from(heartbeatRuns)
-      .where(and(inArray(heartbeatRuns.id, runIds), eq(heartbeatRuns.status, "running")))
-      .orderBy(desc(heartbeatRuns.startedAt))
+    let run = issue.executionRunId
+      ? await db.select().from(heartbeatRuns).where(eq(heartbeatRuns.id, issue.executionRunId)).then((r: any[]) => r[0] ?? null)
+      : null;
+    if (run && run.status !== "queued" && run.status !== "running") {
+      run = null;
+    }
+    if (!run) {
+      run = await db
+        .select()
+        .from(heartbeatRuns)
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, issue.companyId),
+            inArray(heartbeatRuns.status, ["queued", "running"]),
+            sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
+          ),
+        )
+        .orderBy(
+          sql`case when ${heartbeatRuns.status} = 'running' then 0 else 1 end`,
+          desc(heartbeatRuns.createdAt),
+        )
+        .limit(1)
+        .then((r: any[]) => r[0] ?? null);
+    }
+    if (!run) return c.json(null);
+    const agent = await db
+      .select({
+        name: agents.name,
+        adapterType: agents.adapterType,
+      })
+      .from(agents)
+      .where(eq(agents.id, run.agentId))
       .limit(1)
       .then((r: any[]) => r[0] ?? null);
-    return c.json(run);
+    if (!agent) return c.json(null);
+    return c.json({
+      ...run,
+      agentName: agent.name,
+      adapterType: agent.adapterType,
+    });
   });
 
   return app;

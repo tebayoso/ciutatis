@@ -30,7 +30,6 @@ import {
   heartbeatRuns,
   approvals,
   assets,
-  agentWakeupRequests,
 } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 import {
@@ -38,6 +37,7 @@ import {
   assertCompanyAccess,
   getActorInfo,
 } from "../lib/authz.js";
+import { resolveIssueByRef } from "../lib/issues.js";
 import {
   notFound,
   badRequest,
@@ -46,6 +46,7 @@ import {
   unprocessable,
 } from "../lib/errors.js";
 import { logActivity } from "../lib/activity.js";
+import { enqueueHostedHeartbeatRun } from "../lib/hosted-heartbeats.js";
 
 export function requestRoutes() {
   const app = new Hono<AppEnv>();
@@ -255,9 +256,10 @@ export function requestRoutes() {
   // GET /issues/:id/heartbeat-context
   app.get("/issues/:id/heartbeat-context", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     let project = null;
@@ -287,7 +289,7 @@ export function requestRoutes() {
     const recentComments = await db
       .select()
       .from(issueComments)
-      .where(eq(issueComments.issueId, issue.id))
+      .where(eq(issueComments.issueId, issueId))
       .orderBy(desc(issueComments.createdAt))
       .limit(20);
 
@@ -364,15 +366,27 @@ export function requestRoutes() {
     });
 
     if (body.assigneeAgentId && body.status !== "backlog") {
-      await db.insert(agentWakeupRequests).values({
+      void enqueueHostedHeartbeatRun({
+        db,
+        env: c.env,
+        executionCtx: c.executionCtx,
         agentId: body.assigneeAgentId,
-        companyId,
-        source: "issue_assignment",
-        reason: `Assigned to issue ${identifier}`,
-        status: "queued",
+        source: "assignment",
+        triggerDetail: "system",
+        reason: "issue_assigned",
+        payload: {
+          issueId: created?.id ?? null,
+          mutation: "create",
+        },
         requestedByActorType: actorInfo.actorType,
         requestedByActorId: actorInfo.actorId,
-      });
+        contextSnapshot: {
+          issueId: created?.id ?? null,
+          taskId: created?.id ?? null,
+          source: "issue.create",
+          wakeReason: "issue_assigned",
+        },
+      }).catch(() => undefined);
     }
 
     return c.json(created, 201);
@@ -381,9 +395,10 @@ export function requestRoutes() {
   // PATCH /issues/:id
   app.patch("/issues/:id", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const body = await c.req.json();
@@ -416,13 +431,13 @@ export function requestRoutes() {
       patch.cancelledAt = now;
     }
 
-    await db.update(issues).set(patch as any).where(eq(issues.id, id));
-    const updated = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0]);
+    await db.update(issues).set(patch as any).where(eq(issues.id, issueId));
+    const updated = await db.select().from(issues).where(eq(issues.id, issueId)).then((r: any[]) => r[0]);
 
     if (body.comment && typeof body.comment === "string") {
       await db.insert(issueComments).values({
         companyId: issue.companyId,
-        issueId: id,
+        issueId: issueId,
         authorAgentId: actor.type === "agent" ? actor.agentId : null,
         authorUserId: actor.type === "board" ? actor.userId : null,
         body: body.comment,
@@ -437,20 +452,32 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.updated",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { changedKeys: Object.keys(patch).filter((k) => k !== "updatedAt") },
     });
 
     if (body.assigneeAgentId && body.assigneeAgentId !== issue.assigneeAgentId) {
-      await db.insert(agentWakeupRequests).values({
+      void enqueueHostedHeartbeatRun({
+        db,
+        env: c.env,
+        executionCtx: c.executionCtx,
         agentId: body.assigneeAgentId,
-        companyId: issue.companyId,
-        source: "issue_assignment",
-        reason: `Reassigned to issue ${issue.identifier}`,
-        status: "queued",
+        source: "assignment",
+        triggerDetail: "system",
+        reason: "issue_assigned",
+        payload: {
+          issueId,
+          mutation: "reassign",
+        },
         requestedByActorType: actorInfo.actorType,
         requestedByActorId: actorInfo.actorId,
-      });
+        contextSnapshot: {
+          issueId,
+          taskId: issueId,
+          source: "issue.update",
+          wakeReason: "issue_assigned",
+        },
+      }).catch(() => undefined);
     }
 
     return c.json(updated);
@@ -459,12 +486,13 @@ export function requestRoutes() {
   // DELETE /issues/:id
   app.delete("/issues/:id", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
     assertBoard(c);
-    await db.delete(issues).where(eq(issues.id, id));
+    await db.delete(issues).where(eq(issues.id, issueId));
     const actorInfo = getActorInfo(c);
     await logActivity(db, {
       companyId: issue.companyId,
@@ -474,7 +502,7 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.deleted",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { title: issue.title },
     });
     return c.json({ success: true });
@@ -483,9 +511,10 @@ export function requestRoutes() {
   // POST /issues/:id/checkout
   app.post("/issues/:id/checkout", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const body = await c.req.json();
@@ -515,9 +544,9 @@ export function requestRoutes() {
         executionLockedAt: now,
         updatedAt: now,
       } as any)
-      .where(eq(issues.id, id));
+      .where(eq(issues.id, issueId));
 
-    const updated = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0]);
+    const updated = await db.select().from(issues).where(eq(issues.id, issueId)).then((r: any[]) => r[0]);
 
     const actorInfo = getActorInfo(c);
     await logActivity(db, {
@@ -528,7 +557,7 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.checked_out",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { agentId: body.agentId, runId },
     });
 
@@ -538,9 +567,10 @@ export function requestRoutes() {
   // POST /issues/:id/release
   app.post("/issues/:id/release", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const now = new Date().toISOString();
@@ -551,9 +581,9 @@ export function requestRoutes() {
         executionLockedAt: null,
         updatedAt: now,
       } as any)
-      .where(eq(issues.id, id));
+      .where(eq(issues.id, issueId));
 
-    const updated = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0]);
+    const updated = await db.select().from(issues).where(eq(issues.id, issueId)).then((r: any[]) => r[0]);
 
     const actorInfo = getActorInfo(c);
     await logActivity(db, {
@@ -564,7 +594,7 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.released",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: {},
     });
 
@@ -574,16 +604,17 @@ export function requestRoutes() {
   // GET /issues/:id/comments
   app.get("/issues/:id/comments", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const order = c.req.query("order") === "asc" ? asc : desc;
     const limit = Math.min(Number(c.req.query("limit") ?? 100), 500);
     const afterCommentId = c.req.query("afterCommentId");
 
-    let conditions = [eq(issueComments.issueId, id)];
+    let conditions = [eq(issueComments.issueId, issueId)];
     if (afterCommentId) {
       const afterComment = await db
         .select()
@@ -608,16 +639,17 @@ export function requestRoutes() {
   // GET /issues/:id/comments/:commentId
   app.get("/issues/:id/comments/:commentId", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
+    const rawId = c.req.param("id")!;
     const commentId = c.req.param("commentId")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const comment = await db
       .select()
       .from(issueComments)
-      .where(and(eq(issueComments.id, commentId), eq(issueComments.issueId, id)))
+      .where(and(eq(issueComments.id, commentId), eq(issueComments.issueId, issueId)))
       .then((r: any[]) => r[0] ?? null);
     if (!comment) throw notFound("Comment not found");
     return c.json(comment);
@@ -626,9 +658,10 @@ export function requestRoutes() {
   // POST /issues/:id/comments
   app.post("/issues/:id/comments", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const body = await c.req.json();
@@ -639,7 +672,7 @@ export function requestRoutes() {
 
     await db.insert(issueComments).values({
       companyId: issue.companyId,
-      issueId: id,
+      issueId: issueId,
       authorAgentId: actor.type === "agent" ? actor.agentId : null,
       authorUserId: actor.type === "board" ? actor.userId : null,
       body: body.body,
@@ -648,7 +681,7 @@ export function requestRoutes() {
     const created = await db
       .select()
       .from(issueComments)
-      .where(eq(issueComments.issueId, id))
+      .where(eq(issueComments.issueId, issueId))
       .orderBy(desc(issueComments.createdAt))
       .limit(1)
       .then((r: any[]) => r[0]);
@@ -657,7 +690,7 @@ export function requestRoutes() {
       await db
         .update(issues)
         .set({ status: "in_progress", completedAt: null, updatedAt: new Date().toISOString() } as any)
-        .where(eq(issues.id, id));
+        .where(eq(issues.id, issueId));
     }
 
     if (body.interrupt && issue.executionRunId) {
@@ -675,20 +708,35 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.comment_added",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { commentId: created?.id },
     });
 
-    if (issue.assigneeAgentId) {
-      await db.insert(agentWakeupRequests).values({
+    if (issue.assigneeAgentId && created?.id) {
+      void enqueueHostedHeartbeatRun({
+        db,
+        env: c.env,
+        executionCtx: c.executionCtx,
         agentId: issue.assigneeAgentId,
-        companyId: issue.companyId,
-        source: "comment",
-        reason: `New comment on ${issue.identifier}`,
-        status: "queued",
+        source: "automation",
+        triggerDetail: "system",
+        reason: "issue_commented",
+        payload: {
+          issueId,
+          commentId: created.id,
+          mutation: "comment",
+        },
         requestedByActorType: actorInfo.actorType,
         requestedByActorId: actorInfo.actorId,
-      });
+        contextSnapshot: {
+          issueId,
+          taskId: issueId,
+          commentId: created.id,
+          wakeCommentId: created.id,
+          source: "issue.comment",
+          wakeReason: "issue_commented",
+        },
+      }).catch(() => undefined);
     }
 
     return c.json(created, 201);
@@ -697,14 +745,15 @@ export function requestRoutes() {
   // GET /issues/:id/attachments
   app.get("/issues/:id/attachments", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
     const rows = await db
       .select()
       .from(issueAttachments)
-      .where(eq(issueAttachments.issueId, id))
+      .where(eq(issueAttachments.issueId, issueId))
       .orderBy(desc(issueAttachments.createdAt));
     return c.json(rows);
   });
@@ -832,20 +881,21 @@ export function requestRoutes() {
   // POST /issues/:id/read
   app.post("/issues/:id/read", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
+    const rawId = c.req.param("id")!;
     assertBoard(c);
     const actor = c.get("actor");
     if (actor.type !== "board") throw forbidden("Only board users can mark as read");
 
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const now = new Date().toISOString();
     const existing = await db
       .select()
       .from(issueReadStates)
-      .where(and(eq(issueReadStates.issueId, id), eq(issueReadStates.userId, actor.userId)))
+      .where(and(eq(issueReadStates.issueId, issueId), eq(issueReadStates.userId, actor.userId)))
       .then((r: any[]) => r[0] ?? null);
 
     if (existing) {
@@ -856,7 +906,7 @@ export function requestRoutes() {
     } else {
       await db.insert(issueReadStates).values({
         companyId: issue.companyId,
-        issueId: id,
+        issueId: issueId,
         userId: actor.userId,
         lastReadAt: now,
       });
@@ -1071,11 +1121,12 @@ export function requestRoutes() {
   // GET /issues/:id/approvals
   app.get("/issues/:id/approvals", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
-    const links = await db.select().from(issueApprovals).where(eq(issueApprovals.issueId, id));
+    const links = await db.select().from(issueApprovals).where(eq(issueApprovals.issueId, issueId));
     if (links.length === 0) return c.json([]);
     const approvalIds = links.map((l) => l.approvalId);
     const approvalRows = await db.select().from(approvals).where(inArray(approvals.id, approvalIds));
@@ -1090,9 +1141,10 @@ export function requestRoutes() {
   // POST /issues/:id/approvals
   app.post("/issues/:id/approvals", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const rawId = c.req.param("id")!;
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
 
     const body = await c.req.json();
@@ -1101,7 +1153,7 @@ export function requestRoutes() {
     const actor = c.get("actor");
     await db.insert(issueApprovals).values({
       companyId: issue.companyId,
-      issueId: id,
+      issueId: issueId,
       approvalId: body.approvalId,
       linkedByAgentId: actor.type === "agent" ? actor.agentId : null,
       linkedByUserId: actor.type === "board" ? actor.userId : null,
@@ -1116,7 +1168,7 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.approval_linked",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { approvalId: body.approvalId },
     });
     return c.json({ success: true }, 201);
@@ -1125,14 +1177,15 @@ export function requestRoutes() {
   // DELETE /issues/:id/approvals/:approvalId
   app.delete("/issues/:id/approvals/:approvalId", async (c) => {
     const db = c.get("db");
-    const id = c.req.param("id")!;
+    const rawId = c.req.param("id")!;
     const approvalId = c.req.param("approvalId")!;
-    const issue = await db.select().from(issues).where(eq(issues.id, id)).then((r: any[]) => r[0] ?? null);
+    const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
+    const issueId = issue.id;
     assertCompanyAccess(c, issue.companyId);
     await db
       .delete(issueApprovals)
-      .where(and(eq(issueApprovals.issueId, id), eq(issueApprovals.approvalId, approvalId)));
+      .where(and(eq(issueApprovals.issueId, issueId), eq(issueApprovals.approvalId, approvalId)));
     const actorInfo = getActorInfo(c);
     await logActivity(db, {
       companyId: issue.companyId,
@@ -1142,7 +1195,7 @@ export function requestRoutes() {
       runId: actorInfo.runId,
       action: "issue.approval_unlinked",
       entityType: "issue",
-      entityId: id,
+      entityId: issueId,
       details: { approvalId },
     });
     return c.json({ success: true });

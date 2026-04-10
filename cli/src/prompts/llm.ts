@@ -3,7 +3,7 @@ import type { LlmConfig } from "../config/schema.js";
 
 export async function promptLlm(): Promise<LlmConfig | undefined> {
   const configureLlm = await p.confirm({
-    message: "Configure the Gemini LLM provider now?",
+    message: "Configure Cloudflare Workers AI now?",
     initialValue: false,
   });
 
@@ -14,10 +14,22 @@ export async function promptLlm(): Promise<LlmConfig | undefined> {
 
   if (!configureLlm) return undefined;
 
-  const apiKey = await p.password({
-    message: "Google AI (Gemini) API key",
+  const accountId = await p.text({
+    message: "Cloudflare account ID",
     validate: (val) => {
-      if (!val) return "API key is required";
+      if (!val) return "Account ID is required";
+    },
+  });
+
+  if (p.isCancel(accountId)) {
+    p.cancel("Setup cancelled.");
+    process.exit(0);
+  }
+
+  const apiKey = await p.password({
+    message: "Cloudflare API token",
+    validate: (val) => {
+      if (!val) return "API token is required";
     },
   });
 
@@ -26,5 +38,5 @@ export async function promptLlm(): Promise<LlmConfig | undefined> {
     process.exit(0);
   }
 
-  return { provider: "gemini", apiKey };
+  return { provider: "cloudflare_workers_ai", apiKey, accountId };
 }

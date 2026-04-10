@@ -4,6 +4,7 @@ import {
   Field,
 } from "../../components/agent-config-primitives";
 import { ChoosePathButton } from "../../components/PathInstructionsModal";
+import { LocalWorkspaceRuntimeFields } from "../local-workspace-runtime-fields";
 
 const inputClass =
   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
@@ -11,15 +12,18 @@ const instructionsFileHint =
   "Absolute path to a markdown file (e.g. AGENTS.md) that defines this agent's behavior. Prepended to the Gemini prompt at runtime.";
 
 export function GeminiLocalConfigFields({
+  mode,
+  adapterType,
   isCreate,
   values,
   set,
   config,
   eff,
   mark,
+  models,
 }: AdapterConfigFieldsProps) {
   return (
-    <>
+    <div className="space-y-3">
       <Field label="Agent instructions file" hint={instructionsFileHint}>
         <div className="flex items-center gap-2">
           <DraftInput
@@ -44,6 +48,17 @@ export function GeminiLocalConfigFields({
           <ChoosePathButton />
         </div>
       </Field>
-    </>
+      <LocalWorkspaceRuntimeFields
+        isCreate={isCreate}
+        values={values}
+        set={set}
+        config={config}
+        mark={mark}
+        eff={eff}
+        mode={mode}
+        adapterType={adapterType}
+        models={models}
+      />
+    </div>
   );
 }

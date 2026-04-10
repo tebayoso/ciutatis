@@ -10,14 +10,14 @@ import { hashToken } from "../lib/crypto.js";
 export function secretCompanyRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.get("/providers", (c) => {
+  app.get("/companies/:companyId/secret-providers", (c) => {
     assertBoard(c);
     return c.json([
       { id: "local_encrypted", label: "Local (encrypted at rest)", available: true },
     ]);
   });
 
-  app.get("/", async (c) => {
+  app.get("/companies/:companyId/secrets", async (c) => {
     const companyId = c.req.param("companyId")!;
     assertBoard(c);
     assertCompanyAccess(c, companyId);
@@ -42,7 +42,7 @@ export function secretCompanyRoutes() {
     return c.json(secrets);
   });
 
-  app.post("/", async (c) => {
+  app.post("/companies/:companyId/secrets", async (c) => {
     assertBoard(c);
     const companyId = c.req.param("companyId")!;
     assertCompanyAccess(c, companyId);
@@ -99,7 +99,7 @@ export function secretCompanyRoutes() {
 export function secretByIdRoutes() {
   const app = new Hono<AppEnv>();
 
-  app.post("/:id/rotate", async (c) => {
+  app.post("/secrets/:id/rotate", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");
@@ -151,7 +151,7 @@ export function secretByIdRoutes() {
     return c.json(rotated);
   });
 
-  app.patch("/:id", async (c) => {
+  app.patch("/secrets/:id", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");
@@ -187,7 +187,7 @@ export function secretByIdRoutes() {
     return c.json(updated);
   });
 
-  app.delete("/:id", async (c) => {
+  app.delete("/secrets/:id", async (c) => {
     assertBoard(c);
     const id = c.req.param("id")!;
     const db = c.get("db");

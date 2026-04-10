@@ -1,12 +1,12 @@
 import type { CreateConfigValues } from "@ciutatis/adapter-utils";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 
 export const defaultCreateValues: CreateConfigValues = {
-  adapterType: "gemini_local",
+  adapterType: "cloudflare_workers_ai",
   cwd: "",
   instructionsFilePath: "",
   promptTemplate: "",
-  model: DEFAULT_GEMINI_LOCAL_MODEL,
+  model: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
   thinkingEffort: "",
   chrome: false,
   dangerouslySkipPermissions: true,

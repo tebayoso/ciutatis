@@ -25,16 +25,13 @@ import {
 import { getUIAdapter } from "../adapters";
 import { defaultCreateValues } from "./agent-config-defaults";
 import { parseOnboardingGoalInput } from "../lib/onboarding-goal";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
+import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
 import { resolveRouteOnboardingOptions } from "../lib/onboarding-route";
 import { AsciiArtAnimation } from "./AsciiArtAnimation";
-import { ChoosePathButton } from "./PathInstructionsModal";
-import { HintIcon } from "./agent-config-primitives";
 import {
   Building2,
   Bot,
   Code,
-  Gem,
   ListTodo,
   Rocket,
   ArrowLeft,
@@ -44,14 +41,13 @@ import {
   MousePointer2,
   Check,
   Loader2,
-  FolderOpen,
   ChevronDown,
   ShieldAlert,
   X
 } from "lucide-react";
 
 type Step = 1 | 2 | 3 | 4;
-type AdapterType = "gemini_local";
+type AdapterType = "cloudflare_workers_ai";
 
 const DEFAULT_TASK_DESCRIPTION = `Setup yourself as the CEO. Use the ceo persona found here: 
 
@@ -106,9 +102,10 @@ export function OnboardingWizard() {
 
   // Step 2
   const [agentName, setAgentName] = useState("CEO");
-  const [adapterType, setAdapterType] = useState<AdapterType>("gemini_local");
+  const [adapterType, setAdapterType] =
+    useState<AdapterType>("cloudflare_workers_ai");
   const [cwd, setCwd] = useState("");
-  const [model, setModel] = useState(DEFAULT_GEMINI_LOCAL_MODEL);
+  const [model, setModel] = useState(DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL);
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
   const [url, setUrl] = useState("");
@@ -175,8 +172,8 @@ export function OnboardingWizard() {
   }, [step, taskDescription, autoResizeTextarea]);
 
   useEffect(() => {
-    setAdapterType("gemini_local");
-    setModel(DEFAULT_GEMINI_LOCAL_MODEL);
+    setAdapterType("cloudflare_workers_ai");
+    setModel(DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL);
   }, []);
 
   const {
@@ -191,8 +188,8 @@ export function OnboardingWizard() {
     queryFn: () => agentsApi.adapterModels(createdCompanyId!, adapterType),
     enabled: Boolean(createdCompanyId) && effectiveOnboardingOpen && step === 2
   });
-  const isLocalAdapter = adapterType === "gemini_local";
-  const effectiveAdapterCommand = command.trim() || "gemini";
+  const shouldGateOnAdapterEnvironment =
+    adapterType === "cloudflare_workers_ai";
 
   useEffect(() => {
     if (step !== 2) return;
@@ -229,7 +226,7 @@ export function OnboardingWizard() {
     setCompanyName("");
     setCompanyGoal("");
     setAgentName("CEO");
-    setAdapterType("gemini_local");
+    setAdapterType("cloudflare_workers_ai");
     setCwd("");
     setModel("");
     setCommand("");
@@ -257,7 +254,7 @@ export function OnboardingWizard() {
       ...defaultCreateValues,
       adapterType,
       cwd,
-      model: model || DEFAULT_GEMINI_LOCAL_MODEL,
+      model: model || DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
       command,
       args,
       url,
@@ -336,7 +333,7 @@ export function OnboardingWizard() {
     setLoading(true);
     setError(null);
     try {
-      if (isLocalAdapter) {
+      if (shouldGateOnAdapterEnvironment) {
         const result = adapterEnvResult ?? (await runAdapterEnvironmentTest());
         if (!result) return;
       }
@@ -612,11 +609,13 @@ export function OnboardingWizard() {
                       Adapter type
                     </label>
                     <div className="flex items-center gap-3 rounded-md border border-foreground bg-accent px-3 py-2.5">
-                      <Gem className="h-4 w-4" />
+                      <Sparkles className="h-4 w-4" />
                       <div className="flex flex-col">
-                        <span className="text-xs font-medium">Gemini CLI</span>
+                        <span className="text-xs font-medium">
+                          Cloudflare Workers AI
+                        </span>
                         <span className="text-[10px] text-muted-foreground">
-                          Local Gemini agent
+                          Hosted model execution on Cloudflare
                         </span>
                       </div>
                       <span className="ml-auto bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
@@ -626,26 +625,8 @@ export function OnboardingWizard() {
                   </div>
 
                   {/* Conditional adapter fields */}
-                  {adapterType === "gemini_local" && (
+                  {adapterType === "cloudflare_workers_ai" && (
                     <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <label className="text-xs text-muted-foreground">
-                            Working directory
-                          </label>
-                          <HintIcon text="Ciutatis works best if you create a new folder for your agents to keep their memories and stay organized. Create a new folder and put the path here." />
-                        </div>
-                        <div className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5">
-                          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <input
-                            className="w-full bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/50"
-                            placeholder="/path/to/project"
-                            value={cwd}
-                            onChange={(e) => setCwd(e.target.value)}
-                          />
-                          <ChoosePathButton />
-                        </div>
-                      </div>
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">
                           Model
@@ -731,10 +712,21 @@ export function OnboardingWizard() {
                           </PopoverContent>
                         </Popover>
                       </div>
+                      <div className="rounded-md border border-border p-3 text-[11px] text-muted-foreground">
+                        Configure{" "}
+                        <span className="font-mono">
+                          CLOUDFLARE_ACCOUNT_ID
+                        </span>{" "}
+                        and{" "}
+                        <span className="font-mono">
+                          CLOUDFLARE_API_TOKEN
+                        </span>{" "}
+                        on the server or in your Ciutatis config before launch.
+                      </div>
                     </div>
                   )}
 
-                  {isLocalAdapter && (
+                  {shouldGateOnAdapterEnvironment && (
                     <div className="space-y-2 rounded-md border border-border p-3">
                       <div className="flex items-center justify-between gap-2">
                         <div>
@@ -742,8 +734,8 @@ export function OnboardingWizard() {
                             Adapter environment check
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            Runs a live probe that asks the adapter CLI to
-                            respond with hello.
+                            Runs a live Workers AI probe that validates your
+                            Cloudflare credentials and model access.
                           </p>
                         </div>
                         <Button
@@ -777,25 +769,33 @@ export function OnboardingWizard() {
                         <div className="rounded-md border border-border/70 bg-muted/20 px-2.5 py-2 text-[11px] space-y-1.5">
                           <p className="font-medium">Manual debug</p>
                           <p className="text-muted-foreground font-mono break-all">
-                            {`${effectiveAdapterCommand} --output-format json "Respond with hello."`}
+                            {`curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/${
+                              model || DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL
+                            }"`}
                           </p>
                           <p className="text-muted-foreground">
-                            Prompt:{" "}
+                            Send a JSON body with{" "}
+                            <span className="font-mono">messages</span>{" "}
+                            containing{" "}
                             <span className="font-mono">Respond with hello.</span>
                           </p>
                           <p className="text-muted-foreground">
-                            If auth fails, set{" "}
-                            <span className="font-mono">GEMINI_API_KEY</span>{" "}
-                            in env or run{" "}
-                            <span className="font-mono">gemini auth</span>
-                            .
+                            If auth fails, verify{" "}
+                            <span className="font-mono">
+                              CLOUDFLARE_ACCOUNT_ID
+                            </span>{" "}
+                            and{" "}
+                            <span className="font-mono">
+                              CLOUDFLARE_API_TOKEN
+                            </span>{" "}
+                            for the Ciutatis server process.
                           </p>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Adapter type is locked to gemini_local - no other adapter UI needed */}
+                  {/* Adapter type is locked to Cloudflare Workers AI here. */}
                 </div>
               )}
 

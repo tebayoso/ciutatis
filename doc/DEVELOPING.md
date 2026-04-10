@@ -86,6 +86,8 @@ pnpm paperclipai run
 2. `paperclipai doctor` with repair enabled
 3. starts the server when checks pass
 
+Advanced onboarding can also wire Ciutatis to Cloudflare Workers AI. If you enable it, provide `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` or enter the same values during interactive setup.
+
 ## Docker Quickstart (No local Node install)
 
 Build and run Ciutatis in Docker:

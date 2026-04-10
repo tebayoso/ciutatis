@@ -42,7 +42,12 @@ if (mode === "watch") {
 if (tailscaleAuth) {
   env.PAPERCLIP_DEPLOYMENT_MODE = "authenticated";
   env.PAPERCLIP_DEPLOYMENT_EXPOSURE = "private";
-  env.PAPERCLIP_AUTH_BASE_URL_MODE = "auto";
+  const explicitAuthBaseUrl =
+    env.PAPERCLIP_AUTH_PUBLIC_BASE_URL ??
+    env.BETTER_AUTH_URL ??
+    env.BETTER_AUTH_BASE_URL ??
+    env.PAPERCLIP_PUBLIC_URL;
+  env.PAPERCLIP_AUTH_BASE_URL_MODE ??= explicitAuthBaseUrl ? "explicit" : "auto";
   env.HOST = "0.0.0.0";
   console.log("[paperclip] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
 } else {

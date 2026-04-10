@@ -43,6 +43,18 @@ function parseEnvBindings(bindings: unknown): Record<string, unknown> {
   return env;
 }
 
+function parseJsonObject(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export function buildPiLocalConfig(v: CreateConfigValues): Record<string, unknown> {
   const ac: Record<string, unknown> = {};
   if (v.cwd) ac.cwd = v.cwd;
@@ -64,6 +76,18 @@ export function buildPiLocalConfig(v: CreateConfigValues): Record<string, unknow
     }
   }
   if (Object.keys(env).length > 0) ac.env = env;
+  if (v.workspaceStrategyType === "git_worktree") {
+    ac.workspaceStrategy = {
+      type: "git_worktree",
+      ...(v.workspaceBaseRef ? { baseRef: v.workspaceBaseRef } : {}),
+      ...(v.workspaceBranchTemplate ? { branchTemplate: v.workspaceBranchTemplate } : {}),
+      ...(v.worktreeParentDir ? { worktreeParentDir: v.worktreeParentDir } : {}),
+    };
+  }
+  const runtimeServices = parseJsonObject(v.runtimeServicesJson ?? "");
+  if (runtimeServices && Array.isArray(runtimeServices.services)) {
+    ac.workspaceRuntime = runtimeServices;
+  }
   if (v.command) ac.command = v.command;
   if (v.extraArgs) ac.extraArgs = v.extraArgs;
   if (v.args) ac.args = v.args;

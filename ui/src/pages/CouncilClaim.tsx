@@ -91,7 +91,7 @@ export function CouncilClaimPage() {
             Sign in or create an account, then return to this page to claim Council ownership.
           </p>
           <Button asChild className="mt-4">
-            <Link to={`/auth?next=${encodeURIComponent(currentPath)}`}>Sign in / Create account</Link>
+            <Link to={`/auth?mode=signup&next=${encodeURIComponent(currentPath)}`}>Sign in / Create account</Link>
           </Button>
         </div>
       </div>

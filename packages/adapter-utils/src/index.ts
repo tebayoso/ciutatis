@@ -14,6 +14,7 @@ export type {
   AdapterEnvironmentTestContext,
   AdapterSessionCodec,
   AdapterModel,
+  AdapterCapabilities,
   HireApprovedPayload,
   HireApprovedHookResult,
   ServerAdapterModule,

@@ -64,6 +64,26 @@ import {
 import { processAdapter } from "./process/index.js";
 import { httpAdapter } from "./http/index.js";
 
+const localRuntimeCapabilities = {
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: true,
+  supportsPromptTemplate: true,
+  supportsEnvironmentBindings: true,
+  supportsModelSelection: true,
+  supportsCommandConfig: true,
+  supportsWorkingDirectory: true,
+} as const;
+
+const hostedWorkersAiCapabilities = {
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  supportsPromptTemplate: true,
+  supportsEnvironmentBindings: true,
+  supportsModelSelection: true,
+  supportsHostedModelConfig: true,
+} as const;
+
 const claudeLocalAdapter: ServerAdapterModule = {
   type: "claude_local",
   execute: claudeExecute,
@@ -72,6 +92,7 @@ const claudeLocalAdapter: ServerAdapterModule = {
   sessionManagement: getAdapterSessionManagement("claude_local") ?? undefined,
   models: claudeModels,
   supportsLocalAgentJwt: true,
+  capabilities: localRuntimeCapabilities,
   agentConfigurationDoc: claudeAgentConfigurationDoc,
   getQuotaWindows: claudeGetQuotaWindows,
 };
@@ -81,6 +102,7 @@ const cloudflareWorkersAiAdapter: ServerAdapterModule = {
   execute: cloudflareWorkersAiExecute,
   testEnvironment: cloudflareWorkersAiTestEnvironment,
   models: cloudflareWorkersAiModels,
+  capabilities: hostedWorkersAiCapabilities,
   agentConfigurationDoc: cloudflareWorkersAiAgentConfigurationDoc,
 };
 
@@ -92,6 +114,7 @@ const codexLocalAdapter: ServerAdapterModule = {
   sessionManagement: getAdapterSessionManagement("codex_local") ?? undefined,
   models: codexModels,
   supportsLocalAgentJwt: true,
+  capabilities: localRuntimeCapabilities,
   agentConfigurationDoc: codexAgentConfigurationDoc,
   getQuotaWindows: codexGetQuotaWindows,
 };
@@ -104,6 +127,7 @@ const cursorLocalAdapter: ServerAdapterModule = {
   sessionManagement: getAdapterSessionManagement("cursor") ?? undefined,
   models: cursorModels,
   supportsLocalAgentJwt: true,
+  capabilities: localRuntimeCapabilities,
   agentConfigurationDoc: cursorAgentConfigurationDoc,
 };
 
@@ -115,6 +139,7 @@ const geminiLocalAdapter: ServerAdapterModule = {
   sessionManagement: getAdapterSessionManagement("gemini_local") ?? undefined,
   models: geminiModels,
   supportsLocalAgentJwt: true,
+  capabilities: localRuntimeCapabilities,
   agentConfigurationDoc: geminiAgentConfigurationDoc,
 };
 
@@ -135,6 +160,7 @@ const openCodeLocalAdapter: ServerAdapterModule = {
   models: openCodeModels,
   listModels: listOpenCodeModels,
   supportsLocalAgentJwt: true,
+  capabilities: localRuntimeCapabilities,
   agentConfigurationDoc: openCodeAgentConfigurationDoc,
 };
 

@@ -23,6 +23,25 @@ export interface AdapterModel {
   label: string;
 }
 
+export interface AdapterCapabilities {
+  supportsLocalAgentJwt: boolean;
+  supportsInstructionsBundle: boolean;
+  instructionsPathKey: string | null;
+  requiresMaterializedRuntimeSkills: boolean;
+  supportsPromptTemplate: boolean;
+  supportsEnvironmentBindings: boolean;
+  supportsModelSelection: boolean;
+  supportsCommandConfig: boolean;
+  supportsWorkingDirectory: boolean;
+  supportsHostedModelConfig: boolean;
+  supportsSkills: boolean;
+}
+
+export interface AdapterDescriptor {
+  type: string;
+  capabilities: AdapterCapabilities;
+}
+
 export interface ClaudeLoginResult {
   exitCode: number | null;
   signal: string | null;
@@ -120,6 +139,10 @@ export const agentsApi = {
   adapterModels: (companyId: string, type: string) =>
     api.get<AdapterModel[]>(
       `/companies/${encodeURIComponent(companyId)}/adapters/${encodeURIComponent(type)}/models`,
+    ),
+  adapters: (companyId: string) =>
+    api.get<AdapterDescriptor[]>(
+      `/companies/${encodeURIComponent(companyId)}/adapters`,
     ),
   testEnvironment: (
     companyId: string,

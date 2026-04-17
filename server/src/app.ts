@@ -49,11 +49,32 @@ import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 
 type UiMode = "none" | "static" | "vite-dev";
 
+const STATIC_UI_HTML_CACHE_CONTROL = "no-cache";
+const STATIC_UI_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
+const STATIC_UI_DEFAULT_CACHE_CONTROL = "public, max-age=3600";
+
 export function resolveViteHmrPort(serverPort: number): number {
   if (serverPort <= 55_535) {
     return serverPort + 10_000;
   }
   return Math.max(1_024, serverPort - 10_000);
+}
+
+export function resolveStaticUiCacheControl(filePath: string, indexHtmlPath: string): string {
+  const normalizedFilePath = path.resolve(filePath);
+  const normalizedIndexHtmlPath = path.resolve(indexHtmlPath);
+  if (normalizedFilePath === normalizedIndexHtmlPath) {
+    return STATIC_UI_HTML_CACHE_CONTROL;
+  }
+  const normalizedSegments = normalizedFilePath.split(path.sep).join("/");
+  if (normalizedSegments.includes("/assets/")) {
+    return STATIC_UI_ASSET_CACHE_CONTROL;
+  }
+  return STATIC_UI_DEFAULT_CACHE_CONTROL;
+}
+
+export function isStaticUiAssetPath(requestPath: string): boolean {
+  return requestPath === "/assets" || requestPath.startsWith("/assets/");
 }
 
 export async function createApp(
@@ -251,10 +272,27 @@ export async function createApp(
     ];
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
-      const indexHtml = applyUiBranding(fs.readFileSync(path.join(uiDist, "index.html"), "utf-8"));
-      app.use(express.static(uiDist));
+      const indexHtmlPath = path.join(uiDist, "index.html");
+      const indexHtml = applyUiBranding(fs.readFileSync(indexHtmlPath, "utf-8"));
+      app.use(
+        express.static(uiDist, {
+          index: false,
+          setHeaders: (res, filePath) => {
+            res.setHeader("Cache-Control", resolveStaticUiCacheControl(filePath, indexHtmlPath));
+          },
+        }),
+      );
+      app.use(/^\/assets(?:\/.*)?$/, (_req, res) => {
+        res.status(404).set("Cache-Control", STATIC_UI_HTML_CACHE_CONTROL).end();
+      });
       app.get(/.*/, (_req, res) => {
-        res.status(200).set("Content-Type", "text/html").end(indexHtml);
+        res
+          .status(200)
+          .set({
+            "Content-Type": "text/html",
+            "Cache-Control": STATIC_UI_HTML_CACHE_CONTROL,
+          })
+          .end(indexHtml);
       });
     } else {
       console.warn("[paperclip] UI dist not found; running in API-only mode");
@@ -285,7 +323,13 @@ export async function createApp(
         const templatePath = path.resolve(uiRoot, "index.html");
         const template = fs.readFileSync(templatePath, "utf-8");
         const html = applyUiBranding(await vite.transformIndexHtml(req.originalUrl, template));
-        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+        res
+          .status(200)
+          .set({
+            "Content-Type": "text/html",
+            "Cache-Control": STATIC_UI_HTML_CACHE_CONTROL,
+          })
+          .end(html);
       } catch (err) {
         next(err);
       }

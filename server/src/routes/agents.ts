@@ -33,7 +33,8 @@ import {
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
+import { findServerAdapter, listAdapterModels, listServerAdapters } from "../adapters/index.js";
+import type { ServerAdapterModule } from "../adapters/types.js";
 import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
 import { runClaudeLogin } from "@ciutatis/adapter-claude-local/server";
@@ -228,6 +229,23 @@ export function agentRoutes(db: Db) {
   function generateEd25519PrivateKeyPem(): string {
     const { privateKey } = generateKeyPairSync("ed25519");
     return privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  }
+
+  function serializeAdapterCapabilities(adapter: ServerAdapterModule) {
+    const capabilities = adapter.capabilities ?? {};
+    return {
+      supportsLocalAgentJwt: adapter.supportsLocalAgentJwt === true,
+      supportsInstructionsBundle: capabilities.supportsInstructionsBundle === true,
+      instructionsPathKey: capabilities.instructionsPathKey ?? null,
+      requiresMaterializedRuntimeSkills: capabilities.requiresMaterializedRuntimeSkills === true,
+      supportsPromptTemplate: capabilities.supportsPromptTemplate === true,
+      supportsEnvironmentBindings: capabilities.supportsEnvironmentBindings === true,
+      supportsModelSelection: capabilities.supportsModelSelection === true,
+      supportsCommandConfig: capabilities.supportsCommandConfig === true,
+      supportsWorkingDirectory: capabilities.supportsWorkingDirectory === true,
+      supportsHostedModelConfig: capabilities.supportsHostedModelConfig === true,
+      supportsSkills: capabilities.requiresMaterializedRuntimeSkills === true,
+    };
   }
 
   function ensureGatewayDeviceKey(
@@ -431,6 +449,19 @@ export function agentRoutes(db: Db) {
     const type = req.params.type as string;
     const models = await listAdapterModels(type);
     res.json(models);
+  });
+
+  router.get("/companies/:companyId/adapters", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    await assertCanReadConfigurations(req, companyId);
+    const adapters = listServerAdapters()
+      .slice()
+      .sort((left, right) => left.type.localeCompare(right.type))
+      .map((adapter) => ({
+        type: adapter.type,
+        capabilities: serializeAdapterCapabilities(adapter),
+      }));
+    res.json(adapters);
   });
 
   router.post(
@@ -1022,7 +1053,11 @@ export function agentRoutes(db: Db) {
 
     const existingAdapterConfig = asRecord(existing.adapterConfig) ?? {};
     const explicitKey = asNonEmptyString(req.body.adapterConfigKey);
-    const defaultKey = DEFAULT_INSTRUCTIONS_PATH_KEYS[existing.adapterType] ?? null;
+    const adapter = findServerAdapter(existing.adapterType);
+    const defaultKey =
+      asNonEmptyString(adapter?.capabilities?.instructionsPathKey) ??
+      DEFAULT_INSTRUCTIONS_PATH_KEYS[existing.adapterType] ??
+      null;
     const adapterConfigKey = explicitKey ?? defaultKey;
     if (!adapterConfigKey) {
       res.status(422).json({

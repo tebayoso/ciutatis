@@ -39,6 +39,7 @@ export function llmRoutes(db: Db) {
       ...adapters.map((adapter) => `- ${adapter.type}: /llms/agent-configuration/${adapter.type}.txt`),
       "",
       "Related API endpoints:",
+      "- GET /api/companies/:companyId/adapters",
       "- GET /api/companies/:companyId/agent-configurations",
       "- GET /api/agents/:id/configuration",
       "- POST /api/companies/:companyId/agent-hires",

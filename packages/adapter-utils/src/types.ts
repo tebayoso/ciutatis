@@ -128,6 +128,19 @@ export interface AdapterModel {
   label: string;
 }
 
+export interface AdapterCapabilities {
+  supportsLocalAgentJwt?: boolean;
+  supportsInstructionsBundle?: boolean;
+  instructionsPathKey?: string;
+  requiresMaterializedRuntimeSkills?: boolean;
+  supportsPromptTemplate?: boolean;
+  supportsEnvironmentBindings?: boolean;
+  supportsModelSelection?: boolean;
+  supportsCommandConfig?: boolean;
+  supportsWorkingDirectory?: boolean;
+  supportsHostedModelConfig?: boolean;
+}
+
 export type AdapterEnvironmentCheckLevel = "info" | "warn" | "error";
 
 export interface AdapterEnvironmentCheck {
@@ -218,6 +231,7 @@ export interface ServerAdapterModule {
   sessionCodec?: AdapterSessionCodec;
   sessionManagement?: import("./session-compaction.js").AdapterSessionManagement;
   supportsLocalAgentJwt?: boolean;
+  capabilities?: AdapterCapabilities;
   models?: AdapterModel[];
   listModels?: () => Promise<AdapterModel[]>;
   agentConfigurationDoc?: string;

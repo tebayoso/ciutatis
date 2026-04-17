@@ -20,7 +20,15 @@ while IFS= read -r relative_path; do
   target_path="$worktree_cwd/$relative_path"
 
   [[ -d "$source_path" ]] || continue
-  [[ -e "$target_path" || -L "$target_path" ]] && continue
+  if [[ -L "$target_path" ]]; then
+    current_target="$(readlink "$target_path" || true)"
+    if [[ "$current_target" == "$source_path" ]]; then
+      continue
+    fi
+    rm -f "$target_path"
+  elif [[ -e "$target_path" ]]; then
+    continue
+  fi
 
   mkdir -p "$(dirname "$target_path")"
   ln -s "$source_path" "$target_path"

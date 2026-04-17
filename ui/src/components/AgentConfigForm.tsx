@@ -7,7 +7,7 @@ import type {
   CompanySecret,
   EnvBinding,
 } from "@ciutatis/shared";
-import type { AdapterModel } from "../api/agents";
+import type { AdapterCapabilities, AdapterModel } from "../api/agents";
 import { agentsApi } from "../api/agents";
 import { secretsApi } from "../api/secrets";
 import { assetsApi } from "../api/assets";
@@ -120,6 +120,45 @@ function formatArgList(value: unknown): string {
       .join(", ");
   }
   return typeof value === "string" ? value : "";
+}
+
+function fallbackAdapterCapabilities(adapterType: string): AdapterCapabilities {
+  const isLocalRuntime =
+    adapterType === "claude_local" ||
+    adapterType === "codex_local" ||
+    adapterType === "gemini_local" ||
+    adapterType === "opencode_local" ||
+    adapterType === "cursor";
+
+  if (adapterType === "cloudflare_workers_ai") {
+    return {
+      supportsLocalAgentJwt: false,
+      supportsInstructionsBundle: true,
+      instructionsPathKey: "instructionsFilePath",
+      requiresMaterializedRuntimeSkills: false,
+      supportsPromptTemplate: true,
+      supportsEnvironmentBindings: true,
+      supportsModelSelection: true,
+      supportsCommandConfig: false,
+      supportsWorkingDirectory: false,
+      supportsHostedModelConfig: true,
+      supportsSkills: false,
+    };
+  }
+
+  return {
+    supportsLocalAgentJwt: isLocalRuntime,
+    supportsInstructionsBundle: isLocalRuntime,
+    instructionsPathKey: isLocalRuntime ? "instructionsFilePath" : null,
+    requiresMaterializedRuntimeSkills: isLocalRuntime,
+    supportsPromptTemplate: isLocalRuntime,
+    supportsEnvironmentBindings: isLocalRuntime,
+    supportsModelSelection: isLocalRuntime,
+    supportsCommandConfig: isLocalRuntime,
+    supportsWorkingDirectory: isLocalRuntime,
+    supportsHostedModelConfig: false,
+    supportsSkills: isLocalRuntime,
+  };
 }
 
 const codexThinkingEffortOptions = [
@@ -276,19 +315,26 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const adapterType = isCreate
     ? props.values.adapterType
     : overlay.adapterType ?? props.agent.adapterType;
-  const isLocal =
-    adapterType === "claude_local" ||
-    adapterType === "codex_local" ||
-    adapterType === "gemini_local" ||
-    adapterType === "opencode_local" ||
-    adapterType === "cursor";
-  const supportsHostedModelConfig = adapterType === "cloudflare_workers_ai";
-  const supportsPromptTemplate = isLocal || supportsHostedModelConfig;
-  const supportsEnvironmentBindings = isLocal || supportsHostedModelConfig;
-  const supportsModelSelection = isLocal || supportsHostedModelConfig;
-  const supportsCommandConfig = isLocal;
-  const supportsWorkingDirectory = isLocal;
   const uiAdapter = useMemo(() => getUIAdapter(adapterType), [adapterType]);
+  const { data: adapterDescriptors } = useQuery({
+    queryKey: selectedCompanyId
+      ? queryKeys.agents.adapters(selectedCompanyId)
+      : ["agents", "none", "adapters"],
+    queryFn: () => agentsApi.adapters(selectedCompanyId!),
+    enabled: Boolean(selectedCompanyId),
+  });
+  const adapterCapabilities = useMemo(
+    () =>
+      adapterDescriptors?.find((adapter) => adapter.type === adapterType)?.capabilities ??
+      fallbackAdapterCapabilities(adapterType),
+    [adapterDescriptors, adapterType],
+  );
+  const supportsHostedModelConfig = adapterCapabilities.supportsHostedModelConfig === true;
+  const supportsPromptTemplate = adapterCapabilities.supportsPromptTemplate === true;
+  const supportsEnvironmentBindings = adapterCapabilities.supportsEnvironmentBindings === true;
+  const supportsModelSelection = adapterCapabilities.supportsModelSelection === true;
+  const supportsCommandConfig = adapterCapabilities.supportsCommandConfig === true;
+  const supportsWorkingDirectory = adapterCapabilities.supportsWorkingDirectory === true;
 
   // Fetch adapter models for the effective adapter type
   const {
@@ -299,7 +345,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       ? queryKeys.agents.adapterModels(selectedCompanyId, adapterType)
       : ["agents", "none", "adapter-models", adapterType],
     queryFn: () => agentsApi.adapterModels(selectedCompanyId!, adapterType),
-    enabled: Boolean(selectedCompanyId),
+    enabled: Boolean(selectedCompanyId) && supportsModelSelection,
   });
   const models = fetchedModels ?? externalModels ?? [];
 

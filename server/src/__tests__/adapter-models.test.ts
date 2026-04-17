@@ -63,4 +63,26 @@ describe("adapter model listing", () => {
   it("keeps the OpenClaw gateway adapter registered", () => {
     expect(listServerAdapters().some((adapter) => adapter.type === "openclaw_gateway")).toBe(true);
   });
+
+  it("exposes capability flags for local and hosted adapters", () => {
+    expect(findServerAdapter("codex_local")?.capabilities).toMatchObject({
+      supportsInstructionsBundle: true,
+      instructionsPathKey: "instructionsFilePath",
+      requiresMaterializedRuntimeSkills: true,
+      supportsPromptTemplate: true,
+      supportsEnvironmentBindings: true,
+      supportsModelSelection: true,
+      supportsCommandConfig: true,
+      supportsWorkingDirectory: true,
+    });
+
+    expect(findServerAdapter("cloudflare_workers_ai")?.capabilities).toMatchObject({
+      supportsInstructionsBundle: true,
+      instructionsPathKey: "instructionsFilePath",
+      supportsPromptTemplate: true,
+      supportsEnvironmentBindings: true,
+      supportsModelSelection: true,
+      supportsHostedModelConfig: true,
+    });
+  });
 });

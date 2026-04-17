@@ -28,7 +28,16 @@
 <br/>
 
 <div align="center">
-  <video src="https://github.com/user-attachments/assets/773bdfb2-6d1e-4e30-8c5f-3487d5b70c8f" width="600" controls></video>
+  <table>
+    <tr>
+      <td align="center">
+        <img src="doc/assets/readme/public-site-desktop.png" alt="Ciutatis public site on desktop" width="760" />
+      </td>
+      <td align="center">
+        <img src="doc/assets/readme/public-site-mobile-es.png" alt="Ciutatis public site on mobile in Spanish" width="220" />
+      </td>
+    </tr>
+  </table>
 </div>
 
 <br/>
@@ -296,10 +305,6 @@ MIT &copy; 2026 Ciutatis
 <br/>
 
 ---
-
-<p align="center">
-  <img src="doc/assets/footer.jpg" alt="" width="720" />
-</p>
 
 <p align="center">
   <sub>Open source under MIT. Built for people who want to run institutions, not babysit channels.</sub>

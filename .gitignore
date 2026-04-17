@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.env.local
 .dev.vars
 *.tsbuildinfo
 drizzle/meta/
@@ -12,6 +13,14 @@ data/
 .pnpm-store/
 tmp-*
 cli/tmp/
+.mcp.json
+.codex/
+.playwright-cli/
+.playwright-mcp/
+.wrangler/
+workers/api/.wrangler/
+workfiles/
+.sisyphus/
 
 # Scratch/seed scripts (but not scripts/ dir)
 check-*.mjs
@@ -51,9 +60,6 @@ tests/release-smoke/test-results/
 tests/release-smoke/playwright-report/
 .superset/
 .claude/worktrees/
-
-# Sisyphus evidence (contains secrets like API keys)
-.sisyphus/evidence/
 
 # Seed credentials (local reference only — DO NOT COMMIT)
 doc/SEED-CREDENTIALS.md

@@ -20,7 +20,7 @@ import {
   companies,
   companyMemberships,
   instanceUserRoles,
-} from "@ciutatis/db";
+} from "@paperclipai/db";
 import detectPort from "detect-port";
 import { createApp } from "./app.js";
 import { readConfigFile } from "./config-file.js";

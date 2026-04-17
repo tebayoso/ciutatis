@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PatchCloudflareProvisioningSettings } from "@ciutatis/shared";
+import type { PatchCloudflareProvisioningSettings } from "@paperclipai/shared";
 import { CheckCircle2, CloudCog, ShieldAlert, Sparkles } from "lucide-react";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { tenantInstancesApi } from "@/api/tenantInstances";

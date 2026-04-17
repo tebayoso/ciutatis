@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { AdapterExecutionContext, AdapterExecutionResult } from "@ciutatis/adapter-utils";
+import type { AdapterExecutionContext, AdapterExecutionResult } from "@paperclipai/adapter-utils";
 import {
   asNumber,
   asString,
@@ -7,7 +7,7 @@ import {
   joinPromptSections,
   redactEnvForLogs,
   renderTemplate,
-} from "@ciutatis/adapter-utils/server-utils";
+} from "@paperclipai/adapter-utils/server-utils";
 import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "../index.js";
 import {
   buildRunUrl,

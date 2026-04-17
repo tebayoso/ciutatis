@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { eq, desc } from "drizzle-orm";
 import { objectives } from "@ciutatis/db-cloudflare";
-import { createObjectiveSchema, updateObjectiveSchema } from "@ciutatis/shared";
+import { createObjectiveSchema, updateObjectiveSchema } from "@paperclipai/shared";
 import type { AppEnv } from "../lib/types.js";
 import { assertCompanyAccess } from "../lib/authz.js";
 import { notFound } from "../lib/errors.js";

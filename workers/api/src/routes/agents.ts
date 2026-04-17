@@ -16,7 +16,7 @@ import {
   principalPermissionGrants,
   workspaceOperations,
 } from "@ciutatis/db-cloudflare";
-import { isUuidLike, normalizeAgentUrlKey } from "@ciutatis/shared";
+import { isUuidLike, normalizeAgentUrlKey } from "@paperclipai/shared";
 import type { AppContext, AppEnv } from "../lib/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "../lib/authz.js";
 import { notFound, forbidden, conflict, unprocessable, badRequest } from "../lib/errors.js";

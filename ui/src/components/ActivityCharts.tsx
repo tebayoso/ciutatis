@@ -1,4 +1,4 @@
-import type { HeartbeatRun } from "@ciutatis/shared";
+import type { HeartbeatRun } from "@paperclipai/shared";
 
 /* ---- Utilities ---- */
 

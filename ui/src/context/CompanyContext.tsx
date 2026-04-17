@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Company } from "@ciutatis/shared";
+import type { Company } from "@paperclipai/shared";
 import { useLocation } from "@/lib/router";
 import { companiesApi } from "../api/companies";
 import { ApiError } from "../api/client";

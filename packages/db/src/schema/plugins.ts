@@ -8,7 +8,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { PluginCategory, PluginStatus, CiutatisPluginManifestV1 } from "@ciutatis/shared";
+import type { PluginCategory, PluginStatus, CiutatisPluginManifestV1 } from "@paperclipai/shared";
 
 /**
  * `plugins` table — stores one row per installed plugin.

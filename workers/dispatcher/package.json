@@ -11,7 +11,7 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
-    "@ciutatis/shared": "workspace:*"
+    "@paperclipai/shared": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",

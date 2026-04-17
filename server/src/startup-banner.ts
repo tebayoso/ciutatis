@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolveCiutatisConfigPath, resolveCiutatisEnvPath } from "./paths.js";
-import type { DeploymentExposure, DeploymentMode } from "@ciutatis/shared";
+import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
 
 import { parse as parseEnvFileContents } from "dotenv";
 

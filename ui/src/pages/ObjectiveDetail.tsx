@@ -19,7 +19,7 @@ import { projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
-import type { Goal, Project } from "@ciutatis/shared";
+import type { Goal, Project } from "@paperclipai/shared";
 
 export function ObjectiveDetail() {
   const { goalId } = useParams<{ goalId: string }>();

@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { plugins } from "./plugins.js";
-import type { PluginWebhookDeliveryStatus } from "@ciutatis/shared";
+import type { PluginWebhookDeliveryStatus } from "@paperclipai/shared";
 
 /**
  * `plugin_webhook_deliveries` table — inbound webhook delivery history for plugins.

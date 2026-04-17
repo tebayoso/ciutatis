@@ -1,5 +1,5 @@
 {
-  "name": "@ciutatis/create-plugin",
+  "name": "@paperclipai/create-paperclip-plugin",
   "version": "0.1.0",
   "license": "MIT",
   "homepage": "https://github.com/tebayoso/ciutatis",
@@ -13,6 +13,7 @@
   },
   "type": "module",
   "bin": {
+    "create-paperclip-plugin": "./dist/index.js",
     "create-ciutatis-plugin": "./dist/index.js"
   },
   "exports": {
@@ -21,6 +22,7 @@
   "publishConfig": {
     "access": "public",
     "bin": {
+      "create-paperclip-plugin": "./dist/index.js",
       "create-ciutatis-plugin": "./dist/index.js"
     },
     "exports": {
@@ -41,7 +43,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ciutatis/plugin-sdk": "workspace:*"
+    "@paperclipai/plugin-sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",

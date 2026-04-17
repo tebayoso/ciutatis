@@ -29,24 +29,24 @@ importers:
       '@ciutatis/adapter-cloudflare-workers-ai':
         specifier: workspace:*
         version: link:../packages/adapters/cloudflare-workers-ai
-      '@ciutatis/adapter-gemini-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/gemini-local
-      '@ciutatis/adapter-utils':
-        specifier: workspace:*
-        version: link:../packages/adapter-utils
-      '@ciutatis/db':
-        specifier: workspace:*
-        version: link:../packages/db
-      '@ciutatis/server':
-        specifier: workspace:*
-        version: link:../server
-      '@ciutatis/shared':
-        specifier: workspace:*
-        version: link:../packages/shared
       '@clack/prompts':
         specifier: ^0.10.0
         version: 0.10.1
+      '@paperclipai/adapter-gemini-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/gemini-local
+      '@paperclipai/adapter-utils':
+        specifier: workspace:*
+        version: link:../packages/adapter-utils
+      '@paperclipai/db':
+        specifier: workspace:*
+        version: link:../packages/db
+      '@paperclipai/server':
+        specifier: workspace:*
+        version: link:../server
+      '@paperclipai/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -118,7 +118,7 @@ importers:
 
   packages/adapters/claude-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -134,7 +134,7 @@ importers:
 
   packages/adapters/cloudflare-workers-ai:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -150,7 +150,7 @@ importers:
 
   packages/adapters/codex-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -166,7 +166,7 @@ importers:
 
   packages/adapters/cursor-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -182,7 +182,7 @@ importers:
 
   packages/adapters/gemini-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -198,7 +198,7 @@ importers:
 
   packages/adapters/openclaw-gateway:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -220,7 +220,7 @@ importers:
 
   packages/adapters/opencode-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -236,7 +236,7 @@ importers:
 
   packages/adapters/pi-local:
     dependencies:
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
       picocolors:
@@ -252,7 +252,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../shared
       drizzle-orm:
@@ -283,7 +283,7 @@ importers:
 
   packages/db-cloudflare:
     dependencies:
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../shared
       drizzle-orm:
@@ -311,7 +311,7 @@ importers:
 
   packages/plugins/create-paperclip-plugin:
     dependencies:
-      '@ciutatis/plugin-sdk':
+      '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../sdk
     devDependencies:
@@ -324,7 +324,7 @@ importers:
 
   packages/plugins/examples/plugin-authoring-smoke-example:
     dependencies:
-      '@ciutatis/plugin-sdk':
+      '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../../sdk
       react:
@@ -361,9 +361,6 @@ importers:
 
   packages/plugins/examples/plugin-file-browser-example:
     dependencies:
-      '@ciutatis/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../sdk
       '@codemirror/lang-javascript':
         specifier: ^6.2.2
         version: 6.2.4
@@ -379,6 +376,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.1
         version: 1.2.3
+      '@paperclipai/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../sdk
       codemirror:
         specifier: ^6.0.1
         version: 6.0.2
@@ -407,7 +407,7 @@ importers:
 
   packages/plugins/examples/plugin-hello-world-example:
     dependencies:
-      '@ciutatis/plugin-sdk':
+      '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../../sdk
     devDependencies:
@@ -432,10 +432,10 @@ importers:
 
   packages/plugins/examples/plugin-kitchen-sink-example:
     dependencies:
-      '@ciutatis/plugin-sdk':
+      '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../../sdk
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../../../shared
     devDependencies:
@@ -463,7 +463,7 @@ importers:
 
   packages/plugins/sdk:
     dependencies:
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../../shared
       react:
@@ -498,40 +498,40 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.888.0
         version: 3.994.0
-      '@ciutatis/adapter-claude-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/claude-local
       '@ciutatis/adapter-cloudflare-workers-ai':
         specifier: workspace:*
         version: link:../packages/adapters/cloudflare-workers-ai
-      '@ciutatis/adapter-codex-local':
+      '@paperclipai/adapter-claude-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/claude-local
+      '@paperclipai/adapter-codex-local':
         specifier: workspace:*
         version: link:../packages/adapters/codex-local
-      '@ciutatis/adapter-cursor-local':
+      '@paperclipai/adapter-cursor-local':
         specifier: workspace:*
         version: link:../packages/adapters/cursor-local
-      '@ciutatis/adapter-gemini-local':
+      '@paperclipai/adapter-gemini-local':
         specifier: workspace:*
         version: link:../packages/adapters/gemini-local
-      '@ciutatis/adapter-openclaw-gateway':
+      '@paperclipai/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway
-      '@ciutatis/adapter-opencode-local':
+      '@paperclipai/adapter-opencode-local':
         specifier: workspace:*
         version: link:../packages/adapters/opencode-local
-      '@ciutatis/adapter-pi-local':
+      '@paperclipai/adapter-pi-local':
         specifier: workspace:^
         version: link:../packages/adapters/pi-local
-      '@ciutatis/adapter-utils':
+      '@paperclipai/adapter-utils':
         specifier: workspace:*
         version: link:../packages/adapter-utils
-      '@ciutatis/db':
+      '@paperclipai/db':
         specifier: workspace:*
         version: link:../packages/db
-      '@ciutatis/plugin-sdk':
+      '@paperclipai/plugin-sdk':
         specifier: workspace:*
         version: link:../packages/plugins/sdk
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../packages/shared
       ajv:
@@ -631,36 +631,9 @@ importers:
 
   ui:
     dependencies:
-      '@ciutatis/adapter-claude-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/claude-local
       '@ciutatis/adapter-cloudflare-workers-ai':
         specifier: workspace:*
         version: link:../packages/adapters/cloudflare-workers-ai
-      '@ciutatis/adapter-codex-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/codex-local
-      '@ciutatis/adapter-cursor-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/cursor-local
-      '@ciutatis/adapter-gemini-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/gemini-local
-      '@ciutatis/adapter-openclaw-gateway':
-        specifier: workspace:*
-        version: link:../packages/adapters/openclaw-gateway
-      '@ciutatis/adapter-opencode-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/opencode-local
-      '@ciutatis/adapter-pi-local':
-        specifier: workspace:*
-        version: link:../packages/adapters/pi-local
-      '@ciutatis/adapter-utils':
-        specifier: workspace:*
-        version: link:../packages/adapter-utils
-      '@ciutatis/shared':
-        specifier: workspace:*
-        version: link:../packages/shared
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -673,6 +646,33 @@ importers:
       '@mdxeditor/editor':
         specifier: ^3.52.4
         version: 3.52.4(@codemirror/language@6.12.1)(@lezer/highlight@1.2.3)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(yjs@13.6.29)
+      '@paperclipai/adapter-claude-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/claude-local
+      '@paperclipai/adapter-codex-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/codex-local
+      '@paperclipai/adapter-cursor-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/cursor-local
+      '@paperclipai/adapter-gemini-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/gemini-local
+      '@paperclipai/adapter-openclaw-gateway':
+        specifier: workspace:*
+        version: link:../packages/adapters/openclaw-gateway
+      '@paperclipai/adapter-opencode-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/opencode-local
+      '@paperclipai/adapter-pi-local':
+        specifier: workspace:*
+        version: link:../packages/adapters/pi-local
+      '@paperclipai/adapter-utils':
+        specifier: workspace:*
+        version: link:../packages/adapter-utils
+      '@paperclipai/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.4)
@@ -755,12 +755,12 @@ importers:
       '@ciutatis/db-cloudflare':
         specifier: workspace:*
         version: link:../../packages/db-cloudflare
-      '@ciutatis/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@hono/zod-validator':
         specifier: ^0.4.3
         version: 0.4.3(hono@4.12.10)(zod@3.25.76)
+      '@paperclipai/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       better-auth:
         specifier: ^1.0.0
         version: 1.4.18(drizzle-kit@0.31.9)(drizzle-orm@0.38.4(@cloudflare/workers-types@4.20260403.1)(@electric-sql/pglite@0.3.15)(@types/react@19.2.14)(kysely@0.28.11)(pg@8.18.0)(postgres@3.4.8)(react@19.2.4))(pg@8.18.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@25.2.3)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@2.0.1))(lightningcss@1.30.2)(tsx@4.21.0))
@@ -786,7 +786,7 @@ importers:
 
   workers/dispatcher:
     dependencies:
-      '@ciutatis/shared':
+      '@paperclipai/shared':
         specifier: workspace:*
         version: link:../../packages/shared
     devDependencies:

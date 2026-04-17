@@ -43,7 +43,7 @@
     "seed:remote": "wrangler dev src/seed-runner.ts --remote --config wrangler.seed.toml"
   },
   "dependencies": {
-    "@ciutatis/shared": "workspace:*",
+    "@paperclipai/shared": "workspace:*",
     "drizzle-orm": "^0.38.4"
   },
   "devDependencies": {

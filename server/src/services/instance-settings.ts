@@ -1,5 +1,5 @@
-import type { Db } from "@ciutatis/db";
-import { companies, instanceSettings } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
+import { companies, instanceSettings } from "@paperclipai/db";
 import {
   cloudflareProvisioningSettingsSchema,
   type CloudflareProvisioningSettings,
@@ -11,7 +11,7 @@ import {
   tenantProvisioningSettingsSchema,
   type PatchTenantProvisioningSettings,
   type TenantProvisioningSettings,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { eq } from "drizzle-orm";
 
 const DEFAULT_SINGLETON_KEY = "default";

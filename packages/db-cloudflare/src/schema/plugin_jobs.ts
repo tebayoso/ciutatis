@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { plugins } from "./plugins.js";
-import type { PluginJobStatus, PluginJobRunStatus, PluginJobRunTrigger } from "@ciutatis/shared";
+import type { PluginJobStatus, PluginJobRunStatus, PluginJobRunTrigger } from "@paperclipai/shared";
 
 /**
  * `plugin_jobs` table — registration and runtime configuration for

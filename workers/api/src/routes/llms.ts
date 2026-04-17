@@ -63,7 +63,7 @@ export function llmRoutes() {
       "# Ciutatis Agent Icon Names",
       "",
       "Set the `icon` field on hire/create payloads to one of the available icons.",
-      "Refer to @ciutatis/shared AGENT_ICON_NAMES for the full list.",
+      "Refer to @paperclipai/shared AGENT_ICON_NAMES for the full list.",
       "",
     ];
     return c.text(lines.join("\n"));

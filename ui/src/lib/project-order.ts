@@ -1,4 +1,4 @@
-import type { Project } from "@ciutatis/shared";
+import type { Project } from "@paperclipai/shared";
 
 export const PROJECT_ORDER_UPDATED_EVENT = "paperclip:project-order-updated";
 const PROJECT_ORDER_STORAGE_PREFIX = "paperclip.projectOrder";

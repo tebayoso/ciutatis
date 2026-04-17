@@ -9,7 +9,7 @@ import type {
   IssueComment,
   Agent,
   Goal,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import type {
   EventFilter,
   PluginContext,

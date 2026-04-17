@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
-import type { Db } from "@ciutatis/db";
-import { tenantInstances, tenantProvisioningJobs } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
+import { tenantInstances, tenantProvisioningJobs } from "@paperclipai/db";
 import {
   CloudflareTenantProvisioner,
   MockTenantProvisioner,
@@ -18,7 +18,7 @@ import {
   type TenantProvisioningJobSummary,
   type TenantProvisioningJobTrigger,
   type UpdateTenantInstance,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { instanceSettingsService } from "./instance-settings.js";
 
 let isDrainingTenantProvisioningJobs = false;

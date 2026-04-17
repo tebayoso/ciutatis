@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AGENT_ADAPTER_TYPES } from "@ciutatis/shared";
+import { AGENT_ADAPTER_TYPES } from "@paperclipai/shared";
 import type {
   Agent,
   AdapterEnvironmentTestResult,
   CompanySecret,
   EnvBinding,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import type { AdapterCapabilities, AdapterModel } from "../api/agents";
 import { agentsApi } from "../api/agents";
 import { secretsApi } from "../api/secrets";
 import { assetsApi } from "../api/assets";
 import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "@ciutatis/adapter-cloudflare-workers-ai";
-import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ciutatis/adapter-gemini-local";
+import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
 import {
   Popover,
   PopoverContent,
@@ -43,10 +43,10 @@ import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 
 /* ---- Create mode values ---- */
 
-// Canonical type lives in @ciutatis/adapter-utils; re-exported here
+// Canonical type lives in @paperclipai/adapter-utils; re-exported here
 // so existing imports from this file keep working.
-export type { CreateConfigValues } from "@ciutatis/adapter-utils";
-import type { CreateConfigValues } from "@ciutatis/adapter-utils";
+export type { CreateConfigValues } from "@paperclipai/adapter-utils";
+import type { CreateConfigValues } from "@paperclipai/adapter-utils";
 
 /* ---- Props ---- */
 

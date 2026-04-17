@@ -6,7 +6,7 @@ import {
   resubmitApprovalSchema,
   type Approval,
   type ApprovalComment,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import {
   addCommonClientOptions,
   formatInlineRecord,

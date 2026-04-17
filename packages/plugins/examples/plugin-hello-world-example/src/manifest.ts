@@ -1,4 +1,4 @@
-import type { CiutatisPluginManifestV1 } from "@ciutatis/plugin-sdk";
+import type { CiutatisPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 /**
  * Stable plugin ID used by host registration and namespacing.

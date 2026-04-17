@@ -1,5 +1,5 @@
 import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@ciutatis/shared";
+import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@paperclipai/shared";
 
 export const tenantInstances = sqliteTable(
   "tenant_instances",

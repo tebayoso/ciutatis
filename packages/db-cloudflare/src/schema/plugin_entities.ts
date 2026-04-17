@@ -1,6 +1,6 @@
 import { sqliteTable, text, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { plugins } from "./plugins.js";
-import type { PluginStateScopeKind } from "@ciutatis/shared";
+import type { PluginStateScopeKind } from "@paperclipai/shared";
 
 /**
  * `plugin_entities` table — persistent high-level mapping between Ciutatis

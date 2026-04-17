@@ -22,8 +22,8 @@
 import type {
   CiutatisPluginManifestV1,
   PluginToolDeclaration,
-} from "@ciutatis/shared";
-import type { ToolRunContext, ToolResult, ExecuteToolParams } from "@ciutatis/plugin-sdk";
+} from "@paperclipai/shared";
+import type { ToolRunContext, ToolResult, ExecuteToolParams } from "@paperclipai/plugin-sdk";
 import type { PluginWorkerManager } from "./plugin-worker-manager.js";
 import { logger } from "../middleware/logger.js";
 

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import type { Db } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
 import {
   addRequestCommentSchema,
   createRequestAttachmentMetadataSchema,
@@ -13,7 +13,7 @@ import {
   updateRequestWorkProductSchema,
   upsertRequestDocumentSchema,
   updateRequestSchema,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import type { StorageService } from "../storage/types.js";
 import { validate } from "../middleware/validate.js";
 import {

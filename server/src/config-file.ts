@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { paperclipConfigSchema, type CiutatisConfig } from "@ciutatis/shared";
+import { paperclipConfigSchema, type CiutatisConfig } from "@paperclipai/shared";
 import { resolveCiutatisConfigPath } from "./paths.js";
 
 export function readConfigFile(): CiutatisConfig | null {

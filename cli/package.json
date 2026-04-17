@@ -1,14 +1,15 @@
 {
-  "name": "ciutatis",
+  "name": "paperclipai",
   "version": "0.3.1",
-  "description": "Ciutatis CLI — orchestrate AI department agents for civic operations",
+  "description": "Paperclip CLI — orchestrate AI agent teams to run a business",
   "type": "module",
   "bin": {
+    "paperclipai": "./dist/index.js",
     "ciutatis": "./dist/index.js"
   },
   "keywords": [
+    "paperclip",
     "ciutatis",
-    "civic",
     "ai",
     "agents",
     "orchestration",
@@ -39,11 +40,11 @@
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "@ciutatis/adapter-cloudflare-workers-ai": "workspace:*",
-    "@ciutatis/adapter-gemini-local": "workspace:*",
-    "@ciutatis/adapter-utils": "workspace:*",
-    "@ciutatis/db": "workspace:*",
-    "@ciutatis/server": "workspace:*",
-    "@ciutatis/shared": "workspace:*",
+    "@paperclipai/adapter-gemini-local": "workspace:*",
+    "@paperclipai/adapter-utils": "workspace:*",
+    "@paperclipai/db": "workspace:*",
+    "@paperclipai/server": "workspace:*",
+    "@paperclipai/shared": "workspace:*",
     "drizzle-orm": "0.38.4",
     "dotenv": "^17.0.1",
     "commander": "^13.1.0",

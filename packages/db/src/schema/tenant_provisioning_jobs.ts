@@ -4,7 +4,7 @@ import type {
   TenantProvisioningJobStatus,
   TenantProvisioningJobTrigger,
   TenantProvisioningStep,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { tenantInstances } from "./tenant_instances.js";
 
 export const tenantProvisioningJobs = pgTable(

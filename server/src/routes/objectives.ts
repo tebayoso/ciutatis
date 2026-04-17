@@ -1,6 +1,6 @@
 import { Router } from "express";
-import type { Db } from "@ciutatis/db";
-import { createObjectiveSchema, updateObjectiveSchema } from "@ciutatis/shared";
+import type { Db } from "@paperclipai/db";
+import { createObjectiveSchema, updateObjectiveSchema } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import { objectiveService, logActivity } from "../services/index.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";

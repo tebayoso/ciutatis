@@ -5,7 +5,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { agentsApi } from "../api/agents";
 import { queryKeys } from "../lib/queryKeys";
-import { AGENT_ROLES } from "@ciutatis/shared";
+import { AGENT_ROLES } from "@paperclipai/shared";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { isCodexUnknownSessionError, parseCodexJsonl } from "@ciutatis/adapter-codex-local/server";
-import { parseCodexStdoutLine } from "@ciutatis/adapter-codex-local/ui";
-import { printCodexStreamEvent } from "@ciutatis/adapter-codex-local/cli";
+import { isCodexUnknownSessionError, parseCodexJsonl } from "@paperclipai/adapter-codex-local/server";
+import { parseCodexStdoutLine } from "@paperclipai/adapter-codex-local/ui";
+import { printCodexStreamEvent } from "@paperclipai/adapter-codex-local/cli";
 
 describe("codex_local parser", () => {
   it("extracts session, summary, usage, and terminal error message", () => {

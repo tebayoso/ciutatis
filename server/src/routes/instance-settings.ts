@@ -1,12 +1,12 @@
 import { Router, type Request } from "express";
-import type { Db } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
 import {
   createTenantInstanceSchema,
   patchCloudflareProvisioningSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
   patchTenantProvisioningSettingsSchema,
   updateTenantInstanceSchema,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
 import { instanceSettingsService, logActivity, tenantInstancesService } from "../services/index.js";

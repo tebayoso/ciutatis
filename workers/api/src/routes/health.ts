@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { count, eq, and, gt, isNull, sql } from "drizzle-orm";
 import { instanceUserRoles, invites } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
-import type { DeploymentMode, DeploymentExposure } from "@ciutatis/shared";
+import type { DeploymentMode, DeploymentExposure } from "@paperclipai/shared";
 
 const VERSION = "0.1.0-workers";
 

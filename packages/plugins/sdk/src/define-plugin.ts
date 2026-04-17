@@ -11,7 +11,7 @@
  * @example
  * ```ts
  * // dist/worker.ts
- * import { definePlugin } from "@ciutatis/plugin-sdk";
+ * import { definePlugin } from "@paperclipai/plugin-sdk";
  *
  * export default definePlugin({
  *   async setup(ctx) {
@@ -232,7 +232,7 @@ export interface CiutatisPlugin {
  *
  * @example
  * ```ts
- * import { definePlugin } from "@ciutatis/plugin-sdk";
+ * import { definePlugin } from "@paperclipai/plugin-sdk";
  *
  * export default definePlugin({
  *   async setup(ctx) {

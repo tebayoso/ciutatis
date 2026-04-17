@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import type { Agent, Issue, LiveEvent } from "@ciutatis/shared";
+import type { Agent, Issue, LiveEvent } from "@paperclipai/shared";
 import { useLocation } from "@/lib/router";
 import { authApi } from "../api/auth";
 import { healthApi } from "../api/health";

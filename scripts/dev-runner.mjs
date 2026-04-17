@@ -125,14 +125,14 @@ async function maybePreflightMigrations() {
   if (mode !== "watch") return;
 
   const status = await runPnpm(
-    ["--filter", "@ciutatis/db", "exec", "tsx", "src/migration-status.ts", "--json"],
+    ["--filter", "@paperclipai/db", "exec", "tsx", "src/migration-status.ts", "--json"],
     { env },
   );
   if (status.code !== 0) {
     process.stderr.write(
         status.stderr ||
         status.stdout ||
-        `[paperclip] Command failed with code ${status.code}: pnpm --filter @ciutatis/db exec tsx src/migration-status.ts --json\n`,
+        `[paperclip] Command failed with code ${status.code}: pnpm --filter @paperclipai/db exec tsx src/migration-status.ts --json\n`,
     );
     process.exit(status.code);
   }
@@ -206,7 +206,7 @@ await maybePreflightMigrations();
 async function buildPluginSdk() {
   console.log("[paperclip] building plugin sdk...");
   const result = await runPnpm(
-    ["--filter", "@ciutatis/plugin-sdk", "build"],
+    ["--filter", "@paperclipai/plugin-sdk", "build"],
     { stdio: "inherit" },
   );
   if (result.signal) {
@@ -224,7 +224,7 @@ await buildPluginSdk();
 const serverScript = mode === "watch" ? "dev:watch" : "dev";
 const child = spawn(
   pnpmBin,
-  ["--filter", "@ciutatis/server", serverScript, ...forwardedArgs],
+  ["--filter", "@paperclipai/server", serverScript, ...forwardedArgs],
   { stdio: "inherit", env, shell: process.platform === "win32" },
 );
 

@@ -1,5 +1,5 @@
 import { sqliteTable, text, index, unique } from "drizzle-orm/sqlite-core";
-import type { PluginStateScopeKind } from "@ciutatis/shared";
+import type { PluginStateScopeKind } from "@paperclipai/shared";
 import { plugins } from "./plugins.js";
 
 /**

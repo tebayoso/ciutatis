@@ -1,9 +1,9 @@
 import { Router } from "express";
-import type { Db } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
 import {
   publicContactSubmissionSchema,
   type PublicContactSubmissionInput,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
 import { HttpError } from "../errors.js";
 import {

@@ -1,7 +1,7 @@
 import type {
   InstanceExperimentalSettings,
   PatchInstanceExperimentalSettings,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { api } from "./client";
 
 export const instanceSettingsApi = {

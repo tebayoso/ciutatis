@@ -12,7 +12,7 @@ import type { AppEnv } from "../lib/types.js";
 import type { Actor } from "../lib/types.js";
 import { hashToken } from "../lib/crypto.js";
 import { verifyLocalAgentJwt } from "../lib/agent-auth-jwt.js";
-import type { DeploymentMode } from "@ciutatis/shared";
+import type { DeploymentMode } from "@paperclipai/shared";
 import { parseAuthCookie } from "../auth/cookies.js";
 import { deleteSessionFromKV, getSessionFromKV } from "../session/kv.js";
 

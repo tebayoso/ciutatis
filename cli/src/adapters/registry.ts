@@ -1,6 +1,6 @@
-import type { CLIAdapterModule } from "@ciutatis/adapter-utils";
+import type { CLIAdapterModule } from "@paperclipai/adapter-utils";
 import { printCloudflareWorkersAiStreamEvent } from "@ciutatis/adapter-cloudflare-workers-ai/cli";
-import { printGeminiStreamEvent } from "@ciutatis/adapter-gemini-local/cli";
+import { printGeminiStreamEvent } from "@paperclipai/adapter-gemini-local/cli";
 import { processCLIAdapter } from "./process/index.js";
 import { httpCLIAdapter } from "./http/index.js";
 

@@ -2,7 +2,7 @@ import type {
   AdapterEnvironmentCheck,
   AdapterEnvironmentTestContext,
   AdapterEnvironmentTestResult,
-} from "@ciutatis/adapter-utils";
+} from "@paperclipai/adapter-utils";
 import {
   asString,
   asBoolean,
@@ -13,7 +13,7 @@ import {
   ensureCommandResolvable,
   ensurePathInEnv,
   runChildProcess,
-} from "@ciutatis/adapter-utils/server-utils";
+} from "@paperclipai/adapter-utils/server-utils";
 import path from "node:path";
 import { detectClaudeLoginRequired, parseClaudeStreamJson } from "./parse.js";
 

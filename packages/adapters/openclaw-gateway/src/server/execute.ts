@@ -2,8 +2,8 @@ import type {
   AdapterExecutionContext,
   AdapterExecutionResult,
   AdapterRuntimeServiceReport,
-} from "@ciutatis/adapter-utils";
-import { asNumber, asString, buildCiutatisEnv, parseObject } from "@ciutatis/adapter-utils/server-utils";
+} from "@paperclipai/adapter-utils";
+import { asNumber, asString, buildCiutatisEnv, parseObject } from "@paperclipai/adapter-utils/server-utils";
 import crypto, { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
 

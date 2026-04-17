@@ -8,7 +8,7 @@ import type {
   IssueLabel,
   IssueWorkProduct,
   UpsertIssueDocument,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { api } from "./client";
 
 export const issuesApi = {

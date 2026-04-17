@@ -1,5 +1,5 @@
-import { asNumber, asString, parseObject } from "@ciutatis/adapter-utils/server-utils";
-import type { UsageSummary } from "@ciutatis/adapter-utils";
+import { asNumber, asString, parseObject } from "@paperclipai/adapter-utils/server-utils";
+import type { UsageSummary } from "@paperclipai/adapter-utils";
 
 export interface CloudflareWorkersAiCredentials {
   accountId: string | null;

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { paperclipConfigSchema } from "@ciutatis/shared";
+import { paperclipConfigSchema } from "@paperclipai/shared";
 import * as configFileModule from "../config-file.js";
 import { loadConfig } from "../config.js";
 

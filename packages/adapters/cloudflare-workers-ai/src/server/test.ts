@@ -2,8 +2,8 @@ import type {
   AdapterEnvironmentCheck,
   AdapterEnvironmentTestContext,
   AdapterEnvironmentTestResult,
-} from "@ciutatis/adapter-utils";
-import { asString } from "@ciutatis/adapter-utils/server-utils";
+} from "@paperclipai/adapter-utils";
+import { asString } from "@paperclipai/adapter-utils/server-utils";
 import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "../index.js";
 import {
   buildRunUrl,

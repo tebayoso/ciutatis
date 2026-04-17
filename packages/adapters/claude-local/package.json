@@ -1,5 +1,5 @@
 {
-  "name": "@ciutatis/adapter-claude-local",
+  "name": "@paperclipai/adapter-claude-local",
   "version": "0.3.1",
   "license": "MIT",
   "homepage": "https://github.com/tebayoso/ciutatis",
@@ -53,7 +53,7 @@
     "probe:quota:raw": "pnpm exec tsx src/cli/quota-probe.ts --json --raw-cli"
   },
   "dependencies": {
-    "@ciutatis/adapter-utils": "workspace:*",
+    "@paperclipai/adapter-utils": "workspace:*",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

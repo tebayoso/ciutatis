@@ -21,4 +21,4 @@ export type {
   ResolvedSessionCompactionPolicy,
   SessionCompactionPolicy,
   ServerAdapterModule,
-} from "@ciutatis/adapter-utils";
+} from "@paperclipai/adapter-utils";

@@ -21,7 +21,7 @@
 import { fork, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { createInterface, type Interface as ReadlineInterface } from "node:readline";
-import type { CiutatisPluginManifestV1 } from "@ciutatis/shared";
+import type { CiutatisPluginManifestV1 } from "@paperclipai/shared";
 import {
   JSONRPC_VERSION,
   JSONRPC_ERROR_CODES,
@@ -36,7 +36,7 @@ import {
   isJsonRpcSuccessResponse,
   JsonRpcParseError,
   JsonRpcCallError,
-} from "@ciutatis/plugin-sdk";
+} from "@paperclipai/plugin-sdk";
 import type {
   JsonRpcId,
   JsonRpcResponse,
@@ -47,7 +47,7 @@ import type {
   WorkerToHostMethodName,
   WorkerToHostMethods,
   InitializeParams,
-} from "@ciutatis/plugin-sdk";
+} from "@paperclipai/plugin-sdk";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------

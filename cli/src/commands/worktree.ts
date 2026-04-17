@@ -26,7 +26,7 @@ import {
   projectWorkspaces,
   runDatabaseBackup,
   runDatabaseRestore,
-} from "@ciutatis/db";
+} from "@paperclipai/db";
 import type { Command } from "commander";
 import { ensureAgentJwtSecret, loadCiutatisEnvFile, mergeCiutatisEnvEntries, readCiutatisEnvEntries, resolveCiutatisEnvFile } from "../config/env.js";
 import { expandHomePrefix } from "../config/home.js";

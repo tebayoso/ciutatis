@@ -1,5 +1,5 @@
 import { index, pgTable, text, timestamp, uuid, uniqueIndex } from "drizzle-orm/pg-core";
-import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@ciutatis/shared";
+import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@paperclipai/shared";
 
 export const tenantInstances = pgTable(
   "tenant_instances",

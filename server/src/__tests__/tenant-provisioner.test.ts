@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MockTenantProvisioner } from "@ciutatis/shared";
+import { MockTenantProvisioner } from "@paperclipai/shared";
 
 describe("MockTenantProvisioner", () => {
   it("returns stable mock resources for a tenant deployment", async () => {

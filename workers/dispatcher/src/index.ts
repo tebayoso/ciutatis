@@ -1,4 +1,4 @@
-import { parseTenantRoutePathname } from "@ciutatis/shared";
+import { parseTenantRoutePathname } from "@paperclipai/shared";
 
 interface RoutedTenantRecord {
   tenantId: string;

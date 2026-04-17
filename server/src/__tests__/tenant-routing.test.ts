@@ -4,7 +4,7 @@ import {
   deriveTenantPathPrefix,
   deriveTenantWorkerName,
   parseTenantRoutePathname,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 
 describe("tenant routing helpers", () => {
   it("derives normalized dispatcher keys and prefixes", () => {

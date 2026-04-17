@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import type { SecretProvider } from "@ciutatis/shared";
+import type { SecretProvider } from "@paperclipai/shared";
 import type { SecretsConfig } from "../config/schema.js";
 import { resolveDefaultSecretsKeyFilePath, resolveCiutatisInstanceId } from "../config/home.js";
 

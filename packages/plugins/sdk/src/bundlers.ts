@@ -60,8 +60,8 @@ export interface PluginBundlerPresets {
  */
 export function createPluginBundlerPresets(input: PluginBundlerPresetInput = {}): PluginBundlerPresets {
   const uiExternal = [
-    "@ciutatis/plugin-sdk/ui",
-    "@ciutatis/plugin-sdk/ui/hooks",
+    "@paperclipai/plugin-sdk/ui",
+    "@paperclipai/plugin-sdk/ui/hooks",
     "react",
     "react-dom",
     "react/jsx-runtime",
@@ -129,7 +129,7 @@ export function createPluginBundlerPresets(input: PluginBundlerPresetInput = {})
       sourcemap,
       entryFileNames: "manifest.js",
     },
-    external: ["@ciutatis/plugin-sdk"],
+    external: ["@paperclipai/plugin-sdk"],
   };
 
   const rollupUi = uiEntry

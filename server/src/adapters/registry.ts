@@ -1,15 +1,15 @@
 import type { ServerAdapterModule } from "./types.js";
-import { getAdapterSessionManagement } from "@ciutatis/adapter-utils";
+import { getAdapterSessionManagement } from "@paperclipai/adapter-utils";
 import {
   execute as claudeExecute,
   getQuotaWindows as claudeGetQuotaWindows,
   sessionCodec as claudeSessionCodec,
   testEnvironment as claudeTestEnvironment,
-} from "@ciutatis/adapter-claude-local/server";
+} from "@paperclipai/adapter-claude-local/server";
 import {
   agentConfigurationDoc as claudeAgentConfigurationDoc,
   models as claudeModels,
-} from "@ciutatis/adapter-claude-local";
+} from "@paperclipai/adapter-claude-local";
 import {
   execute as cloudflareWorkersAiExecute,
   testEnvironment as cloudflareWorkersAiTestEnvironment,
@@ -23,44 +23,44 @@ import {
   getQuotaWindows as codexGetQuotaWindows,
   sessionCodec as codexSessionCodec,
   testEnvironment as codexTestEnvironment,
-} from "@ciutatis/adapter-codex-local/server";
+} from "@paperclipai/adapter-codex-local/server";
 import {
   agentConfigurationDoc as codexAgentConfigurationDoc,
   models as codexModels,
-} from "@ciutatis/adapter-codex-local";
+} from "@paperclipai/adapter-codex-local";
 import {
   execute as cursorExecute,
   sessionCodec as cursorSessionCodec,
   testEnvironment as cursorTestEnvironment,
-} from "@ciutatis/adapter-cursor-local/server";
+} from "@paperclipai/adapter-cursor-local/server";
 import {
   agentConfigurationDoc as cursorAgentConfigurationDoc,
   models as cursorModels,
-} from "@ciutatis/adapter-cursor-local";
+} from "@paperclipai/adapter-cursor-local";
 import {
   execute as geminiExecute,
   testEnvironment as geminiTestEnvironment,
   sessionCodec as geminiSessionCodec,
-} from "@ciutatis/adapter-gemini-local/server";
-import { agentConfigurationDoc as geminiAgentConfigurationDoc, models as geminiModels } from "@ciutatis/adapter-gemini-local";
+} from "@paperclipai/adapter-gemini-local/server";
+import { agentConfigurationDoc as geminiAgentConfigurationDoc, models as geminiModels } from "@paperclipai/adapter-gemini-local";
 import {
   execute as openClawGatewayExecute,
   testEnvironment as openClawGatewayTestEnvironment,
-} from "@ciutatis/adapter-openclaw-gateway/server";
+} from "@paperclipai/adapter-openclaw-gateway/server";
 import {
   agentConfigurationDoc as openClawGatewayAgentConfigurationDoc,
   models as openClawGatewayModels,
-} from "@ciutatis/adapter-openclaw-gateway";
+} from "@paperclipai/adapter-openclaw-gateway";
 import {
   execute as openCodeExecute,
   listOpenCodeModels,
   sessionCodec as openCodeSessionCodec,
   testEnvironment as openCodeTestEnvironment,
-} from "@ciutatis/adapter-opencode-local/server";
+} from "@paperclipai/adapter-opencode-local/server";
 import {
   agentConfigurationDoc as openCodeAgentConfigurationDoc,
   models as openCodeModels,
-} from "@ciutatis/adapter-opencode-local";
+} from "@paperclipai/adapter-opencode-local";
 import { processAdapter } from "./process/index.js";
 import { httpAdapter } from "./http/index.js";
 

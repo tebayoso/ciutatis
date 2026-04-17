@@ -1,4 +1,4 @@
-import type { CreateConfigValues } from "@ciutatis/adapter-utils";
+import type { CreateConfigValues } from "@paperclipai/adapter-utils";
 import { DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL } from "../index.js";
 
 export function buildCloudflareWorkersAiConfig(

@@ -13,7 +13,7 @@ import {
   type PluginSettingsPageProps,
   type PluginSidebarProps,
   type PluginWidgetProps,
-} from "@ciutatis/plugin-sdk/ui";
+} from "@paperclipai/plugin-sdk/ui";
 import {
   DEFAULT_CONFIG,
   JOB_KEYS,

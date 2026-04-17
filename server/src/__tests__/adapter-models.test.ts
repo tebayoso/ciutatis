@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { models as claudeModels } from "@ciutatis/adapter-claude-local";
+import { models as claudeModels } from "@paperclipai/adapter-claude-local";
 import { models as cloudflareWorkersAiModels } from "@ciutatis/adapter-cloudflare-workers-ai";
-import { models as codexModels } from "@ciutatis/adapter-codex-local";
-import { models as cursorModels } from "@ciutatis/adapter-cursor-local";
-import { models as geminiModels } from "@ciutatis/adapter-gemini-local";
+import { models as codexModels } from "@paperclipai/adapter-codex-local";
+import { models as cursorModels } from "@paperclipai/adapter-cursor-local";
+import { models as geminiModels } from "@paperclipai/adapter-gemini-local";
 import { findServerAdapter, listAdapterModels, listServerAdapters } from "../adapters/index.js";
 
 describe("adapter model listing", () => {

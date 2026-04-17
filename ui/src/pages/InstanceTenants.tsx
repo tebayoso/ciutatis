@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { TenantInstance, UpdateTenantInstance } from "@ciutatis/shared";
+import type { TenantInstance, UpdateTenantInstance } from "@paperclipai/shared";
 import { Archive, Building2, ExternalLink, PauseCircle, PlayCircle, RefreshCcw, Router, Save } from "lucide-react";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { tenantInstancesApi } from "@/api/tenantInstances";

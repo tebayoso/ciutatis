@@ -1,5 +1,5 @@
-import type { Db } from "@ciutatis/db";
-import { pluginLogs, agentTaskSessions as agentTaskSessionsTable } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
+import { pluginLogs, agentTaskSessions as agentTaskSessionsTable } from "@paperclipai/db";
 import { eq, and, like, desc } from "drizzle-orm";
 import type {
   HostServices,
@@ -10,7 +10,7 @@ import type {
   Goal,
   PluginWorkspace,
   IssueComment,
-} from "@ciutatis/plugin-sdk";
+} from "@paperclipai/plugin-sdk";
 import { institutionService } from "./institutionService.js";
 import { agentService } from "./agents.js";
 import { projectService } from "./projects.js";
@@ -559,7 +559,7 @@ export function buildHostServices(
         await scopedBus.emit(params.name, params.companyId, params.payload);
       },
       async subscribe(params: { eventPattern: string; filter?: Record<string, unknown> | null }) {
-        const handler = async (event: import("@ciutatis/plugin-sdk").PluginEvent) => {
+        const handler = async (event: import("@paperclipai/plugin-sdk").PluginEvent) => {
           if (notifyWorker) {
             notifyWorker("onEvent", { event });
           }

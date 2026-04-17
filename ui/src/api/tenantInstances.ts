@@ -9,7 +9,7 @@ import type {
   TenantProvisioningJob,
   TenantProvisioningSettings,
   UpdateTenantInstance,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { api } from "./client";
 
 export const tenantInstancesApi = {

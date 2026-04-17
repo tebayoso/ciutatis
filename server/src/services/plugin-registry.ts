@@ -1,5 +1,5 @@
 import { asc, eq, ne, sql, and } from "drizzle-orm";
-import type { Db } from "@ciutatis/db";
+import type { Db } from "@paperclipai/db";
 import {
   plugins,
   pluginConfig,
@@ -7,7 +7,7 @@ import {
   pluginJobs,
   pluginJobRuns,
   pluginWebhookDeliveries,
-} from "@ciutatis/db";
+} from "@paperclipai/db";
 import type {
   CiutatisPluginManifestV1,
   PluginStatus,
@@ -24,7 +24,7 @@ import type {
   PluginJobRunStatus,
   PluginJobRunTrigger,
   PluginWebhookDeliveryStatus,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import { conflict, notFound } from "../errors.js";
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import type { CiutatisPluginManifestV1 } from "@ciutatis/plugin-sdk";
+import type { CiutatisPluginManifestV1 } from "@paperclipai/plugin-sdk";
 
 const PLUGIN_ID = "paperclip-file-browser-example";
 const FILES_SIDEBAR_SLOT_ID = "files-link";

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import type { PublicContactLocale, PublicContactSubmission } from "@ciutatis/shared";
+import type { PublicContactLocale, PublicContactSubmission } from "@paperclipai/shared";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

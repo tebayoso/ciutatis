@@ -25,7 +25,7 @@ import {
   type TenantProvisioningJobKind,
   type TenantProvisioningJobTrigger,
   type UpdateTenantInstance,
-} from "@ciutatis/shared";
+} from "@paperclipai/shared";
 import type { AppEnv } from "../lib/types.js";
 import { assertBoard } from "../lib/authz.js";
 

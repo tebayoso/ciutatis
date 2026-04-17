@@ -1,4 +1,4 @@
-import type { DashboardSummary } from "@ciutatis/shared";
+import type { DashboardSummary } from "@paperclipai/shared";
 import { api } from "./client";
 
 export const dashboardApi = {

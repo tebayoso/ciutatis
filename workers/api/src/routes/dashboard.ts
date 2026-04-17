@@ -9,7 +9,7 @@ import {
   issues,
   projects,
 } from "@ciutatis/db-cloudflare";
-import type { DashboardSummary } from "@ciutatis/shared";
+import type { DashboardSummary } from "@paperclipai/shared";
 import type { AppEnv } from "../lib/types.js";
 import { assertCompanyAccess } from "../lib/authz.js";
 import { notFound } from "../lib/errors.js";

@@ -1,0 +1,34 @@
+name = "ciutatis-status"
+main = "src/index.ts"
+compatibility_date = "2026-04-17"
+
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+[[routes]]
+pattern = "status.ciutatis.com/*"
+zone_name = "ciutatis.com"
+
+[vars]
+CIUTATIS_PUBLIC_ORIGIN = "https://ciutatis.com"
+CIUTATIS_ADMIN_ORIGIN = "https://admin.ciutatis.com"
+STATUS_PAGE_TITLE = "Ciutatis Status"
+STATUS_PAGE_TAGLINE = "Live edge checks for the public surface, admin shell, and API."
+
+[[kv_namespaces]]
+binding = "STATUS_CACHE"
+id = "4977305446284d7eb8a00dac7fc9e500"
+
+[[services]]
+binding = "PUBLIC_API"
+service = "ciutatis-api"
+
+[[services]]
+binding = "ADMIN_API"
+service = "ciutatis-admin-api"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1

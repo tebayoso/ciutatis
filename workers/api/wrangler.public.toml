@@ -1,0 +1,38 @@
+# Cloudflare Workers API - Ciutatis Public API
+name = "ciutatis-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "b9f5ebc6c05975fab56f056782461b77"
+
+[[routes]]
+pattern = "ciutatis.com/api/*"
+zone_name = "ciutatis.com"
+
+[[routes]]
+pattern = "www.ciutatis.com/api/*"
+zone_name = "ciutatis.com"
+
+[vars]
+DEPLOYMENT_MODE = "authenticated"
+AUTH_DISABLE_SIGNUP = "true"
+CLOUDFLARE_ACCOUNT_ID = "b9f5ebc6c05975fab56f056782461b77"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ciutatis-db"
+database_id = "2978f493-067e-40c8-ab7d-ca4b2926d17c"
+migrations_dir = "../../packages/db-cloudflare/src/migrations"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "ciutatis-assets"
+
+[[kv_namespaces]]
+binding = "CIUTATIS_SESSIONS"
+id = "ab19e1c5abe54868a89462c46570cad1"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

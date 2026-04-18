@@ -47,6 +47,7 @@ import {
 } from "../lib/errors.js";
 import { logActivity } from "../lib/activity.js";
 import { enqueueHostedHeartbeatRun } from "../lib/hosted-heartbeats.js";
+import { publicPortalService } from "../lib/public-portal.js";
 
 export function requestRoutes() {
   const app = new Hono<AppEnv>();
@@ -395,6 +396,7 @@ export function requestRoutes() {
   // PATCH /issues/:id
   app.patch("/issues/:id", async (c) => {
     const db = c.get("db");
+    const portal = publicPortalService(db);
     const rawId = c.req.param("id")!;
     const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
@@ -479,6 +481,8 @@ export function requestRoutes() {
         },
       }).catch(() => undefined);
     }
+
+    await portal.syncIssueStatus(issueId, updated.status);
 
     return c.json(updated);
   });
@@ -658,6 +662,7 @@ export function requestRoutes() {
   // POST /issues/:id/comments
   app.post("/issues/:id/comments", async (c) => {
     const db = c.get("db");
+    const portal = publicPortalService(db);
     const rawId = c.req.param("id")!;
     const issue = await resolveIssueByRef(db, rawId);
     if (!issue) throw notFound("Issue not found");
@@ -691,6 +696,7 @@ export function requestRoutes() {
         .update(issues)
         .set({ status: "in_progress", completedAt: null, updatedAt: new Date().toISOString() } as any)
         .where(eq(issues.id, issueId));
+      await portal.syncIssueStatus(issueId, "in_progress");
     }
 
     if (body.interrupt && issue.executionRunId) {

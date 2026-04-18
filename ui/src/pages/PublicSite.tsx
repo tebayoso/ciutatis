@@ -1289,6 +1289,10 @@ function pathFor(locale: Locale, page: PageKey): string {
   return slug ? `/${locale}/${slug}` : `/${locale}`;
 }
 
+function portalPathFor(locale: Locale): string {
+  return locale === "en" ? "/portal" : `/${locale}/portal`;
+}
+
 function buildHomeSectionLinks(site: SiteContent): HomeSectionLink[] {
   return [
     { id: "public-hero", label: site.pages.home.hero.eyebrow },
@@ -1513,7 +1517,7 @@ function PublicHeader({
               <div className="flex items-center gap-2 sm:gap-3">
                 <a
                   className="hidden text-sm font-medium text-primary transition-colors hover:text-foreground focus-visible:rounded-[10px] lg:inline-flex"
-                  href="#public-contact"
+                  href={portalPathFor(locale)}
                 >
                   {site.common.reportIssue}
                 </a>
@@ -1612,7 +1616,7 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="rounded-full border-border bg-background/88 px-6">
-                  <a href="#public-contact">{site.home.secondaryCta}</a>
+                  <Link to={portalPathFor(locale)}>{site.home.secondaryCta}</Link>
                 </Button>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">

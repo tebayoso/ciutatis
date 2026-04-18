@@ -39,6 +39,8 @@ import { CouncilClaimPage } from "./pages/CouncilClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
 import { PublicSite } from "./pages/PublicSite";
+import { PublicPortalPage } from "./pages/PublicPortalPage";
+import { PublicPortalRequestPage } from "./pages/PublicPortalRequestPage";
 import { queryKeys } from "./lib/queryKeys";
 import { isAdminHostname, isPublicSitePath } from "./lib/public-site-paths";
 import { useCompany, useOptionalCompany } from "./context/CompanyContext";
@@ -386,10 +388,16 @@ export function App() {
         <Route path="platform" element={publicEntryElement} />
         <Route path="about" element={publicEntryElement} />
         <Route path="partners" element={publicEntryElement} />
+        <Route path="portal" element={<PublicPortalPage />} />
+        <Route path="portal/requests/:publicId" element={<PublicPortalRequestPage />} />
+        <Route path="portal/:institutionSlug" element={<PublicPortalPage />} />
         <Route path="en" element={publicEntryElement} />
         <Route path="en/platform" element={publicEntryElement} />
         <Route path="en/about" element={publicEntryElement} />
         <Route path="en/partners" element={publicEntryElement} />
+        <Route path="en/portal" element={<PublicPortalPage />} />
+        <Route path="en/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
+        <Route path="en/portal/:institutionSlug" element={<PublicPortalPage />} />
         <Route path="es" element={publicEntryElement} />
         <Route path="es/procesos" element={publicEntryElement} />
         <Route path="es/modulos" element={publicEntryElement} />
@@ -397,6 +405,9 @@ export function App() {
         <Route path="es/plataforma" element={publicEntryElement} />
         <Route path="es/nosotros" element={publicEntryElement} />
         <Route path="es/alianzas" element={publicEntryElement} />
+        <Route path="es/portal" element={<PublicPortalPage />} />
+        <Route path="es/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
+        <Route path="es/portal/:institutionSlug" element={<PublicPortalPage />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="app" element={<ShellEntryRedirect />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />

@@ -4,6 +4,15 @@ export type { TenantInstance } from "./tenant-instance.js";
 export type { Objective } from "./objective.js";
 export type { PublicContactSubmission, PublicContactLocale } from "./public-contact.js";
 export type {
+  PublicInstitutionSummary,
+  PublicRequestSummary,
+  PublicRequestUpdate,
+  PublicRequestDetail,
+  PublicRequestCreateInput,
+  PublicRequestCreateResult,
+  PublicRequestCommentInput,
+} from "./public-portal.js";
+export type {
   Request,
   RequestAncestorProject,
   RequestAncestorObjective,

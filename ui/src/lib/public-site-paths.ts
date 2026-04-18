@@ -3,10 +3,12 @@ const PUBLIC_SITE_PATHS = new Set([
   "/platform",
   "/about",
   "/partners",
+  "/portal",
   "/en",
   "/en/platform",
   "/en/about",
   "/en/partners",
+  "/en/portal",
   "/es",
   "/es/procesos",
   "/es/modulos",
@@ -14,6 +16,7 @@ const PUBLIC_SITE_PATHS = new Set([
   "/es/plataforma",
   "/es/nosotros",
   "/es/alianzas",
+  "/es/portal",
 ]);
 
 const ADMIN_HOSTNAMES = new Set([
@@ -41,5 +44,14 @@ export function isPublicSitePath(pathname: string, hostname?: string | null): bo
     return false;
   }
 
-  return PUBLIC_SITE_PATHS.has(normalizePath(pathname));
+  const normalized = normalizePath(pathname);
+  if (PUBLIC_SITE_PATHS.has(normalized)) {
+    return true;
+  }
+
+  return (
+    normalized.startsWith("/portal/") ||
+    normalized.startsWith("/en/portal/") ||
+    normalized.startsWith("/es/portal/")
+  );
 }

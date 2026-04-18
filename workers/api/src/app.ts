@@ -31,6 +31,7 @@ import {
   accessRoutes,
   contactRoutes,
   authRoutes,
+  publicPortalRoutes,
 } from "./routes/index.js";
 
 export function createApp() {
@@ -68,20 +69,10 @@ export function createApp() {
 
   app.route("/api/auth", authRoutes());
 
-  app.post("/api/auth/sign-up/*", (c) => {
-    const disableSignup = c.env.AUTH_DISABLE_SIGNUP;
-    if (disableSignup === "true") {
-      return c.json(
-        { error: "Sign up is currently disabled. Contact support for access." },
-        403,
-      );
-    }
-    return c.json({ error: "Sign up is not available in this deployment" }, 501);
-  });
-
   app.route("/", llmRoutes());
 
   app.route("/api", contactRoutes());
+  app.route("/api/public", publicPortalRoutes());
 
   const api = new Hono<AppEnv>();
   api.use("*", boardMutationGuard);

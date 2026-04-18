@@ -21,6 +21,12 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
 
   const nextPath = useMemo(() => searchParams.get("next") || "/app", [searchParams]);
+  const isPortalContext =
+    searchParams.get("context") === "portal" ||
+    nextPath === "/portal" ||
+    nextPath.startsWith("/portal/") ||
+    nextPath === "/es/portal" ||
+    nextPath.startsWith("/es/portal/");
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
@@ -80,7 +86,7 @@ export function AuthPage() {
         <div className="w-full max-w-md mx-auto my-auto px-8 py-12">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Ciutatis</span>
+            <span className="text-sm font-medium">{isPortalContext ? "Ciutatis Portal" : "Ciutatis"}</span>
           </div>
 
           <div className="inline-flex rounded-md border border-border p-1">
@@ -115,12 +121,22 @@ export function AuthPage() {
           </div>
 
           <h1 className="mt-6 text-xl font-semibold">
-            {mode === "sign_up" ? "Create your Ciutatis account" : "Sign in to Ciutatis"}
+            {mode === "sign_up"
+              ? isPortalContext
+                ? "Create your citizen account"
+                : "Create your Ciutatis account"
+              : isPortalContext
+                ? "Sign in to continue your public request"
+                : "Sign in to Ciutatis"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "sign_up"
-              ? "Create an email/password account to access this instance."
-              : "Use your email and password to access this instance."}
+              ? isPortalContext
+                ? "Use an email/password account to file requests and keep the conversation attached to your account."
+                : "Create an email/password account to access this instance."
+              : isPortalContext
+                ? "Use your email and password to continue from the public civic portal."
+                : "Use your email and password to access this instance."}
           </p>
 
           <form

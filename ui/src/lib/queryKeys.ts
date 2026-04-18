@@ -68,6 +68,12 @@ export const queryKeys = {
   auth: {
     session: ["auth", "session"] as const,
   },
+  publicPortal: {
+    institutions: ["public-portal", "institutions"] as const,
+    institution: (slug: string) => ["public-portal", "institution", slug] as const,
+    requests: (filters?: Record<string, string | undefined>) => ["public-portal", "requests", filters ?? {}] as const,
+    detail: (publicId: string) => ["public-portal", "detail", publicId] as const,
+  },
   instance: {
     adminOverview: ["instance", "admin-overview"] as const,
     schedulerHeartbeats: ["instance", "scheduler-heartbeats"] as const,

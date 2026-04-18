@@ -22,6 +22,13 @@ export {
 } from "./public-contact.js";
 
 export {
+  publicRequestCreateSchema,
+  publicRequestCommentSchema,
+  type PublicRequestCreate,
+  type PublicRequestComment,
+} from "./public-portal.js";
+
+export {
   upsertBudgetPolicySchema,
   resolveBudgetIncidentSchema,
   type UpsertBudgetPolicy,

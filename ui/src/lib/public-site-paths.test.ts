@@ -15,6 +15,8 @@ describe("isPublicSitePath", () => {
   it("keeps marketing routes public on the public host", () => {
     expect(isPublicSitePath("/en", "ciutatis.com")).toBe(true);
     expect(isPublicSitePath("/es/plataforma", "ciutatis.com")).toBe(true);
+    expect(isPublicSitePath("/portal", "ciutatis.com")).toBe(true);
+    expect(isPublicSitePath("/portal/requests/pap-12", "ciutatis.com")).toBe(true);
   });
 
   it("disables marketing routing on the admin host", () => {

@@ -19,3 +19,4 @@ export { pluginUiStaticRoutes } from "./plugin-ui-static.js";
 export { accessRoutes } from "./access.js";
 export { contactRoutes } from "./contact.js";
 export { authRoutes } from "./auth.js";
+export { publicPortalRoutes } from "./public-portal.js";

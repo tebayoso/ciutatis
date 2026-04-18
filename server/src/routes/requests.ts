@@ -23,6 +23,7 @@ import {
   objectiveService,
   heartbeatService,
   issueApprovalService,
+  publicPortalService,
   requestService,
   documentService,
   logActivity,
@@ -49,6 +50,7 @@ export function requestRoutes(db: Db, storage: StorageService) {
   const executionWorkspacesSvc = executionWorkspaceService(db);
   const workProductsSvc = workProductService(db);
   const documentsSvc = documentService(db);
+  const publicPortal = publicPortalService(db);
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -302,6 +304,8 @@ export function requestRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
+
+    await publicPortal.syncIssueStatus(issue.id, issue.status);
     assertCompanyAccess(req, issue.companyId);
     const [ancestors, project, goal, mentionedProjectIds, documentPayload] = await Promise.all([
       svc.getAncestors(issue.id),
@@ -1207,6 +1211,7 @@ export function requestRoutes(db: Db, storage: StorageService) {
       reopened = true;
       reopenFromStatus = issue.status;
       currentIssue = reopenedIssue;
+      await publicPortal.syncIssueStatus(currentIssue.id, currentIssue.status);
 
       await logActivity(db, {
         companyId: currentIssue.companyId,

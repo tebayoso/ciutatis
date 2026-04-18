@@ -6,6 +6,8 @@ export { institutionSecrets } from "./institution_secrets.js";
 export { institutionSecretVersions } from "./institution_secret_versions.js";
 export { objectives } from "./objectives.js";
 export { requests } from "./requests.js";
+export { publicRequests } from "./public_requests.js";
+export { publicRequestUpdates } from "./public_request_updates.js";
 export { requestApprovals } from "./request_approvals.js";
 export { requestComments } from "./request_comments.js";
 export { requestAttachments } from "./request_attachments.js";

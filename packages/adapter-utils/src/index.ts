@@ -12,11 +12,22 @@ export type {
   AdapterEnvironmentTestStatus,
   AdapterEnvironmentTestResult,
   AdapterEnvironmentTestContext,
+  AdapterSkillSyncMode,
+  AdapterSkillState,
+  AdapterSkillOrigin,
+  AdapterSkillEntry,
+  AdapterSkillSnapshot,
+  AdapterSkillContext,
   AdapterSessionCodec,
   AdapterModel,
-  AdapterCapabilities,
+  AdapterModelProfileKey,
+  AdapterModelProfileDefinition,
   HireApprovedPayload,
   HireApprovedHookResult,
+  ConfigFieldOption,
+  ConfigFieldSchema,
+  AdapterConfigSchema,
+  AdapterRuntimeCommandSpec,
   ServerAdapterModule,
   QuotaWindow,
   ProviderQuotaResult,
@@ -45,4 +56,20 @@ export {
   redactHomePathUserSegmentsInValue,
   redactTranscriptEntryPaths,
 } from "./log-redaction.js";
+export {
+  REDACTED_COMMAND_TEXT_VALUE,
+  redactCommandText,
+} from "./command-redaction.js";
 export { inferOpenAiCompatibleBiller } from "./billing.js";
+// Keep the root adapter-utils entry browser-safe because the UI imports it.
+// The sandbox callback bridge stays available via its dedicated subpath export.
+export type {
+  SandboxCallbackBridgeRequest,
+  SandboxCallbackBridgeResponse,
+  SandboxCallbackBridgeAsset,
+  SandboxCallbackBridgeDirectories,
+  SandboxCallbackBridgeRouteRule,
+  SandboxCallbackBridgeQueueClient,
+  SandboxCallbackBridgeWorkerHandle,
+  StartedSandboxCallbackBridgeServer,
+} from "./sandbox-callback-bridge.js";

@@ -3,7 +3,15 @@ import type {
   AdapterExecutionResult,
   AdapterRuntimeServiceReport,
 } from "@paperclipai/adapter-utils";
-import { asNumber, asString, buildCiutatisEnv, parseObject } from "@paperclipai/adapter-utils/server-utils";
+import {
+  asNumber,
+  asString,
+  buildPaperclipEnv,
+  parseObject,
+  readPaperclipIssueWorkModeFromContext,
+  renderPaperclipWakePrompt,
+  stringifyPaperclipWakePayload,
+} from "@paperclipai/adapter-utils/server-utils";
 import crypto, { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
 
@@ -126,16 +134,26 @@ function normalizeSessionKeyStrategy(value: unknown): SessionKeyStrategy {
   return "issue";
 }
 
-function resolveSessionKey(input: {
+function prefixSessionKeyForAgent(sessionKey: string, agentId: string | null): string {
+  if (!agentId || sessionKey.startsWith("agent:")) return sessionKey;
+  return `agent:${agentId}:${sessionKey}`;
+}
+
+export function resolveSessionKey(input: {
   strategy: SessionKeyStrategy;
   configuredSessionKey: string | null;
+  agentId: string | null;
   runId: string;
   issueId: string | null;
 }): string {
   const fallback = input.configuredSessionKey ?? "paperclip";
-  if (input.strategy === "run") return `paperclip:run:${input.runId}`;
-  if (input.strategy === "issue" && input.issueId) return `paperclip:issue:${input.issueId}`;
-  return fallback;
+  if (input.strategy === "run") {
+    return prefixSessionKeyForAgent(`paperclip:run:${input.runId}`, input.agentId);
+  }
+  if (input.strategy === "issue" && input.issueId) {
+    return prefixSessionKeyForAgent(`paperclip:issue:${input.issueId}`, input.agentId);
+  }
+  return prefixSessionKeyForAgent(fallback, input.agentId);
 }
 
 function isLoopbackHost(hostname: string): boolean {
@@ -301,7 +319,7 @@ function buildWakePayload(ctx: AdapterExecutionContext): WakePayload {
   };
 }
 
-function resolveCiutatisApiUrlOverride(value: unknown): string | null {
+function resolvePaperclipApiUrlOverride(value: unknown): string | null {
   const raw = nonEmpty(value);
   if (!raw) return null;
   try {
@@ -313,10 +331,16 @@ function resolveCiutatisApiUrlOverride(value: unknown): string | null {
   }
 }
 
-function buildCiutatisEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
-  const paperclipApiUrlOverride = resolveCiutatisApiUrlOverride(ctx.config.paperclipApiUrl);
+const DEFAULT_CLAIMED_API_KEY_PATH = "~/.openclaw/workspace/paperclip-claimed-api-key.json";
+
+function resolveClaimedApiKeyPath(value: unknown): string {
+  return nonEmpty(value) ?? DEFAULT_CLAIMED_API_KEY_PATH;
+}
+
+function buildPaperclipEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
+  const paperclipApiUrlOverride = resolvePaperclipApiUrlOverride(ctx.config.paperclipApiUrl);
   const paperclipEnv: Record<string, string> = {
-    ...buildCiutatisEnv(ctx.agent),
+    ...buildPaperclipEnv(ctx.agent),
     PAPERCLIP_RUN_ID: ctx.runId,
   };
 
@@ -324,6 +348,8 @@ function buildCiutatisEnvForWake(ctx: AdapterExecutionContext, wakePayload: Wake
     paperclipEnv.PAPERCLIP_API_URL = paperclipApiUrlOverride;
   }
   if (wakePayload.taskId) paperclipEnv.PAPERCLIP_TASK_ID = wakePayload.taskId;
+  const issueWorkMode = readPaperclipIssueWorkModeFromContext(ctx.context);
+  if (issueWorkMode) paperclipEnv.PAPERCLIP_ISSUE_WORK_MODE = issueWorkMode;
   if (wakePayload.wakeReason) paperclipEnv.PAPERCLIP_WAKE_REASON = wakePayload.wakeReason;
   if (wakePayload.wakeCommentId) paperclipEnv.PAPERCLIP_WAKE_COMMENT_ID = wakePayload.wakeCommentId;
   if (wakePayload.approvalId) paperclipEnv.PAPERCLIP_APPROVAL_ID = wakePayload.approvalId;
@@ -335,7 +361,11 @@ function buildCiutatisEnvForWake(ctx: AdapterExecutionContext, wakePayload: Wake
   return paperclipEnv;
 }
 
-function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string>): string {
+function buildWakeText(
+  payload: WakePayload,
+  paperclipEnv: Record<string, string>,
+  structuredWakePrompt: string,
+): string {
   const claimedApiKeyPath = "~/.openclaw/workspace/paperclip-claimed-api-key.json";
   const orderedKeys = [
     "PAPERCLIP_RUN_ID",
@@ -361,7 +391,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
   const apiBaseHint = paperclipEnv.PAPERCLIP_API_URL ?? "<set PAPERCLIP_API_URL>";
 
   const lines = [
-    "Ciutatis wake event for a cloud adapter.",
+    "Paperclip wake event for a cloud adapter.",
     "",
     "Run this procedure now. Do not guess undocumented endpoints and do not ask for additional heartbeat docs.",
     "",
@@ -382,7 +412,7 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     "",
     "HTTP rules:",
     "- Use Authorization: Bearer $PAPERCLIP_API_KEY on every API call.",
-    "- Use X-Ciutatis-Run-Id: $PAPERCLIP_RUN_ID on every mutating API call.",
+    "- Use X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID on every mutating API call.",
     "- Use only /api endpoints listed below.",
     "- Do NOT call guessed endpoints like /api/cloud-adapter/*, /api/cloud-adapters/*, /api/adapters/cloud/*, or /api/heartbeat.",
     "",
@@ -390,20 +420,30 @@ function buildWakeText(payload: WakePayload, paperclipEnv: Record<string, string
     "1) GET /api/agents/me",
     `2) Determine issueId: PAPERCLIP_TASK_ID if present, otherwise issue_id (${issueIdHint}).`,
     "3) If issueId exists:",
-    "   - POST /api/issues/{issueId}/checkout with {\"agentId\":\"$PAPERCLIP_AGENT_ID\",\"expectedStatuses\":[\"todo\",\"backlog\",\"blocked\"]}",
+    "   - POST /api/issues/{issueId}/checkout with {\"agentId\":\"$PAPERCLIP_AGENT_ID\",\"expectedStatuses\":[\"todo\",\"backlog\",\"blocked\",\"in_review\"]}",
     "   - GET /api/issues/{issueId}",
     "   - GET /api/issues/{issueId}/comments",
-    "   - Execute the issue instructions exactly.",
+    "   - Execute the issue instructions exactly. If the issue is actionable, take concrete action in this run; do not stop at a plan unless planning was requested.",
+    "   - Leave durable progress with a clear next action. Use child issues for long or parallel delegated work instead of polling agents, sessions, or processes.",
+    "   - Create child issues directly when you know what needs to be done; use POST /api/issues/{issueId}/interactions with kind suggest_tasks, ask_user_questions, or request_confirmation when the board/user must choose, answer, or confirm before you can continue.",
+    "   - For plan approval, update the plan document first, then create request_confirmation targeting the latest plan revision with idempotencyKey confirmation:{issueId}:plan:{revisionId}; wait for acceptance before creating implementation subtasks.",
+    "   - If blocked, PATCH /api/issues/{issueId} with {\"status\":\"blocked\",\"comment\":\"what is blocked, who owns the unblock, and the next action\"}.",
     "   - If instructions require a comment, POST /api/issues/{issueId}/comments with {\"body\":\"...\"}.",
     "   - PATCH /api/issues/{issueId} with {\"status\":\"done\",\"comment\":\"what changed and why\"}.",
     "4) If issueId does not exist:",
-    "   - GET /api/companies/$PAPERCLIP_COMPANY_ID/issues?assigneeAgentId=$PAPERCLIP_AGENT_ID&status=todo,in_progress,blocked",
-    "   - Pick in_progress first, then todo, then blocked, then execute step 3.",
+    "   - GET /api/companies/$PAPERCLIP_COMPANY_ID/issues?assigneeAgentId=$PAPERCLIP_AGENT_ID&status=todo,in_progress,in_review,blocked",
+    "   - Pick in_progress first, then in_review when you were woken by a comment, then todo, then blocked, then execute step 3.",
     "",
     "Useful endpoints for issue work:",
     "- POST /api/issues/{issueId}/comments",
     "- PATCH /api/issues/{issueId}",
     "- POST /api/companies/{companyId}/issues (when asked to create a new issue)",
+    ...(structuredWakePrompt
+      ? [
+          "",
+          structuredWakePrompt,
+        ]
+      : []),
     "",
     "Complete the workflow in this run.",
   ];
@@ -415,13 +455,24 @@ function appendWakeText(baseText: string, wakeText: string): string {
   return trimmedBase.length > 0 ? `${trimmedBase}\n\n${wakeText}` : wakeText;
 }
 
-function buildStandardCiutatisPayload(
+function joinWakePayloadSections(structuredWakePrompt: string, structuredWakeJson: string): string {
+  const sections = [
+    structuredWakePrompt.trim(),
+    "Structured wake payload JSON:",
+    "```json",
+    structuredWakeJson,
+    "```",
+  ].filter((entry) => entry.trim().length > 0);
+  return sections.join("\n");
+}
+
+function buildStandardPaperclipPayload(
   ctx: AdapterExecutionContext,
   wakePayload: WakePayload,
   paperclipEnv: Record<string, string>,
   payloadTemplate: Record<string, unknown>,
 ): Record<string, unknown> {
-  const templateCiutatis = parseObject(payloadTemplate.paperclip);
+  const templatePaperclip = parseObject(payloadTemplate.paperclip);
   const workspace = asRecord(ctx.context.paperclipWorkspace);
   const workspaces = Array.isArray(ctx.context.paperclipWorkspaces)
     ? ctx.context.paperclipWorkspaces.filter((entry): entry is Record<string, unknown> => Boolean(asRecord(entry)))
@@ -433,7 +484,7 @@ function buildStandardCiutatisPayload(
       )
     : [];
 
-  const standardCiutatis: Record<string, unknown> = {
+  const standardPaperclip: Record<string, unknown> = {
     runId: ctx.runId,
     companyId: ctx.agent.companyId,
     agentId: ctx.agent.id,
@@ -447,23 +498,27 @@ function buildStandardCiutatisPayload(
     approvalStatus: wakePayload.approvalStatus,
     apiUrl: paperclipEnv.PAPERCLIP_API_URL ?? null,
   };
+  const structuredWake = parseObject(ctx.context.paperclipWake);
+  if (Object.keys(structuredWake).length > 0) {
+    standardPaperclip.wake = structuredWake;
+  }
 
   if (workspace) {
-    standardCiutatis.workspace = workspace;
+    standardPaperclip.workspace = workspace;
   }
   if (workspaces.length > 0) {
-    standardCiutatis.workspaces = workspaces;
+    standardPaperclip.workspaces = workspaces;
   }
   if (runtimeServiceIntents.length > 0 || Object.keys(configuredWorkspaceRuntime).length > 0) {
-    standardCiutatis.workspaceRuntime = {
+    standardPaperclip.workspaceRuntime = {
       ...configuredWorkspaceRuntime,
       ...(runtimeServiceIntents.length > 0 ? { services: runtimeServiceIntents } : {}),
     };
   }
 
   return {
-    ...templateCiutatis,
-    ...standardCiutatis,
+    ...templatePaperclip,
+    ...standardPaperclip,
   };
 }
 
@@ -605,6 +660,7 @@ class GatewayWsClient {
       this.resolveChallenge = resolve;
       this.rejectChallenge = reject;
     });
+    this.challengePromise.catch(() => {});
   }
 
   async connect(
@@ -1051,21 +1107,30 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const disableDeviceAuth = parseBoolean(ctx.config.disableDeviceAuth, false);
 
   const wakePayload = buildWakePayload(ctx);
-  const paperclipEnv = buildCiutatisEnvForWake(ctx, wakePayload);
-  const wakeText = buildWakeText(wakePayload, paperclipEnv);
+  const paperclipEnv = buildPaperclipEnvForWake(ctx, wakePayload);
+  const structuredWakePrompt = renderPaperclipWakePrompt(ctx.context.paperclipWake);
+  const structuredWakeJson = stringifyPaperclipWakePayload(ctx.context.paperclipWake);
+  const wakeText = buildWakeText(
+    wakePayload,
+    paperclipEnv,
+    structuredWakeJson
+      ? joinWakePayloadSections(structuredWakePrompt, structuredWakeJson)
+      : structuredWakePrompt,
+  );
 
   const sessionKeyStrategy = normalizeSessionKeyStrategy(ctx.config.sessionKeyStrategy);
   const configuredSessionKey = nonEmpty(ctx.config.sessionKey);
   const sessionKey = resolveSessionKey({
     strategy: sessionKeyStrategy,
     configuredSessionKey,
+    agentId: nonEmpty(ctx.config.agentId),
     runId: ctx.runId,
     issueId: wakePayload.issueId,
   });
 
   const templateMessage = nonEmpty(payloadTemplate.message) ?? nonEmpty(payloadTemplate.text);
   const message = templateMessage ? appendWakeText(templateMessage, wakeText) : wakeText;
-  const paperclipPayload = buildStandardCiutatisPayload(ctx, wakePayload, paperclipEnv, payloadTemplate);
+  const paperclipPayload = buildStandardPaperclipPayload(ctx, wakePayload, paperclipEnv, payloadTemplate);
 
   const agentParams: Record<string, unknown> = {
     ...payloadTemplate,
@@ -1074,6 +1139,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     idempotencyKey: ctx.runId,
   };
   delete agentParams.text;
+  agentParams.paperclip = paperclipPayload;
 
   const configuredAgentId = nonEmpty(ctx.config.agentId);
   if (configuredAgentId && !nonEmpty(agentParams.agentId)) {

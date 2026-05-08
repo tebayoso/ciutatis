@@ -5,8 +5,6 @@ import { forbidden } from "../errors.js";
 import { listServerAdapters } from "../adapters/index.js";
 import { agentService } from "../services/agents.js";
 
-const LLM_ADAPTER_TYPES = new Set(["cloudflare_workers_ai"]);
-
 function hasCreatePermission(agent: { role: string; permissions: Record<string, unknown> | null | undefined }) {
   if (!agent.permissions || typeof agent.permissions !== "object") return false;
   return Boolean((agent.permissions as Record<string, unknown>).canCreateAgents);
@@ -29,17 +27,14 @@ export function llmRoutes(db: Db) {
 
   router.get("/llms/agent-configuration.txt", async (req, res) => {
     await assertCanRead(req);
-    const adapters = listServerAdapters()
-      .filter((adapter) => LLM_ADAPTER_TYPES.has(adapter.type))
-      .sort((a, b) => a.type.localeCompare(b.type));
+    const adapters = listServerAdapters().sort((a, b) => a.type.localeCompare(b.type));
     const lines = [
-      "# Ciutatis Agent Configuration Index",
+      "# Paperclip Agent Configuration Index",
       "",
       "Installed adapters:",
       ...adapters.map((adapter) => `- ${adapter.type}: /llms/agent-configuration/${adapter.type}.txt`),
       "",
       "Related API endpoints:",
-      "- GET /api/companies/:companyId/adapters",
       "- GET /api/companies/:companyId/agent-configurations",
       "- GET /api/agents/:id/configuration",
       "- POST /api/companies/:companyId/agent-hires",
@@ -50,6 +45,8 @@ export function llmRoutes(db: Db) {
       "Notes:",
       "- Sensitive values are redacted in configuration read APIs.",
       "- New hires may be created in pending_approval state depending on company settings.",
+      "- Use the paperclip-create-agent skill for end-to-end hiring: adapter reflection, config comparison, instruction source selection, icon choice, desiredSkills, sourceIssueId/sourceIssueIds, and approval follow-up.",
+      "- Timer heartbeats are opt-in for new hires. Leave runtimeConfig.heartbeat.enabled false unless the role truly needs scheduled work or the user explicitly asked for it.",
       "",
     ];
     res.type("text/plain").send(lines.join("\n"));
@@ -58,7 +55,7 @@ export function llmRoutes(db: Db) {
   router.get("/llms/agent-icons.txt", async (req, res) => {
     await assertCanRead(req);
     const lines = [
-      "# Ciutatis Agent Icon Names",
+      "# Paperclip Agent Icon Names",
       "",
       "Set the `icon` field on hire/create payloads to one of:",
       ...AGENT_ICON_NAMES.map((name) => `- ${name}`),
@@ -73,9 +70,7 @@ export function llmRoutes(db: Db) {
   router.get("/llms/agent-configuration/:adapterType.txt", async (req, res) => {
     await assertCanRead(req);
     const adapterType = req.params.adapterType as string;
-    const adapter = listServerAdapters().find(
-      (entry) => entry.type === adapterType && LLM_ADAPTER_TYPES.has(entry.type),
-    );
+    const adapter = listServerAdapters().find((entry) => entry.type === adapterType);
     if (!adapter) {
       res.status(404).type("text/plain").send(`Unknown adapter type: ${adapterType}`);
       return;

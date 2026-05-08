@@ -11,6 +11,10 @@ describe("summarizeHeartbeatRunResultJson", () => {
       total_cost_usd: 1.23,
       cost_usd: 0.45,
       costUsd: 0.67,
+      stopReason: "timeout",
+      effectiveTimeoutSec: 30,
+      timeoutConfigured: true,
+      timeoutFired: true,
       nested: { ignored: true },
     });
 
@@ -22,6 +26,10 @@ describe("summarizeHeartbeatRunResultJson", () => {
       total_cost_usd: 1.23,
       cost_usd: 0.45,
       costUsd: 0.67,
+      stopReason: "timeout",
+      effectiveTimeoutSec: 30,
+      timeoutConfigured: true,
+      timeoutFired: true,
     });
   });
 

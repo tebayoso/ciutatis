@@ -1,62 +1,68 @@
 import type { Db } from "@paperclipai/db";
 import { companies, instanceSettings } from "@paperclipai/db";
 import {
-  cloudflareProvisioningSettingsSchema,
-  type CloudflareProvisioningSettings,
+  DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE,
+  DEFAULT_BACKUP_RETENTION,
+  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  instanceGeneralSettingsSchema,
+  type InstanceGeneralSettings,
   instanceExperimentalSettingsSchema,
   type InstanceExperimentalSettings,
+  type PatchInstanceGeneralSettings,
   type InstanceSettings,
-  type PatchCloudflareProvisioningSettings,
   type PatchInstanceExperimentalSettings,
-  tenantProvisioningSettingsSchema,
-  type PatchTenantProvisioningSettings,
-  type TenantProvisioningSettings,
 } from "@paperclipai/shared";
 import { eq } from "drizzle-orm";
 
 const DEFAULT_SINGLETON_KEY = "default";
 
-function asRecord(value: unknown) {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+function normalizeGeneralSettings(raw: unknown): InstanceGeneralSettings {
+  const parsed = instanceGeneralSettingsSchema.safeParse(raw ?? {});
+  if (parsed.success) {
+    return {
+      censorUsernameInLogs: parsed.data.censorUsernameInLogs ?? false,
+      keyboardShortcuts: parsed.data.keyboardShortcuts ?? false,
+      feedbackDataSharingPreference:
+        parsed.data.feedbackDataSharingPreference ?? DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE,
+      backupRetention: parsed.data.backupRetention ?? DEFAULT_BACKUP_RETENTION,
+    };
+  }
+  return {
+    censorUsernameInLogs: false,
+    keyboardShortcuts: false,
+    feedbackDataSharingPreference: DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE,
+    backupRetention: DEFAULT_BACKUP_RETENTION,
+  };
 }
 
 function normalizeExperimentalSettings(raw: unknown): InstanceExperimentalSettings {
   const parsed = instanceExperimentalSettingsSchema.safeParse(raw ?? {});
   if (parsed.success) {
     return {
+      enableEnvironments: parsed.data.enableEnvironments ?? false,
       enableIsolatedWorkspaces: parsed.data.enableIsolatedWorkspaces ?? false,
+      autoRestartDevServerWhenIdle: parsed.data.autoRestartDevServerWhenIdle ?? false,
+      enableIssueGraphLivenessAutoRecovery: parsed.data.enableIssueGraphLivenessAutoRecovery ?? false,
+      issueGraphLivenessAutoRecoveryLookbackHours:
+        parsed.data.issueGraphLivenessAutoRecoveryLookbackHours ??
+        DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
     };
   }
   return {
+    enableEnvironments: false,
     enableIsolatedWorkspaces: false,
+    autoRestartDevServerWhenIdle: false,
+    enableIssueGraphLivenessAutoRecovery: false,
+    issueGraphLivenessAutoRecoveryLookbackHours:
+      DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
   };
 }
 
-function normalizeTenantProvisioningSettings(raw: unknown): TenantProvisioningSettings {
-  const parsed = tenantProvisioningSettingsSchema.safeParse(raw ?? {});
-  if (parsed.success) return parsed.data;
-  return tenantProvisioningSettingsSchema.parse({});
-}
-
-function normalizeCloudflareProvisioningSettings(raw: unknown): CloudflareProvisioningSettings {
-  const parsed = cloudflareProvisioningSettingsSchema.safeParse(raw ?? {});
-  if (parsed.success) return parsed.data;
-  return cloudflareProvisioningSettingsSchema.parse({});
-}
-
 function toInstanceSettings(row: typeof instanceSettings.$inferSelect): InstanceSettings {
-  const experimentalRecord = asRecord(row.experimental);
-  const tenantProvisioningRecord = Object.keys(asRecord(row.tenantProvisioning)).length > 0
-    ? asRecord(row.tenantProvisioning)
-    : asRecord(experimentalRecord.tenantProvisioning);
-  const cloudflareProvisioningRecord = Object.keys(asRecord(row.cloudflareProvisioning)).length > 0
-    ? asRecord(row.cloudflareProvisioning)
-    : asRecord(experimentalRecord.cloudflareProvisioning);
   return {
     id: row.id,
-    experimental: normalizeExperimentalSettings(experimentalRecord),
-    tenantProvisioning: normalizeTenantProvisioningSettings(tenantProvisioningRecord),
-    cloudflareProvisioning: normalizeCloudflareProvisioningSettings(cloudflareProvisioningRecord),
+    general: normalizeGeneralSettings(row.general),
+    experimental: normalizeExperimentalSettings(row.experimental),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -73,15 +79,14 @@ export function instanceSettingsService(db: Db) {
 
     const now = new Date();
     const [created] = await db
-        .insert(instanceSettings)
-        .values({
-          singletonKey: DEFAULT_SINGLETON_KEY,
-          experimental: {},
-          tenantProvisioning: {},
-          cloudflareProvisioning: {},
-          createdAt: now,
-          updatedAt: now,
-        })
+      .insert(instanceSettings)
+      .values({
+        singletonKey: DEFAULT_SINGLETON_KEY,
+        general: {},
+        experimental: {},
+        createdAt: now,
+        updatedAt: now,
+      })
       .onConflictDoUpdate({
         target: [instanceSettings.singletonKey],
         set: {
@@ -90,15 +95,47 @@ export function instanceSettingsService(db: Db) {
       })
       .returning();
 
-    return created;
+    if (created) return created;
+
+    const raced = await db
+      .select()
+      .from(instanceSettings)
+      .where(eq(instanceSettings.singletonKey, DEFAULT_SINGLETON_KEY))
+      .then((rows) => rows[0] ?? null);
+    if (raced) return raced;
+
+    throw new Error("Failed to initialize instance settings row");
   }
 
   return {
     get: async (): Promise<InstanceSettings> => toInstanceSettings(await getOrCreateRow()),
 
+    getGeneral: async (): Promise<InstanceGeneralSettings> => {
+      const row = await getOrCreateRow();
+      return normalizeGeneralSettings(row.general);
+    },
+
     getExperimental: async (): Promise<InstanceExperimentalSettings> => {
       const row = await getOrCreateRow();
       return normalizeExperimentalSettings(row.experimental);
+    },
+
+    updateGeneral: async (patch: PatchInstanceGeneralSettings): Promise<InstanceSettings> => {
+      const current = await getOrCreateRow();
+      const nextGeneral = normalizeGeneralSettings({
+        ...normalizeGeneralSettings(current.general),
+        ...patch,
+      });
+      const now = new Date();
+      const [updated] = await db
+        .update(instanceSettings)
+        .set({
+          general: { ...nextGeneral },
+          updatedAt: now,
+        })
+        .where(eq(instanceSettings.id, current.id))
+        .returning();
+      return toInstanceSettings(updated ?? current);
     },
 
     updateExperimental: async (patch: PatchInstanceExperimentalSettings): Promise<InstanceSettings> => {
@@ -112,96 +149,6 @@ export function instanceSettingsService(db: Db) {
         .update(instanceSettings)
         .set({
           experimental: { ...nextExperimental },
-          updatedAt: now,
-        })
-        .where(eq(instanceSettings.id, current.id))
-        .returning();
-      return toInstanceSettings(updated ?? current);
-    },
-
-    getTenantProvisioning: async (): Promise<TenantProvisioningSettings> => {
-      const row = await getOrCreateRow();
-      const tenantProvisioning = Object.keys(asRecord(row.tenantProvisioning)).length > 0
-        ? row.tenantProvisioning
-        : asRecord(row.experimental).tenantProvisioning;
-      return normalizeTenantProvisioningSettings(tenantProvisioning);
-    },
-
-    updateTenantProvisioning: async (patch: PatchTenantProvisioningSettings): Promise<InstanceSettings> => {
-      const current = await getOrCreateRow();
-      const experimental = asRecord(current.experimental);
-      const nextTenantProvisioning = normalizeTenantProvisioningSettings({
-        ...normalizeTenantProvisioningSettings(
-          Object.keys(asRecord(current.tenantProvisioning)).length > 0
-            ? current.tenantProvisioning
-            : experimental.tenantProvisioning,
-        ),
-        ...patch,
-      });
-      const now = new Date();
-      const [updated] = await db
-        .update(instanceSettings)
-        .set({
-          experimental,
-          tenantProvisioning: nextTenantProvisioning,
-          updatedAt: now,
-        })
-        .where(eq(instanceSettings.id, current.id))
-        .returning();
-      return toInstanceSettings(updated ?? current);
-    },
-
-    getCloudflareProvisioning: async (): Promise<CloudflareProvisioningSettings> => {
-      const row = await getOrCreateRow();
-      const cloudflareProvisioning = Object.keys(asRecord(row.cloudflareProvisioning)).length > 0
-        ? row.cloudflareProvisioning
-        : asRecord(row.experimental).cloudflareProvisioning;
-      return normalizeCloudflareProvisioningSettings(cloudflareProvisioning);
-    },
-
-    updateCloudflareProvisioning: async (patch: PatchCloudflareProvisioningSettings): Promise<InstanceSettings> => {
-      const current = await getOrCreateRow();
-      const experimental = asRecord(current.experimental);
-      const nextCloudflareProvisioning = normalizeCloudflareProvisioningSettings({
-        ...normalizeCloudflareProvisioningSettings(
-          Object.keys(asRecord(current.cloudflareProvisioning)).length > 0
-            ? current.cloudflareProvisioning
-            : experimental.cloudflareProvisioning,
-        ),
-        ...patch,
-      });
-      const now = new Date();
-      const [updated] = await db
-        .update(instanceSettings)
-        .set({
-          experimental,
-          cloudflareProvisioning: nextCloudflareProvisioning as unknown as Record<string, unknown>,
-          updatedAt: now,
-        })
-        .where(eq(instanceSettings.id, current.id))
-        .returning();
-      return toInstanceSettings(updated ?? current);
-    },
-
-    recordCloudflareValidation: async (
-      patch: Pick<CloudflareProvisioningSettings, "apiTokenConfigured" | "lastValidatedAt" | "lastValidationError">,
-    ): Promise<InstanceSettings> => {
-      const current = await getOrCreateRow();
-      const experimental = asRecord(current.experimental);
-      const nextCloudflareProvisioning = normalizeCloudflareProvisioningSettings({
-        ...normalizeCloudflareProvisioningSettings(
-          Object.keys(asRecord(current.cloudflareProvisioning)).length > 0
-            ? current.cloudflareProvisioning
-            : experimental.cloudflareProvisioning,
-        ),
-        ...patch,
-      });
-      const now = new Date();
-      const [updated] = await db
-        .update(instanceSettings)
-        .set({
-          experimental,
-          cloudflareProvisioning: nextCloudflareProvisioning as unknown as Record<string, unknown>,
           updatedAt: now,
         })
         .where(eq(instanceSettings.id, current.id))

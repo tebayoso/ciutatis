@@ -5,6 +5,10 @@ import { activityLog, agents, companies, costEvents, heartbeatRuns, issues, proj
 import { notFound, unprocessable } from "../errors.js";
 import { budgetService, type BudgetServiceHooks } from "./budgets.js";
 
+function sumAsNumber(column: any) {
+  return sql<number>`sum(${column})::float`;
+}
+
 export interface CostDateRange {
   from?: Date;
   to?: Date;
@@ -495,6 +499,12 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(and(...conditions, sql`${effectiveProjectId} is not null`))
         .groupBy(effectiveProjectId, projects.name)
         .orderBy(desc(costCentsExpr));
+    },
+    getById: async (_id: string) => {
+      return null;
+    },
+    update: async (_id: string, _data: Record<string, unknown>) => {
+      return null;
     },
   };
 }

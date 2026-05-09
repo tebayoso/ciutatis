@@ -18,6 +18,7 @@ export {
   type RunDatabaseBackupOptions,
   type RunDatabaseBackupResult,
   type RunDatabaseRestoreOptions,
+  type BackupRetentionPolicy,
 } from "./backup-lib.js";
 export { issueReferenceMentions } from "./schema/issue_reference_mentions.js";
 export * from "./schema/index.js";

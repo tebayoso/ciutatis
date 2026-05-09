@@ -11,7 +11,7 @@ import {
   authVerifications,
 } from "@paperclipai/db";
 import type { Config } from "../config.js";
-import { resolvePaperclipInstanceId } from "../home-paths.js";
+import { resolveCiutatisInstanceId } from "../home-paths.js";
 
 export type BetterAuthSessionUser = {
   id: string;
@@ -29,7 +29,7 @@ type BetterAuthInstance = ReturnType<typeof betterAuth>;
 const AUTH_COOKIE_PREFIX_FALLBACK = "default";
 const AUTH_COOKIE_PREFIX_INVALID_SEGMENTS_RE = /[^a-zA-Z0-9_-]+/g;
 
-export function deriveAuthCookiePrefix(instanceId = resolvePaperclipInstanceId()): string {
+export function deriveAuthCookiePrefix(instanceId = resolveCiutatisInstanceId()): string {
   const scopedInstanceId = instanceId
     .trim()
     .replace(AUTH_COOKIE_PREFIX_INVALID_SEGMENTS_RE, "-")

@@ -826,7 +826,7 @@ export function createPluginWorkerHandle(
 
     // Send the initialize RPC call
     const initParams: InitializeParams = {
-      manifest: options.manifest,
+      manifest: options.manifest as unknown as InitializeParams["manifest"],
       config: options.config,
       instanceInfo: options.instanceInfo,
       apiVersion: options.apiVersion,

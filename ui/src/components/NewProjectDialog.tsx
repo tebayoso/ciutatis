@@ -178,7 +178,7 @@ export function NewProjectDialog() {
       for (const workspacePayload of workspacePayloads) {
         await projectsApi.createWorkspace(created.id, {
           ...workspacePayload,
-        });
+        }, selectedCompanyId);
       }
 
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(selectedCompanyId) });

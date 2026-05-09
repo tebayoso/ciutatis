@@ -25,6 +25,7 @@ export const issueTreeHolds = pgTable(
     releasedByRunId: uuid("released_by_run_id").references(() => heartbeatRuns.id, { onDelete: "set null" }),
     releaseReason: text("release_reason"),
     releaseMetadata: jsonb("release_metadata").$type<Record<string, unknown>>(),
+    supersededByHoldId: uuid("superseded_by_hold_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

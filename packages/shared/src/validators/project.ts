@@ -24,6 +24,7 @@ export const projectExecutionWorkspacePolicySchema = z
     pullRequestPolicy: z.record(z.unknown()).optional().nullable(),
     runtimePolicy: z.record(z.unknown()).optional().nullable(),
     cleanupPolicy: z.record(z.unknown()).optional().nullable(),
+    environmentId: z.string().uuid().optional().nullable(),
   })
   .strict();
 

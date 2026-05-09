@@ -361,6 +361,7 @@ export const PERMISSION_KEYS = [
   "tasks:assign",
   "tasks:assign_scope",
   "joins:approve",
+  "environments:manage",
 ] as const;
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
@@ -430,6 +431,9 @@ export const PLUGIN_CAPABILITIES = [
   "issues.read",
   "issue.comments.read",
   "issue.documents.read",
+  "issue.relations.read",
+  "issue.subtree.read",
+  "issues.orchestration.read",
   "agents.read",
   "goals.read",
   "goals.create",
@@ -439,8 +443,12 @@ export const PLUGIN_CAPABILITIES = [
   // Data Write
   "issues.create",
   "issues.update",
+  "issues.checkout",
+  "issues.wakeup",
   "issue.comments.create",
   "issue.documents.write",
+  "issue.interactions.create",
+  "issue.relations.write",
   "agents.pause",
   "agents.resume",
   "agents.invoke",
@@ -460,8 +468,10 @@ export const PLUGIN_CAPABILITIES = [
   "webhooks.receive",
   "http.outbound",
   "secrets.read-ref",
+  "environment.drivers.register",
   // Agent Tools
   "agent.tools.register",
+  "agents.managed",
   // UI
   "instance.settings.register",
   "ui.sidebar.register",
@@ -470,6 +480,10 @@ export const PLUGIN_CAPABILITIES = [
   "ui.dashboardWidget.register",
   "ui.commentAnnotation.register",
   "ui.action.register",
+  "local.folders",
+  "database.namespace.read",
+  "database.namespace.write",
+  "projects.managed",
 ] as const;
 export type PluginCapability = (typeof PLUGIN_CAPABILITIES)[number];
 
@@ -671,6 +685,10 @@ export const PLUGIN_EVENT_TYPES = [
   "issue.created",
   "issue.updated",
   "issue.comment.created",
+  "issue.document.created",
+  "issue.document.updated",
+  "issue.document.deleted",
+  "issue.relations.updated",
   "agent.created",
   "agent.updated",
   "agent.status_changed",
@@ -682,6 +700,8 @@ export const PLUGIN_EVENT_TYPES = [
   "goal.updated",
   "approval.created",
   "approval.decided",
+  "budget.incident.opened",
+  "budget.incident.resolved",
   "cost_event.created",
   "activity.logged",
 ] as const;

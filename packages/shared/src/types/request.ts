@@ -3,6 +3,7 @@ import type { Objective } from "./objective.js";
 import type { Project, ProjectWorkspace } from "./project.js";
 import type { ExecutionWorkspace, IssueExecutionWorkspaceSettings } from "./workspace-runtime.js";
 import type { RequestWorkProduct } from "./work-product.js";
+import type { IssueTreePreviewRun } from "./issue-tree.js";
 
 export interface RequestAncestorProject {
   id: string;
@@ -141,6 +142,7 @@ export interface Request {
   isUnreadForMe?: boolean;
   createdAt: Date;
   updatedAt: Date;
+  activeRun?: IssueTreePreviewRun | null;
 }
 
 export interface RequestComment {

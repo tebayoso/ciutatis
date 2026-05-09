@@ -409,8 +409,8 @@ export function userProfileRoutes(db: Db) {
       daily,
       recentIssues: recentIssues.map((issue) => ({
         ...issue,
-        status: issue.status as UserProfileResponse["recentIssues"][number]["status"],
-        priority: issue.priority as UserProfileResponse["recentIssues"][number]["priority"],
+        status: issue.status as string,
+        priority: issue.priority as string,
       })),
       recentActivity,
       topAgents: topAgents.map((entry) => ({

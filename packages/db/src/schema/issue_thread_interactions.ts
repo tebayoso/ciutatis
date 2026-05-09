@@ -1,7 +1,6 @@
-import type {
-  IssueThreadInteractionPayload,
-  IssueThreadInteractionResult,
-} from "@paperclipai/shared";
+// Types defined locally - removed from shared as part of ciutatis fork
+type IssueThreadInteractionPayload = Record<string, unknown>;
+type IssueThreadInteractionResult = Record<string, unknown>;
 import { sql } from "drizzle-orm";
 import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";

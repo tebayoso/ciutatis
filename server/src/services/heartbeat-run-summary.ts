@@ -1,3 +1,7 @@
+export const HEARTBEAT_RUN_RESULT_OUTPUT_MAX_CHARS = 10000;
+export const HEARTBEAT_RUN_RESULT_SUMMARY_MAX_CHARS = 5000;
+export const HEARTBEAT_RUN_SAFE_RESULT_JSON_MAX_BYTES = 100000;
+
 function truncateSummaryText(value: unknown, maxLength = 500) {
   if (typeof value !== "string") return null;
   return value.length > maxLength ? value.slice(0, maxLength) : value;
@@ -5,6 +9,25 @@ function truncateSummaryText(value: unknown, maxLength = 500) {
 
 function readNumericField(record: Record<string, unknown>, key: string) {
   return key in record ? record[key] ?? null : undefined;
+}
+
+function readCommentText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  return value;
+}
+
+export function buildHeartbeatRunIssueComment(
+  _run: unknown,
+  _opts?: { includeHeader?: boolean }
+): string {
+  return "";
+}
+
+export function mergeHeartbeatRunResultJson(
+  _existing: unknown,
+  _incoming: unknown
+): Record<string, unknown> {
+  return {};
 }
 
 export function summarizeHeartbeatRunResultJson(

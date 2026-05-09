@@ -78,12 +78,6 @@ import { renderOrgChartSvg, renderOrgChartPng, type OrgNode, type OrgChartStyle,
 import { instanceSettingsService } from "../services/instance-settings.js";
 import { runClaudeLogin } from "@paperclipai/adapter-claude-local/server";
 import {
-  DEFAULT_ACPX_LOCAL_AGENT,
-  DEFAULT_ACPX_LOCAL_MODE,
-  DEFAULT_ACPX_LOCAL_NON_INTERACTIVE_PERMISSIONS,
-  DEFAULT_ACPX_LOCAL_PERMISSION_MODE,
-} from "@paperclipai/adapter-acpx-local";
-import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
 } from "@paperclipai/adapter-codex-local";
@@ -173,7 +167,7 @@ export function agentRoutes(
   const recovery = recoveryService(db, { enqueueWakeup: heartbeat.wakeup });
   const issueApprovalsSvc = issueApprovalService(db);
   const secretsSvc = secretService(db);
-  const instructions = agentInstructionsService();
+  const instructions = agentInstructionsService(db);
   const companySkills = companySkillService(db);
   const workspaceOperations = workspaceOperationService(db);
   const instanceSettings = instanceSettingsService(db);
@@ -246,7 +240,7 @@ export function agentRoutes(
     if (environment.driver === "local") {
       return {
         executionTarget: null,
-        environmentName: environment.name,
+        environmentName: environment.name ?? null,
         fallbackChecks: [],
         release: noopRelease,
       };
@@ -268,14 +262,14 @@ export function agentRoutes(
         if (target) {
           return {
             executionTarget: target,
-            environmentName: environment.name,
+            environmentName: environment.name ?? null,
             fallbackChecks: [],
             release: noopRelease,
           };
         }
         return {
           executionTarget: null,
-          environmentName: environment.name,
+          environmentName: environment.name ?? null,
           fallbackChecks: [
             {
               code: "environment_target_unavailable",
@@ -289,7 +283,7 @@ export function agentRoutes(
       } catch (err) {
         return {
           executionTarget: null,
-          environmentName: environment.name,
+          environmentName: environment.name ?? null,
           fallbackChecks: [
             {
               code: "environment_target_failed",
@@ -325,7 +319,7 @@ export function agentRoutes(
     } catch (err) {
       return {
         executionTarget: null,
-        environmentName: environment.name,
+        environmentName: environment.name ?? null,
         fallbackChecks: [
           {
             code: "environment_lease_acquire_failed",
@@ -378,7 +372,7 @@ export function agentRoutes(
       await releaseLease("failed");
       return {
         executionTarget: null,
-        environmentName: environment.name,
+        environmentName: environment.name ?? null,
         fallbackChecks: [
           {
             code: "environment_workspace_realize_failed",
@@ -417,7 +411,7 @@ export function agentRoutes(
       await releaseLease("failed");
       return {
         executionTarget: null,
-        environmentName: environment.name,
+        environmentName: environment.name ?? null,
         fallbackChecks: [
           {
             code: "environment_target_failed",
@@ -434,7 +428,7 @@ export function agentRoutes(
       await releaseLease("failed");
       return {
         executionTarget: null,
-        environmentName: environment.name,
+        environmentName: environment.name ?? null,
         fallbackChecks: [
           {
             code: "environment_target_unsupported",
@@ -449,7 +443,7 @@ export function agentRoutes(
 
     return {
       executionTarget: target,
-      environmentName: environment.name,
+      environmentName: environment.name ?? null,
       fallbackChecks: [],
       release: releaseLease,
     };
@@ -1001,21 +995,6 @@ export function agentRoutes(
     adapterConfig: Record<string, unknown>,
   ): Record<string, unknown> {
     const next = { ...adapterConfig };
-    if (adapterType === "acpx_local") {
-      if (!asNonEmptyString(next.agent)) {
-        next.agent = DEFAULT_ACPX_LOCAL_AGENT;
-      }
-      if (!asNonEmptyString(next.mode)) {
-        next.mode = DEFAULT_ACPX_LOCAL_MODE;
-      }
-      if (!asNonEmptyString(next.permissionMode)) {
-        next.permissionMode = DEFAULT_ACPX_LOCAL_PERMISSION_MODE;
-      }
-      if (!asNonEmptyString(next.nonInteractivePermissions)) {
-        next.nonInteractivePermissions = DEFAULT_ACPX_LOCAL_NON_INTERACTIVE_PERMISSIONS;
-      }
-      return ensureGatewayDeviceKey(adapterType, next);
-    }
     if (adapterType === "codex_local") {
       if (!asNonEmptyString(next.model)) {
         next.model = DEFAULT_CODEX_LOCAL_MODEL;
@@ -1106,8 +1085,14 @@ export function agentRoutes(
       return (updated as T | null) ?? { ...agent, adapterConfig: nextAdapterConfig };
     }
 
-    const files = input?.files
+    const bundleInput = input?.files
       ?? await loadDefaultAgentInstructionsBundle(resolveDefaultAgentInstructionsBundleRole(agent.role));
+    // Convert bundle files to Record<string, string> format
+    const files: Record<string, string> = Array.isArray((bundleInput as { files?: unknown }).files)
+      ? Object.fromEntries(
+        ((bundleInput as { files: Array<{ path: string; content: string }> }).files).map((f) => [f.path, f.content]),
+      )
+      : (bundleInput as Record<string, string>);
     const materialized = await instructions.materializeManagedBundle(
       agent,
       files,
@@ -1591,8 +1576,8 @@ export function agentRoutes(
           desiredSkills,
           mode: snapshot.mode,
           supported: snapshot.supported,
-          entryCount: snapshot.entries.length,
-          warningCount: snapshot.warnings.length,
+          entryCount: snapshot.entries?.length ?? 0,
+          warningCount: snapshot.warnings?.length ?? 0,
         },
       });
 
@@ -2864,7 +2849,7 @@ export function agentRoutes(
       return;
     }
 
-    const revoked = await svc.revokeKey(agent.id, keyId);
+    const revoked = await svc.revokeKey(keyId);
     if (!revoked) {
       res.status(404).json({ error: "Key not found" });
       return;

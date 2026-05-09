@@ -324,13 +324,7 @@
       "tag": "0061_lively_thor_girl",
       "breakpoints": true
     },
-    {
-      "idx": 62,
-      "version": "7",
-      "when": 1776780000000,
-      "tag": "0062_routine_run_dispatch_fingerprint",
-      "breakpoints": true
-    },
+
     {
       "idx": 63,
       "version": "7",

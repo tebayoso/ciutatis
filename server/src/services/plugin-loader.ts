@@ -951,7 +951,7 @@ export function pluginLoader(
 
   async function loadManifestFromPackageRoot(
     packageRoot: string,
-  ): Promise<PaperclipPluginManifestV1 | null> {
+  ): Promise<CiutatisPluginManifestV1 | null> {
     const pkgJson = await readPackageJson(packageRoot);
     if (!pkgJson) return null;
 

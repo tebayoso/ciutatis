@@ -10,11 +10,9 @@ import { and, eq } from "drizzle-orm";
 import {
   createDb,
   ensurePostgresDatabase,
-  formatEmbeddedPostgresError,
   getPostgresDataDirectory,
   inspectMigrations,
   applyPendingMigrations,
-  createEmbeddedPostgresLogBuffer,
   reconcilePendingMigrationHistory,
   formatDatabaseBackupResult,
   runDatabaseBackup,
@@ -29,20 +27,14 @@ import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
 import {
-  feedbackService,
   heartbeatService,
   instanceSettingsService,
   reconcilePersistedRuntimeServicesOnStartup,
-  routineService,
 } from "./services/index.js";
-import { createFeedbackTraceShareClientFromConfig } from "./services/feedback-share-client.js";
 import { buildRuntimeApiCandidateUrls, choosePrimaryRuntimeApiUrl } from "./runtime-api.js";
 import { createPluginWorkerManager } from "./services/plugin-worker-manager.js";
 import { createStorageServiceFromConfig } from "./storage/index.js";
 import { printStartupBanner } from "./startup-banner.js";
-import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-claim.js";
-import { maybePersistWorktreeRuntimePorts } from "./worktree-config.js";
-import { initTelemetry, getTelemetryClient } from "./telemetry.js";
 import { conflict } from "./errors.js";
 import type {
   InstanceDatabaseBackupRunResult,
@@ -88,7 +80,6 @@ export interface StartedServer {
 
 export async function startServer(): Promise<StartedServer> {
   let config = loadConfig();
-  initTelemetry({ enabled: config.telemetryEnabled });
   if (process.env.PAPERCLIP_SECRETS_PROVIDER === undefined) {
     process.env.PAPERCLIP_SECRETS_PROVIDER = config.secretsProvider;
   }
@@ -294,10 +285,8 @@ export async function startServer(): Promise<StartedServer> {
     const dataDir = resolve(config.embeddedPostgresDataDir);
     const configuredPort = config.embeddedPostgresPort;
     let port = configuredPort;
-    const logBuffer = createEmbeddedPostgresLogBuffer(120);
     const verboseEmbeddedPostgresLogs = process.env.PAPERCLIP_EMBEDDED_POSTGRES_VERBOSE === "true";
     const appendEmbeddedPostgresLog = (message: unknown) => {
-      logBuffer.append(message);
       if (!verboseEmbeddedPostgresLogs) {
         return;
       }
@@ -310,19 +299,6 @@ export async function startServer(): Promise<StartedServer> {
         const line = lineRaw.trim();
         if (!line) continue;
         logger.info({ embeddedPostgresLog: line }, "embedded-postgres");
-      }
-    };
-    const logEmbeddedPostgresFailure = (phase: "initialise" | "start", err: unknown) => {
-      const recentLogs = logBuffer.getRecentLogs();
-      if (recentLogs.length > 0) {
-        logger.error(
-          {
-            phase,
-            recentLogs,
-            err,
-          },
-          "Embedded PostgreSQL failed; showing buffered startup logs",
-        );
       }
     };
   
@@ -394,11 +370,8 @@ export async function startServer(): Promise<StartedServer> {
           try {
             await embeddedPostgres.initialise();
           } catch (err) {
-            logEmbeddedPostgresFailure("initialise", err);
-            throw formatEmbeddedPostgresError(err, {
-              fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
-              recentLogs: logBuffer.getRecentLogs(),
-            });
+            logger.error({ err }, `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`);
+            throw err;
           }
         } else {
           logger.info(`Embedded PostgreSQL cluster already exists (${clusterVersionFile}); skipping init`);
@@ -411,11 +384,8 @@ export async function startServer(): Promise<StartedServer> {
         try {
           await embeddedPostgres.start();
         } catch (err) {
-          logEmbeddedPostgresFailure("start", err);
-          throw formatEmbeddedPostgresError(err, {
-            fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
-            recentLogs: logBuffer.getRecentLogs(),
-          });
+          logger.error({ err }, `Failed to start embedded PostgreSQL on port ${port}`);
+          throw err;
         }
         embeddedPostgresStartedByThisProcess = true;
       }
@@ -516,22 +486,14 @@ export async function startServer(): Promise<StartedServer> {
     betterAuthHandler = createBetterAuthHandler(auth);
     resolveSession = (req) => resolveBetterAuthSession(auth, req);
     resolveSessionFromHeaders = (headers) => resolveBetterAuthSessionFromHeaders(auth, headers);
-    await initializeBoardClaimChallenge(db as any, { deploymentMode: config.deploymentMode });
     authReady = true;
   }
 
   if (resolvedEmbeddedPostgresPort !== null && resolvedEmbeddedPostgresPort !== config.embeddedPostgresPort) {
     config.embeddedPostgresPort = resolvedEmbeddedPostgresPort;
   }
-  maybePersistWorktreeRuntimePorts({
-    serverPort: listenPort,
-    databasePort: resolvedEmbeddedPostgresPort,
-  });
   const uiMode = config.uiDevMiddleware ? "vite-dev" : config.serveUi ? "static" : "none";
   const storageService = createStorageServiceFromConfig(config);
-  const feedback = feedbackService(db as any, {
-    shareClient: createFeedbackTraceShareClientFromConfig(config),
-  });
   const backupSettingsSvc = instanceSettingsService(db);
   let databaseBackupInFlight = false;
   const runServerDatabaseBackup = async (
@@ -554,7 +516,12 @@ export async function startServer(): Promise<StartedServer> {
       logger.info({ backupDir: config.databaseBackupDir, trigger }, `${label} database backup starting`);
       // Read retention from Instance Settings (DB) so changes take effect without restart.
       const generalSettings = await backupSettingsSvc.getGeneral();
-      const retention = generalSettings.backupRetention;
+      const retentionDays = generalSettings.backupRetention ?? 7;
+      const retention: import("@paperclipai/db").BackupRetentionPolicy = {
+        dailyDays: Math.min(retentionDays, 7),
+        weeklyWeeks: Math.ceil(retentionDays / 7),
+        monthlyMonths: Math.ceil(retentionDays / 30),
+      };
 
       const result = await runDatabaseBackup({
         connectionString: activeDatabaseConnectionString,
@@ -597,7 +564,6 @@ export async function startServer(): Promise<StartedServer> {
     uiMode,
     serverPort: listenPort,
     storageService,
-    feedbackExportService: feedback,
     databaseBackupService: {
       runManualBackup: async () => {
         const result = await runServerDatabaseBackup("manual");
@@ -671,7 +637,6 @@ export async function startServer(): Promise<StartedServer> {
   
   if (config.heartbeatSchedulerEnabled) {
     const heartbeat = heartbeatService(db as any, { pluginWorkerManager });
-    const routines = routineService(db as any, { pluginWorkerManager });
   
     // Reap orphaned running runs at startup while in-memory execution state is empty,
     // then resume any persisted queued runs that were waiting on the previous process.
@@ -728,17 +693,6 @@ export async function startServer(): Promise<StartedServer> {
           logger.error({ err }, "heartbeat timer tick failed");
         });
 
-      void routines
-        .tickScheduledTriggers(new Date())
-        .then((result) => {
-          if (result.triggered > 0) {
-            logger.info({ ...result }, "routine scheduler tick enqueued runs");
-          }
-        })
-        .catch((err) => {
-          logger.error({ err }, "routine scheduler tick failed");
-        });
-  
       // Periodically reap orphaned runs (5-min staleness threshold) and make sure
       // persisted queued work is still being driven forward.
       void heartbeat
@@ -807,7 +761,7 @@ export async function startServer(): Promise<StartedServer> {
   // Without this, adapter type validation (assertKnownAdapterType) would
   // reject valid external adapter types during the startup loading window.
   const { waitForExternalAdapters } = await import("./adapters/registry.js");
-  await waitForExternalAdapters();
+  await waitForExternalAdapters;
 
   await new Promise<void>((resolveListen, rejectListen) => {
     const onError = (err: Error) => {
@@ -832,52 +786,29 @@ export async function startServer(): Promise<StartedServer> {
           });
       }
         printStartupBanner({
-          bind: config.bind,
           host: config.host,
           deploymentMode: config.deploymentMode,
-        deploymentExposure: config.deploymentExposure,
-        authReady,
-        requestedPort: requestedListenPort,
-        listenPort,
-        uiMode,
-        db: startupDbInfo,
-        migrationSummary,
-        heartbeatSchedulerEnabled: config.heartbeatSchedulerEnabled,
-        heartbeatSchedulerIntervalMs: config.heartbeatSchedulerIntervalMs,
-        databaseBackupEnabled: config.databaseBackupEnabled,
-        databaseBackupIntervalMinutes: config.databaseBackupIntervalMinutes,
-        databaseBackupRetentionDays: config.databaseBackupRetentionDays,
-        databaseBackupDir: config.databaseBackupDir,
-      });
+          deploymentExposure: config.deploymentExposure,
+          authReady,
+          requestedPort: requestedListenPort,
+          listenPort,
+          uiMode,
+          db: startupDbInfo,
+          migrationSummary,
+          heartbeatSchedulerEnabled: config.heartbeatSchedulerEnabled,
+          heartbeatSchedulerIntervalMs: config.heartbeatSchedulerIntervalMs,
+          databaseBackupEnabled: config.databaseBackupEnabled,
+          databaseBackupIntervalMinutes: config.databaseBackupIntervalMinutes,
+          databaseBackupRetentionDays: config.databaseBackupRetentionDays,
+          databaseBackupDir: config.databaseBackupDir,
+        });
 
-      const boardClaimUrl = getBoardClaimWarningUrl(config.host, listenPort);
-      if (boardClaimUrl) {
-        const red = "\x1b[41m\x1b[30m";
-        const yellow = "\x1b[33m";
-        const reset = "\x1b[0m";
-        console.log(
-          [
-            `${red}  BOARD CLAIM REQUIRED  ${reset}`,
-            `${yellow}This instance was previously local_trusted and still has local-board as the only admin.${reset}`,
-            `${yellow}Sign in with a real user and open this one-time URL to claim ownership:${reset}`,
-            `${yellow}${boardClaimUrl}${reset}`,
-            `${yellow}If you are connecting over Tailscale, replace the host in this URL with your Tailscale IP/MagicDNS name.${reset}`,
-          ].join("\n"),
-        );
-      }
-
-      resolveListen();
+        resolveListen();
     });
   });
   
   {
     const shutdown = async (signal: "SIGINT" | "SIGTERM") => {
-      const telemetryClient = getTelemetryClient();
-      if (telemetryClient) {
-        telemetryClient.stop();
-        await telemetryClient.flush();
-      }
-
       if (embeddedPostgres && embeddedPostgresStartedByThisProcess) {
         logger.info({ signal }, "Stopping embedded PostgreSQL");
         try {

@@ -263,7 +263,6 @@ export async function refreshIssueContinuationSummary(input: {
     baseRevisionId: existing?.latestRevisionId ?? null,
     changeSummary: `Refresh continuation summary after run ${run.id}`,
     createdByAgentId: agent.id,
-    createdByRunId: run.id,
   });
   return result.document;
 }

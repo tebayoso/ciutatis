@@ -80,6 +80,10 @@ export function contactRoutes(db: Db, opts: ContactRoutesOptions) {
       createdByUserId: null,
     });
 
+    if (!created) {
+      throw new HttpError(500, "Failed to create contact request");
+    }
+
     await logActivity(db, {
       companyId: company.id,
       actorType: "system",

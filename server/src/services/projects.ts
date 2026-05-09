@@ -951,7 +951,7 @@ export function projectService(db: Db) {
           data.runtimeConfig !== undefined
             ? mergeProjectWorkspaceRuntimeConfig(
                 data.metadata !== undefined
-                  ? (data.metadata as Record<string, unknown> | null | undefined)
+                  ? ((data.metadata as Record<string, unknown> | null | undefined) ?? null)
                   : ((existing.metadata as Record<string, unknown> | null | undefined) ?? null),
                 data.runtimeConfig ?? null,
               )

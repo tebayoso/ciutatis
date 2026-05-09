@@ -100,8 +100,8 @@ export function environmentRoutes(
   }
 
   function redactEnvironmentForRestrictedView<T extends {
-    config: Record<string, unknown>;
-    metadata: Record<string, unknown> | null;
+    config: Record<string, unknown> | null;
+    metadata?: Record<string, unknown> | null;
   }>(environment: T): T & { configRedacted: true; metadataRedacted: true } {
     return {
       ...environment,
@@ -115,9 +115,9 @@ export function environmentRoutes(
   function summarizeEnvironmentUpdate(
     patch: Record<string, unknown>,
     environment: {
-      name: string;
-      driver: string;
-      status: string;
+      name?: string;
+      driver?: string;
+      status?: string;
     },
   ): Record<string, unknown> {
     const details: Record<string, unknown> = {
@@ -164,14 +164,11 @@ export function environmentRoutes(
   router.get("/companies/:companyId/environments/capabilities", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const pluginDrivers = await listReadyPluginEnvironmentDrivers({
-      db,
-      workerManager: options.pluginWorkerManager,
-    });
+    const pluginDrivers = await listReadyPluginEnvironmentDrivers();
     res.json(getEnvironmentCapabilities(
       AGENT_ADAPTER_TYPES,
       {
-        sandboxProviders: Object.fromEntries(pluginDrivers.map((driver) => [
+        sandboxProviders: Object.fromEntries((pluginDrivers as Array<{ driverKey: string; displayName: string; description?: string; pluginKey: string; pluginId: string; configSchema?: Record<string, unknown> }>).map((driver) => [
           driver.driverKey,
           {
             status: "supported" as const,
@@ -180,11 +177,11 @@ export function environmentRoutes(
             supportsRunExecution: true,
             supportsReusableLeases: true,
             displayName: driver.displayName,
-            description: driver.description,
+            description: driver.description ?? null,
             source: "plugin" as const,
             pluginKey: driver.pluginKey,
             pluginId: driver.pluginId,
-            configSchema: driver.configSchema,
+            configSchema: driver.configSchema ?? {},
           },
         ])),
       },
@@ -265,6 +262,10 @@ export function environmentRoutes(
     const lease = await svc.getLeaseById(req.params.leaseId as string);
     if (!lease) {
       res.status(404).json({ error: "Environment lease not found" });
+      return;
+    }
+    if (!lease.companyId) {
+      res.status(400).json({ error: "Lease has no company" });
       return;
     }
     assertCompanyAccess(req, lease.companyId);
@@ -425,8 +426,8 @@ export function environmentRoutes(
         status: "active" as const,
         config: normalizedConfig,
         metadata: req.body.metadata ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       const probe = await probeEnvironment(db, environment, {
         pluginWorkerManager: options.pluginWorkerManager,

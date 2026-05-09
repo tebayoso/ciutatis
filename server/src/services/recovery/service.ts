@@ -569,6 +569,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       }
 
       await issuesSvc.addComment(
+        candidate.companyId,
         candidate.id,
         [
           "## Assigned Orphan Blocker",
@@ -578,7 +579,6 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
           "- Assigned it back to the agent that created the blocker.",
           "- Next action: resolve this blocker or reassign it to the right owner.",
         ].join("\n"),
-        {},
       );
 
       await logActivity(db, {
@@ -960,14 +960,19 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       ...(input.sourceIssue.status === "blocked" ? {} : { status: "blocked" }),
       blockedByIssueIds: nextBlockerIds,
     });
-    await issuesSvc.addComment(input.sourceIssue.id, [
-      "Paperclip detected critical output silence on this issue's active run.",
-      "",
-      `- Evaluation issue: ${input.evaluationIssue.identifier ?? input.evaluationIssue.id}`,
-      `- Run: \`${input.run.id}\``,
-      "",
-      "This blocks the source issue on the explicit review task without cancelling the active process.",
-    ].join("\n"), { runId: input.run.id });
+    await issuesSvc.addComment(
+      input.sourceIssue.companyId,
+      input.sourceIssue.id,
+      [
+        "Paperclip detected critical output silence on this issue's active run.",
+        "",
+        `- Evaluation issue: ${input.evaluationIssue.identifier ?? input.evaluationIssue.id}`,
+        `- Run: \`${input.run.id}\``,
+        "",
+        "This blocks the source issue on the explicit review task without cancelling the active process.",
+      ].join("\n"),
+      { runId: input.run.id }
+    );
     await logActivity(db, {
       companyId: input.sourceIssue.companyId,
       actorType: "system",
@@ -1008,13 +1013,18 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
         await issuesSvc.update(existing.id, {
           priority: "high",
         });
-        await issuesSvc.addComment(existing.id, [
-          "Critical output silence threshold crossed.",
-          "",
-          `- Run: \`${input.run.id}\``,
-          `- Silent for: ${formatDuration(evidence.silenceAgeMs)}`,
-          `- Last output at: ${input.run.lastOutputAt?.toISOString() ?? "none recorded"}`,
-        ].join("\n"), { runId: input.run.id });
+        await issuesSvc.addComment(
+          input.run.companyId,
+          existing.id,
+          [
+            "Critical output silence threshold crossed.",
+            "",
+            `- Run: \`${input.run.id}\``,
+            `- Silent for: ${formatDuration(evidence.silenceAgeMs)}`,
+            `- Last output at: ${input.run.lastOutputAt?.toISOString() ?? "none recorded"}`,
+          ].join("\n"),
+          { runId: input.run.id }
+        );
         await ensureSourceIssueBlockedByStaleEvaluation({
           sourceIssue,
           evaluationIssue: existing,
@@ -1065,6 +1075,10 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       const raced = await findOpenStaleRunEvaluation(input.run.companyId, input.run.id);
       if (!raced) throw error;
       return { kind: "existing" as const, evaluationIssueId: raced.id };
+    }
+
+    if (!evaluation) {
+      throw new Error("Failed to create stale run evaluation issue");
     }
 
     await logActivity(db, {
@@ -1181,7 +1195,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       id: string;
       assigneeAgentId: string | null;
       companyId: string;
-      originKind: string;
+      originKind: string | null;
       originId: string | null;
       hiddenAt: Date | null;
       status: string;
@@ -1481,6 +1495,10 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       return raced;
     }
 
+    if (!recovery) {
+      throw new Error("Failed to create stranded issue recovery");
+    }
+
     await deps.enqueueWakeup(ownerAgentId, {
       source: "assignment",
       triggerDetail: "system",
@@ -1544,6 +1562,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
 
     const prefix = await getCompanyIssuePrefix(input.issue.companyId);
     await issuesSvc.addComment(
+      input.issue.companyId,
       input.issue.id,
       buildRecoveryIssueInPlaceEscalationComment({
         issue: input.issue,
@@ -1551,7 +1570,6 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
         latestRun: input.latestRun,
         prefix,
       }),
-      {},
     );
 
     await logActivity(db, {
@@ -1681,13 +1699,22 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       ].join("\n");
 
     if (notice) {
-      await issuesSvc.addComment(input.issue.id, notice.body, {}, {
-        authorType: "system",
-        presentation: notice.presentation,
-        metadata: notice.metadata,
-      });
+      await issuesSvc.addComment(
+        input.issue.companyId,
+        input.issue.id,
+        notice.body,
+        {
+          authorType: "system",
+          presentation: notice.presentation,
+          metadata: notice.metadata,
+        }
+      );
     } else {
-      await issuesSvc.addComment(input.issue.id, `${input.comment ?? ""}${recoveryLine}`, {});
+      await issuesSvc.addComment(
+        input.issue.companyId,
+        input.issue.id,
+        `${input.comment ?? ""}${recoveryLine}`
+      );
     }
 
     await logActivity(db, {
@@ -2114,12 +2141,12 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
           {
             companyId: row.companyId,
             issueId: parsed.issueId,
-            status: row.status,
+            status: row.status ?? "unknown",
           },
           {
             companyId: row.companyId,
             issueId: parsed.leafIssueId,
-            status: row.status,
+            status: row.status ?? "unknown",
           },
         ];
       }
@@ -2129,12 +2156,16 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       return [{
         companyId: row.companyId,
         issueId,
-        status: row.status,
+        status: row.status ?? "unknown",
       }];
     });
 
     return classifyIssueGraphLiveness({
-      issues: issueRows,
+      issues: issueRows.map((row) => ({
+        ...row,
+        executionPolicy: row.executionPolicy as Record<string, unknown> | null,
+        executionState: row.executionState as Record<string, unknown> | null,
+      })),
       relations: relationRows,
       agents: agentRows,
       activeRuns: activeRunRows.map((row) => ({
@@ -2154,8 +2185,12 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
         status: row.status,
         issueId: issueIdFromWakePayload(row.payload),
       })),
-      pendingInteractions: interactionRows,
-      pendingApprovals: approvalRows,
+      pendingInteractions: interactionRows
+        .filter((row): row is { companyId: string; issueId: string; status: string } => row.status !== null)
+        .map((row) => ({ companyId: row.companyId, issueId: row.issueId, status: row.status })),
+      pendingApprovals: approvalRows
+        .filter((row): row is { companyId: string; issueId: string; status: string } => row.status !== null)
+        .map((row) => ({ companyId: row.companyId, issueId: row.issueId, status: row.status })),
       openRecoveryIssues,
       now: new Date(),
     });
@@ -2407,6 +2442,7 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
         state: finding.state,
         severity: finding.severity,
         reason: finding.reason,
+        action: finding.recommendedAction,
         recoveryIssueId: finding.recoveryIssueId,
         recoveryIdentifier: recoveryIssue?.identifier ?? null,
         recoveryTitle: recoveryIssue?.title ?? null,
@@ -2423,6 +2459,8 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       generatedAt: now.toISOString(),
       findings: findings.length,
       recoverableFindings: items.length,
+      totalIssues: findings.length,
+      wouldRecover: items.length,
       skippedOutsideLookback,
       items,
     };
@@ -2609,6 +2647,10 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
       return { kind: "existing" as const, escalationIssueId: raced.id };
     }
 
+    if (!escalation) {
+      throw new Error("Failed to create liveness escalation issue");
+    }
+
     await ensureIssueBlockedByEscalation({
       issue,
       escalationIssueId: escalation.id,
@@ -2617,9 +2659,10 @@ export function recoveryService(db: Db, deps: { enqueueWakeup: RecoveryWakeup })
     });
 
     await issuesSvc.addComment(
+      issue.companyId,
       issue.id,
-      buildLivenessOriginalIssueComment(input.finding, escalation),
-      { runId: input.runId ?? null },
+      buildLivenessOriginalIssueComment(input.finding, escalation as typeof issues.$inferSelect),
+      { runId: input.runId ?? null }
     );
 
     await logActivity(db, {

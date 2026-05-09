@@ -65,3 +65,5 @@ tests/release-smoke/playwright-report/
 doc/SEED-CREDENTIALS.md
 .aidesigner/*
 !.aidesigner/.gitkeep
+.env
+!.env.example

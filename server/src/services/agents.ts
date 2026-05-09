@@ -639,6 +639,20 @@ export function agentService(db: Db) {
       return rows[0] ?? null;
     },
 
+    getKeyById: async (keyId: string) => {
+      const rows = await db
+        .select({
+          id: agentApiKeys.id,
+          agentId: agentApiKeys.agentId,
+          name: agentApiKeys.name,
+          createdAt: agentApiKeys.createdAt,
+          revokedAt: agentApiKeys.revokedAt,
+        })
+        .from(agentApiKeys)
+        .where(eq(agentApiKeys.id, keyId));
+      return rows[0] ?? null;
+    },
+
     orgForCompany: async (companyId: string) => {
       const rows = await db
         .select()

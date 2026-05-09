@@ -3,7 +3,7 @@ import type { AdapterExecutionContext, AdapterExecutionResult } from "@paperclip
 import {
   asNumber,
   asString,
-  buildCiutatisEnv,
+  buildPaperclipEnv,
   joinPromptSections,
   redactEnvForLogs,
   renderTemplate,
@@ -43,7 +43,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const timeoutSec = asNumber(config.timeoutSec, 120);
   const maxOutputTokens = Math.max(64, asNumber(config.maxOutputTokens, 4096));
   const env = {
-    ...buildCiutatisEnv(agent),
+    ...buildPaperclipEnv(agent),
     ...resolveCloudflareWorkersAiEnv(config.env),
   };
   const runtimeEnv = Object.fromEntries(

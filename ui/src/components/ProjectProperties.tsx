@@ -285,7 +285,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
   };
 
   const createWorkspace = useMutation({
-    mutationFn: (data: Record<string, unknown>) => projectsApi.createWorkspace(project.id, data),
+    mutationFn: (data: Record<string, unknown>) => projectsApi.createWorkspace(project.id, data, selectedCompanyId!),
     onSuccess: () => {
       setWorkspaceCwd("");
       setWorkspaceRepoUrl("");
@@ -296,7 +296,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
   });
 
   const removeWorkspace = useMutation({
-    mutationFn: (workspaceId: string) => projectsApi.removeWorkspace(project.id, workspaceId),
+    mutationFn: (workspaceId: string) => projectsApi.removeWorkspace(project.id, workspaceId, selectedCompanyId!),
     onSuccess: () => {
       setWorkspaceCwd("");
       setWorkspaceRepoUrl("");
@@ -307,7 +307,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
   });
   const updateWorkspace = useMutation({
     mutationFn: ({ workspaceId, data }: { workspaceId: string; data: Record<string, unknown> }) =>
-      projectsApi.updateWorkspace(project.id, workspaceId, data),
+      projectsApi.updateWorkspace(project.id, workspaceId, data, selectedCompanyId!),
     onSuccess: () => {
       setWorkspaceCwd("");
       setWorkspaceRepoUrl("");

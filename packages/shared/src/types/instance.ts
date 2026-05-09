@@ -2,6 +2,10 @@ import type { TenantInstance } from "./tenant-instance.js";
 
 export interface InstanceExperimentalSettings {
   enableIsolatedWorkspaces: boolean;
+  enableEnvironments?: boolean;
+  enableIssueGraphLivenessAutoRecovery?: boolean;
+  issueGraphLivenessAutoRecoveryLookbackHours?: number;
+  autoRestartDevServerWhenIdle?: boolean;
 }
 
 export interface TenantProvisioningSettings {
@@ -82,8 +86,19 @@ export interface InstanceAdminOverview {
   }>;
 }
 
+export interface InstanceGeneralSettings {
+  instanceName: string;
+  contactEmail: string | null;
+  timezone: string;
+  locale: string;
+  backupRetention?: number;
+  censorUsernameInLogs?: boolean;
+  autoRestartDevServerWhenIdle?: boolean;
+}
+
 export interface InstanceSettings {
   id: string;
+  general: InstanceGeneralSettings;
   experimental: InstanceExperimentalSettings;
   tenants?: TenantInstance[];
   tenantProvisioning?: TenantProvisioningSettings;

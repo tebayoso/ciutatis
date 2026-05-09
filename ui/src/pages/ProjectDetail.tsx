@@ -235,7 +235,10 @@ export function ProjectDetail() {
 
   const { data: project, isLoading, error } = useQuery({
     queryKey: [...queryKeys.projects.detail(routeProjectRef), lookupCompanyId ?? null],
-    queryFn: () => projectsApi.get(routeProjectRef, lookupCompanyId),
+    queryFn: () => {
+      if (!lookupCompanyId) throw new Error("No company selected");
+      return projectsApi.get(routeProjectRef, lookupCompanyId);
+    },
     enabled: canFetchProject,
   });
   const canonicalProjectRef = project ? projectRouteRef(project) : routeProjectRef;
@@ -274,18 +277,24 @@ export function ProjectDetail() {
   };
 
   const updateProject = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      projectsApi.update(projectLookupRef, data, resolvedCompanyId ?? lookupCompanyId),
+    mutationFn: (data: Record<string, unknown>) => {
+      const companyId = resolvedCompanyId ?? lookupCompanyId;
+      if (!companyId) throw new Error("No company selected");
+      return projectsApi.update(projectLookupRef, data, companyId);
+    },
     onSuccess: invalidateProject,
   });
 
   const archiveProject = useMutation({
-    mutationFn: (archived: boolean) =>
-      projectsApi.update(
+    mutationFn: (archived: boolean) => {
+      const companyId = resolvedCompanyId ?? lookupCompanyId;
+      if (!companyId) throw new Error("No company selected");
+      return projectsApi.update(
         projectLookupRef,
         { archivedAt: archived ? new Date().toISOString() : null },
-        resolvedCompanyId ?? lookupCompanyId,
-      ),
+        companyId,
+      );
+    },
     onSuccess: (updatedProject, archived) => {
       invalidateProject();
       const name = updatedProject?.name ?? project?.name ?? "Project";
@@ -387,11 +396,13 @@ export function ProjectDetail() {
   }, []);
 
   const updateProjectField = useCallback(async (field: ProjectConfigFieldKey, data: Record<string, unknown>) => {
+    const companyId = resolvedCompanyId ?? lookupCompanyId;
+    if (!companyId) throw new Error("No company selected");
     const requestId = (fieldSaveRequestIds.current[field] ?? 0) + 1;
     fieldSaveRequestIds.current[field] = requestId;
     setFieldState(field, "saving");
     try {
-      await projectsApi.update(projectLookupRef, data, resolvedCompanyId ?? lookupCompanyId);
+      await projectsApi.update(projectLookupRef, data, companyId);
       invalidateProject();
       if (fieldSaveRequestIds.current[field] !== requestId) return;
       setFieldState(field, "saved");

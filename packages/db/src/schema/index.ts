@@ -83,3 +83,73 @@ export { pluginDatabaseNamespaces, pluginMigrations } from "./plugin_database.js
 export { pluginJobs, pluginJobRuns } from "./plugin_jobs.js";
 export { pluginWebhookDeliveries } from "./plugin_webhooks.js";
 export { pluginLogs } from "./plugin_logs.js";
+export { issueTreeHolds } from "./issue_tree_holds.js";
+export { issueTreeHoldMembers } from "./issue_tree_hold_members.js";
+
+// Stub exports for upstream compatibility - tables intentionally removed from Ciutatis
+// These are minimal table definitions to satisfy upstream type requirements
+import { pgTable, uuid, text, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { institutions } from "./institutions.js";
+import { requests } from "./requests.js";
+
+export const companySkills = pgTable(
+  "company_skills",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull().references(() => institutions.id),
+    key: text("key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    companyKeyIdx: index("company_skills_company_key_idx").on(table.companyId, table.key),
+  })
+);
+
+export const issueRelations = pgTable(
+  "issue_relations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull().references(() => institutions.id),
+    issueId: uuid("issue_id").notNull().references(() => requests.id),
+    type: text("type").notNull(),
+    relatedIssueId: uuid("related_issue_id").notNull().references(() => requests.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    issueIdx: index("issue_relations_issue_idx").on(table.issueId),
+    companyIdx: index("issue_relations_company_idx").on(table.companyId),
+  })
+);
+
+export const issueThreadInteractions = pgTable(
+  "issue_thread_interactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull().references(() => institutions.id),
+    issueId: uuid("issue_id").notNull().references(() => requests.id),
+    status: text("status"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    issueIdx: index("issue_thread_interactions_issue_idx").on(table.issueId),
+    companyIdx: index("issue_thread_interactions_company_idx").on(table.companyId),
+  })
+);
+
+export const issueInboxArchives = pgTable(
+  "issue_inbox_archives",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull().references(() => institutions.id),
+    issueId: uuid("issue_id").notNull().references(() => requests.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    issueIdx: index("issue_inbox_archives_issue_idx").on(table.issueId),
+    companyIdx: index("issue_inbox_archives_company_idx").on(table.companyId),
+  })
+);

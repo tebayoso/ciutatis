@@ -14,6 +14,8 @@ export const documentRevisions = pgTable(
     changeSummary: text("change_summary"),
     createdByAgentId: uuid("created_by_agent_id").references(() => agents.id, { onDelete: "set null" }),
     createdByUserId: text("created_by_user_id"),
+    // Upstream-only column for type compatibility
+    createdByRunId: uuid("created_by_run_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

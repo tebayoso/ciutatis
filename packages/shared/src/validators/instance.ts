@@ -4,7 +4,11 @@ import { TENANT_INSTANCE_STATUSES } from "../constants.js";
 export const TENANT_DEFAULT_ROUTING_MODES = ["path", "subdomain", "custom_domain"] as const;
 
 export const instanceExperimentalSettingsSchema = z.object({
+  enableEnvironments: z.boolean().default(false),
   enableIsolatedWorkspaces: z.boolean().default(false),
+  autoRestartDevServerWhenIdle: z.boolean().default(false),
+  enableIssueGraphLivenessAutoRecovery: z.boolean().default(false),
+  issueGraphLivenessAutoRecoveryLookbackHours: z.number().default(24),
 }).strict();
 
 export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSettingsSchema.partial();

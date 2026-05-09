@@ -308,6 +308,27 @@ export function secretService(db: Db) {
       return normalized;
     },
 
+    normalizeEnvBindingsForPersistence: async (
+      companyId: string,
+      envValue: unknown,
+      opts?: { strictMode?: boolean; fieldPath?: string },
+    ): Promise<Record<string, EnvBinding>> => {
+      const record = asRecord(envValue);
+      if (!record) return {};
+      const normalized: Record<string, EnvBinding> = {};
+      for (const [key, rawBinding] of Object.entries(record)) {
+        if (!ENV_KEY_RE.test(key)) {
+          throw unprocessable(`Invalid environment variable name: ${key}`);
+        }
+        const parsed = envBindingSchema.safeParse(rawBinding);
+        if (!parsed.success) {
+          throw unprocessable(`Invalid environment binding for key: ${key}`);
+        }
+        normalized[key] = parsed.data as EnvBinding;
+      }
+      return normalized;
+    },
+
     resolveEnvBindings: async (companyId: string, envValue: unknown): Promise<{ env: Record<string, string>; secretKeys: Set<string> }> => {
       const record = asRecord(envValue);
       if (!record) return { env: {} as Record<string, string>, secretKeys: new Set<string>() };
@@ -363,6 +384,11 @@ export function secretService(db: Db) {
       }
       resolved.env = env;
       return { config: resolved, secretKeys };
+    },
+
+    resolveSecretValue: async (companyId: string, secretRef: string, version: string | number): Promise<string> => {
+      const resolvedVersion = version === "latest" ? "latest" : typeof version === "number" ? version : parseInt(version, 10);
+      return resolveSecretValue(companyId, secretRef, resolvedVersion as number | "latest");
     },
   };
 }

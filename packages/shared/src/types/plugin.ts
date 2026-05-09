@@ -9,26 +9,14 @@ import type {
   PluginLauncherAction,
   PluginLauncherBounds,
   PluginLauncherRenderEnvironment,
-  PluginApiRouteAuthMode,
-  PluginApiRouteCheckoutPolicy,
-  PluginApiRouteMethod,
-  PluginDatabaseCoreReadTable,
-  PluginDatabaseMigrationStatus,
-  PluginDatabaseNamespaceMode,
-  PluginDatabaseNamespaceStatus,
   AgentAdapterType,
   AgentRole,
   AgentStatus,
   IssuePriority,
   ProjectStatus,
-  RoutineCatchUpPolicy,
-  RoutineConcurrencyPolicy,
-  RoutineStatus,
-  IssueSurfaceVisibility,
 } from "../constants.js";
 import type { Agent } from "./agent.js";
 import type { Project } from "./project.js";
-import type { Routine, RoutineTrigger, RoutineVariable } from "./routine.js";
 
 // ---------------------------------------------------------------------------
 // JSON Schema placeholder – plugins declare config schemas as JSON Schema
@@ -40,12 +28,7 @@ import type { Routine, RoutineTrigger, RoutineVariable } from "./routine.js";
  */
 export type JsonSchema = Record<string, unknown>;
 
-export type {
-  PluginDatabaseCoreReadTable,
-  PluginDatabaseMigrationStatus,
-  PluginDatabaseNamespaceMode,
-  PluginDatabaseNamespaceStatus,
-} from "../constants.js";
+
 
 // ---------------------------------------------------------------------------
 // Manifest sub-types — nested declarations within CiutatisPluginManifestV1
@@ -124,6 +107,39 @@ export interface PluginEnvironmentDriverDeclaration {
   /** JSON Schema describing the driver's provider-specific configuration. */
   configSchema: JsonSchema;
 }
+
+/**
+ * Declares a database namespace contributed by a plugin.
+ * Requires `database.namespace.write` capability.
+ */
+export interface PluginDatabaseNamespaceDeclaration {
+  /** Stable identifier for this namespace, unique within the plugin. */
+  name: string;
+  /** Optional slug override for the database schema name. */
+  slug?: string;
+  /** Relative path to the migrations directory from package root. */
+  migrationsDir: string;
+  /** Core tables the plugin can read from the public schema at runtime. */
+  coreReadTables?: PluginDatabaseCoreReadTable[];
+}
+
+/**
+ * Core table the plugin is allowed to read from public schema.
+ */
+export type PluginDatabaseCoreReadTable =
+  | "agents"
+  | "agent_api_keys"
+  | "companies"
+  | "company_settings"
+  | "projects"
+  | "issues"
+  | "issue_comments"
+  | "issue_documents"
+  | "runs"
+  | "run_logs"
+  | "plugins"
+  | "plugin_state"
+  | string;
 
 /**
  * Declares a normal Paperclip agent that a plugin can provision and later
@@ -208,7 +224,7 @@ export interface PluginManagedProjectDeclaration {
   settings?: Record<string, unknown>;
 }
 
-export type PluginManagedResourceKind = "agent" | "project" | "routine";
+export type PluginManagedResourceKind = "agent" | "project";
 
 export interface PluginManagedResourceRef {
   pluginKey?: string;
@@ -216,38 +232,7 @@ export interface PluginManagedResourceRef {
   resourceKey: string;
 }
 
-export interface PluginManagedRoutineDeclaration {
-  /** Stable identifier for this managed routine, unique within the plugin. */
-  routineKey: string;
-  /** Suggested routine title template. */
-  title: string;
-  /** Suggested routine description template. */
-  description?: string | null;
-  /** Stable managed agent reference for the default assignee. */
-  assigneeRef?: PluginManagedResourceRef | null;
-  /** Stable managed project reference for routine-created issues. */
-  projectRef?: PluginManagedResourceRef | null;
-  /** Optional goal id to set on the routine in this company. */
-  goalId?: string | null;
-  /** Suggested starting status. Defaults to `paused` when no assignee is resolved, otherwise `active`. */
-  status?: RoutineStatus;
-  /** Suggested issue priority. Defaults to `medium`. */
-  priority?: IssuePriority;
-  /** Suggested concurrency behavior. Defaults to core routine default. */
-  concurrencyPolicy?: RoutineConcurrencyPolicy;
-  /** Suggested missed-trigger behavior. Defaults to core routine default. */
-  catchUpPolicy?: RoutineCatchUpPolicy;
-  /** Suggested routine variables. */
-  variables?: RoutineVariable[];
-  /** Suggested triggers created when the routine is first reconciled. */
-  triggers?: Array<Pick<RoutineTrigger, "kind" | "label" | "enabled" | "cronExpression" | "timezone" | "signingMode" | "replayWindowSec">>;
-  /** Defaults for issues created by this routine. */
-  issueTemplate?: {
-    surfaceVisibility?: IssueSurfaceVisibility;
-    originId?: string | null;
-    billingCode?: string | null;
-  };
-}
+
 
 export interface PluginManagedAgentResolution {
   pluginKey: string;
@@ -270,16 +255,7 @@ export interface PluginManagedProjectResolution {
   status: "missing" | "resolved" | "created" | "relinked" | "reset";
 }
 
-export interface PluginManagedRoutineResolution {
-  pluginKey: string;
-  resourceKind: "routine";
-  resourceKey: string;
-  companyId: string;
-  routineId: string | null;
-  routine: Routine | null;
-  status: "missing" | "missing_refs" | "resolved" | "created" | "relinked" | "reset";
-  missingRefs?: PluginManagedResourceRef[];
-}
+
 
 /**
  * Declares a UI extension slot the plugin fills with a React component.
@@ -396,43 +372,7 @@ export interface PluginUiDeclaration {
   launchers?: PluginLauncherDeclaration[];
 }
 
-/**
- * Declares restricted database access for trusted orchestration plugins.
- *
- * The host derives the final namespace from the plugin key and optional slug,
- * applies SQL migrations before worker startup, and gates runtime SQL through
- * the `database.namespace.*` capabilities.
- */
-export interface PluginDatabaseDeclaration {
-  /** Optional stable human-readable slug included in the host-derived namespace. */
-  namespaceSlug?: string;
-  /** SQL migration directory relative to the plugin package root. */
-  migrationsDir: string;
-  /** Public core tables this plugin may read or join at runtime. */
-  coreReadTables?: PluginDatabaseCoreReadTable[];
-}
 
-export type PluginApiRouteCompanyResolution =
-  | { from: "body"; key: string }
-  | { from: "query"; key: string }
-  | { from: "issue"; param: string };
-
-export interface PluginApiRouteDeclaration {
-  /** Stable plugin-defined route key passed to the worker. */
-  routeKey: string;
-  /** HTTP method accepted by this route. */
-  method: PluginApiRouteMethod;
-  /** Plugin-local path under `/api/plugins/:pluginId/api`, e.g. `/issues/:issueId/smoke`. */
-  path: string;
-  /** Actor class allowed to call the route. */
-  auth: PluginApiRouteAuthMode;
-  /** Capability required to expose the route. Currently `api.routes.register`. */
-  capability: "api.routes.register";
-  /** Optional checkout policy enforced by the host before worker dispatch. */
-  checkoutPolicy?: PluginApiRouteCheckoutPolicy;
-  /** How the host resolves company access for this route. */
-  companyResolution?: PluginApiRouteCompanyResolution;
-}
 
 // ---------------------------------------------------------------------------
 // Plugin Manifest V1
@@ -484,20 +424,10 @@ export interface CiutatisPluginManifestV1 {
   webhooks?: PluginWebhookDeclaration[];
   /** Agent tools this plugin contributes. Requires `agent.tools.register` capability. */
   tools?: PluginToolDeclaration[];
-  /** Restricted plugin-owned database namespace declaration. */
-  database?: PluginDatabaseDeclaration;
-  /** Scoped JSON API routes mounted under `/api/plugins/:pluginId/api/*`. */
-  apiRoutes?: PluginApiRouteDeclaration[];
-  /** Environment drivers this plugin contributes. Requires `environment.drivers.register` capability. */
-  environmentDrivers?: PluginEnvironmentDriverDeclaration[];
   /** Suggested company-scoped agents this plugin can provision and resolve by stable key. */
   agents?: PluginManagedAgentDeclaration[];
   /** Suggested company-scoped projects this plugin can provision and resolve by stable key. */
   projects?: PluginManagedProjectDeclaration[];
-  /** Suggested company-scoped routines this plugin can provision and resolve by stable key. */
-  routines?: PluginManagedRoutineDeclaration[];
-  /** Trusted local folders this plugin can configure and access by stable key. */
-  localFolders?: PluginLocalFolderDeclaration[];
   /**
    * Legacy top-level launcher declarations.
    * Prefer `ui.launchers` for new manifests.
@@ -505,6 +435,23 @@ export interface CiutatisPluginManifestV1 {
   launchers?: PluginLauncherDeclaration[];
   /** UI bundle declarations. Requires `entrypoints.ui` when populated. */
   ui?: PluginUiDeclaration;
+  /**
+   * Environment runtime drivers this plugin contributes.
+   * Requires `environment.drivers.register` capability.
+   */
+  environmentDrivers?: PluginEnvironmentDriverDeclaration[];
+  /**
+   * Database namespaces and migrations this plugin contributes.
+   * Requires `database.namespace.write` capability.
+   */
+  database?: {
+    /** Optional slug override for the database schema name. */
+    namespaceSlug?: string;
+    /** Relative path to the migrations directory from package root. */
+    migrationsDir: string;
+    /** Core tables the plugin can read from the public schema at runtime. */
+    coreReadTables?: PluginDatabaseCoreReadTable[];
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -542,31 +489,6 @@ export interface PluginRecord {
   installedAt: Date;
   /** Timestamp of the most recent status or metadata change. */
   updatedAt: Date;
-}
-
-export interface PluginDatabaseNamespaceRecord {
-  id: string;
-  pluginId: string;
-  pluginKey: string;
-  namespaceName: string;
-  namespaceMode: PluginDatabaseNamespaceMode;
-  status: PluginDatabaseNamespaceStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface PluginMigrationRecord {
-  id: string;
-  pluginId: string;
-  pluginKey: string;
-  namespaceName: string;
-  migrationKey: string;
-  checksum: string;
-  pluginVersion: string;
-  status: PluginDatabaseMigrationStatus;
-  startedAt: Date;
-  appliedAt: Date | null;
-  errorMessage: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -785,4 +707,34 @@ export interface PluginWebhookDeliveryRecord {
   finishedAt: Date | null;
   /** ISO 8601 creation timestamp. */
   createdAt: Date;
+}
+
+// ---------------------------------------------------------------------------
+// Plugin Migration – represents a row in the `plugin_migrations` table
+// ---------------------------------------------------------------------------
+
+/**
+ * Domain type for a plugin database migration record.
+ */
+export interface PluginMigrationRecord {
+  /** UUID primary key. */
+  id: string;
+  /** FK to the plugin namespace record. */
+  namespaceId: string;
+  /** Migration file name/key. */
+  migrationKey: string;
+  /** Migration status. */
+  status: "pending" | "running" | "applied" | "failed";
+  /** Timestamp when migration started. */
+  startedAt: Date;
+  /** Timestamp when migration completed (null if not yet complete). */
+  completedAt: Date | null;
+  /** Error message if migration failed. */
+  error: string | null;
+  /** Checksum of migration file content. */
+  checksum: string;
+  /** Plugin version at time of migration. */
+  pluginVersion: string;
+  /** Timestamp when migration was applied (null if pending). */
+  appliedAt: Date | null;
 }

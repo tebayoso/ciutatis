@@ -29,7 +29,7 @@ import {
   redactPublicText,
 } from "@paperclipai/shared";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
-import { requestService } from "./requestService.js";
+import { issueService as requestService } from "./requestService.js";
 
 function hashRecoveryToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -215,6 +215,10 @@ export function publicPortalService(db: Db) {
       createdByAgentId: null,
       createdByUserId: input.ownerUserId ?? null,
     });
+
+    if (!createdIssue) {
+      throw new Error("Failed to create issue");
+    }
 
     const publicId = createPublicRequestId(createdIssue.identifier, createdIssue.id);
 

@@ -175,15 +175,6 @@ export interface HostServices {
     resetManaged(params: WorkerToHostMethods["projects.managed.reset"][0]): Promise<WorkerToHostMethods["projects.managed.reset"][1]>;
   };
 
-  /** Provides `routines.managed.*`. */
-  routines: {
-    managedGet(params: WorkerToHostMethods["routines.managed.get"][0]): Promise<WorkerToHostMethods["routines.managed.get"][1]>;
-    managedReconcile(params: WorkerToHostMethods["routines.managed.reconcile"][0]): Promise<WorkerToHostMethods["routines.managed.reconcile"][1]>;
-    managedReset(params: WorkerToHostMethods["routines.managed.reset"][0]): Promise<WorkerToHostMethods["routines.managed.reset"][1]>;
-    managedUpdate(params: WorkerToHostMethods["routines.managed.update"][0]): Promise<WorkerToHostMethods["routines.managed.update"][1]>;
-    managedRun(params: WorkerToHostMethods["routines.managed.run"][0]): Promise<WorkerToHostMethods["routines.managed.run"][1]>;
-  };
-
   /** Provides issue read/write, relation, checkout, wakeup, summary, comment methods. */
   issues: {
     list(params: WorkerToHostMethods["issues.list"][0]): Promise<WorkerToHostMethods["issues.list"][1]>;
@@ -353,12 +344,7 @@ const METHOD_CAPABILITY_MAP: Record<WorkerToHostMethodName, PluginCapability | n
   "projects.getWorkspaceForIssue": "project.workspaces.read",
   "projects.managed.get": "projects.managed",
   "projects.managed.reconcile": "projects.managed",
-    "projects.managed.reset": "projects.managed",
-    "routines.managed.get": "routines.managed",
-    "routines.managed.reconcile": "routines.managed",
-    "routines.managed.reset": "routines.managed",
-    "routines.managed.update": "routines.managed",
-    "routines.managed.run": "routines.managed",
+  "projects.managed.reset": "projects.managed",
 
   // Issues
   "issues.list": "issues.read",
@@ -588,23 +574,6 @@ export function createHostClientHandlers(
     }),
     "projects.managed.reset": gated("projects.managed.reset", async (params) => {
       return services.projects.resetManaged(params);
-    }),
-
-    // Routines
-    "routines.managed.get": gated("routines.managed.get", async (params) => {
-      return services.routines.managedGet(params);
-    }),
-    "routines.managed.reconcile": gated("routines.managed.reconcile", async (params) => {
-      return services.routines.managedReconcile(params);
-    }),
-    "routines.managed.reset": gated("routines.managed.reset", async (params) => {
-      return services.routines.managedReset(params);
-    }),
-    "routines.managed.update": gated("routines.managed.update", async (params) => {
-      return services.routines.managedUpdate(params);
-    }),
-    "routines.managed.run": gated("routines.managed.run", async (params) => {
-      return services.routines.managedRun(params);
     }),
 
     // Issues

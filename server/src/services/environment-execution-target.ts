@@ -57,7 +57,7 @@ export async function resolveEnvironmentExecutionTarget(input: {
       typeof input.leaseMetadata?.remoteCwd === "string" && input.leaseMetadata.remoteCwd.trim().length > 0
         ? input.leaseMetadata.remoteCwd.trim()
         : DEFAULT_SANDBOX_REMOTE_CWD;
-    const timeoutMs = "timeoutMs" in parsed.config ? parsed.config.timeoutMs : null;
+    const timeoutMs = "timeoutMs" in parsed.config ? parsed.config.timeoutMs as number | null | undefined : null;
     const shellCommand =
       input.leaseMetadata?.shellCommand === "bash" || input.leaseMetadata?.shellCommand === "sh"
         ? input.leaseMetadata.shellCommand
@@ -129,7 +129,7 @@ export async function resolveEnvironmentExecutionTarget(input: {
   const remoteCwd =
     typeof input.leaseMetadata?.remoteCwd === "string" && input.leaseMetadata.remoteCwd.trim().length > 0
       ? input.leaseMetadata.remoteCwd.trim()
-      : parsed.config.remoteWorkspacePath;
+      : parsed.config.remoteWorkspacePath as string;
 
   return {
     kind: "remote",
@@ -138,13 +138,13 @@ export async function resolveEnvironmentExecutionTarget(input: {
     leaseId: input.leaseId ?? null,
     remoteCwd,
     spec: {
-      host: parsed.config.host,
-      port: parsed.config.port,
-      username: parsed.config.username,
-      remoteWorkspacePath: parsed.config.remoteWorkspacePath,
-      privateKey: parsed.config.privateKey,
-      knownHosts: parsed.config.knownHosts,
-      strictHostKeyChecking: parsed.config.strictHostKeyChecking,
+      host: parsed.config.host as string,
+      port: parsed.config.port as number,
+      username: parsed.config.username as string,
+      remoteWorkspacePath: parsed.config.remoteWorkspacePath as string,
+      privateKey: parsed.config.privateKey as string | null,
+      knownHosts: parsed.config.knownHosts as string | null,
+      strictHostKeyChecking: parsed.config.strictHostKeyChecking as boolean,
       remoteCwd,
     },
   };

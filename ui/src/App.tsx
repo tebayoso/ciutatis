@@ -182,6 +182,8 @@ function councilRoutes() {
       <Route path="projects/:projectId/overview" element={<ProjectDetail />} />
       <Route path="projects/:projectId/requests" element={<ProjectDetail />} />
       <Route path="projects/:projectId/requests/:filter" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/issues" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/issues/:filter" element={<ProjectDetail />} />
       <Route path="projects/:projectId/configuration" element={<ProjectDetail />} />
       <Route path="projects/:projectId/budget" element={<ProjectDetail />} />
       <Route path="requests" element={<Requests />} />
@@ -445,6 +447,8 @@ export function App() {
           <Route path="projects/:projectId/requests/:filter" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
+          <Route path="objectives" element={<UnprefixedBoardRedirect />} />
+          <Route path="objectives/:goalId" element={<UnprefixedBoardRedirect />} />
           <Route path=":companyPrefix" element={<Layout />}>
             {councilRoutes()}
           </Route>

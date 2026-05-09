@@ -304,7 +304,7 @@ export function activityService(db: Db) {
           livenessReason: classification.livenessReason,
           continuationAttempt: classification.continuationAttempt,
           lastUsefulActionAt: classification.lastUsefulActionAt,
-          nextAction: classification.nextAction,
+          nextAction: classification.nextAction ? { text: classification.nextAction } : null,
           updatedAt: new Date(),
         })
         .where(and(eq(heartbeatRuns.id, run.id), isNull(heartbeatRuns.livenessState)));

@@ -178,10 +178,10 @@ export function buildWorkspaceRealizationRecord(input: {
     provider,
     environmentId: input.environment.id,
     leaseId: input.lease.id,
-    providerLeaseId: input.lease.providerLeaseId,
+    providerLeaseId: input.lease.providerLeaseId ?? null,
     local: {
       path: localPath,
-      source: input.request.source.kind,
+      kind: input.request.source.kind,
       strategy: input.request.source.strategy,
       projectId: input.request.source.projectId,
       projectWorkspaceId: input.request.source.projectWorkspaceId,
@@ -202,13 +202,13 @@ export function buildWorkspaceRealizationRecord(input: {
       command: input.request.runtimeOverlay.provisionCommand,
     },
     rebuild: {
-      executionWorkspaceId: input.request.executionWorkspaceId,
-      mode: input.request.requestedMode,
-      repoUrl: input.request.source.repoUrl,
-      repoRef: input.request.source.repoRef,
+      executionWorkspaceId: input.request.executionWorkspaceId ?? null,
+      mode: input.request.requestedMode ?? null,
+      repoUrl: input.request.source.repoUrl ?? null,
+      repoRef: input.request.source.repoRef ?? null,
       localPath,
       remotePath,
-      providerLeaseId: input.lease.providerLeaseId,
+      providerLeaseId: input.lease.providerLeaseId ?? null,
       metadata: {
         source: input.request.source,
         runtimeOverlay: input.request.runtimeOverlay,
@@ -238,10 +238,10 @@ export function buildWorkspaceRealizationRecordFromDriverInput(input: {
     readWorkspaceRealizationRequest(input.workspace.metadata?.request) ??
     buildWorkspaceRealizationRequest({
       adapterType: "unknown",
-      companyId: input.lease.companyId,
+      companyId: input.lease.companyId ?? "unknown",
       environmentId: input.environment.id,
-      executionWorkspaceId: input.lease.executionWorkspaceId,
-      issueId: input.lease.issueId,
+      executionWorkspaceId: input.lease.executionWorkspaceId ?? null,
+      issueId: input.lease.issueId ?? null,
       heartbeatRunId: input.lease.heartbeatRunId ?? "unknown",
       requestedMode: input.workspace.mode ?? null,
       workspace: {

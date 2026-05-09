@@ -97,8 +97,30 @@ export type {
   CompanyPortabilityExportRequest,
 } from "./company-portability.js";
 
+export type {
+  IssueTreeControlMode,
+  IssueTreeHoldStatus,
+  IssueTreeHoldReleasePolicyStrategy,
+  IssueTreeHoldReleasePolicy,
+  IssueTreePreviewTotals,
+  IssueTreePreviewWarning,
+  IssueTreePreviewRun,
+  IssueTreePreviewIssue,
+  IssueTreePreviewAgent,
+  IssueTreeControlPreview,
+  IssueTreeHoldMember,
+  IssueTreeHold,
+  IssueGraphLivenessAutoRecoveryPreview,
+  IssueGraphLivenessAutoRecoveryPreviewItem,
+} from "./issue-tree.js";
+export {
+  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+} from "./issue-tree.js";
+
 // Unchanged exports
-export type { InstanceExperimentalSettings, InstanceSettings } from "./instance.js";
+export type { InstanceExperimentalSettings, InstanceSettings, InstanceGeneralSettings } from "./instance.js";
 export type {
   CloudflareProvisioningSettings,
   CloudflareProvisioningValidationResult,
@@ -196,4 +218,6 @@ export type {
   PluginJobRecord,
   PluginJobRunRecord,
   PluginWebhookDeliveryRecord,
+  PluginManagedProjectDeclaration,
+  PluginManagedProjectResolution,
 } from "./plugin.js";

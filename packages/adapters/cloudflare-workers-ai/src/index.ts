@@ -1,9 +1,9 @@
 export const type = "cloudflare_workers_ai";
 export const label = "Cloudflare Workers AI";
-export const DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/moonshotai/kimi-k2.5";
+export const DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/moonshotai/kimi-k2.6";
 
 export const models: { id: string; label: string }[] = [
-  { id: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL, label: "Moonshot AI Kimi K2.5" },
+  { id: DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL, label: "Moonshot AI Kimi K2.6" },
   { id: "@cf/openai/gpt-oss-20b", label: "OpenAI gpt-oss-20b" },
   { id: "@cf/openai/gpt-oss-120b", label: "OpenAI gpt-oss-120b" },
   {

@@ -93,7 +93,11 @@ export function institutionRoutes(db: Db) {
       assertBoard(req);
     }
     const actor = getActorInfo(req);
-    const result = await portability.importBundle(req.body, req.actor.type === "board" ? req.actor.userId : null);
+    const result = await portability.importBundle(req.body, req.actor.type === "board" ? req.actor.userId : null) as {
+      company: { id: string; action: string };
+      agents: unknown[];
+      warnings: unknown[];
+    };
     await logActivity(db, {
       companyId: result.company.id,
       actorType: actor.actorType,

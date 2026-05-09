@@ -162,7 +162,7 @@ export function executionWorkspaceRoutes(db: Db) {
       ? listConfiguredRuntimeServiceEntries({ workspaceRuntime: effectiveRuntimeConfig })
       : [];
     const workspaceCommand = effectiveRuntimeConfig
-      ? findWorkspaceCommandDefinition(effectiveRuntimeConfig, target.workspaceCommandId ?? null)
+      ? findWorkspaceCommandDefinition(effectiveRuntimeConfig as Record<string, unknown>, target.workspaceCommandId ?? null)
       : null;
     if (target.workspaceCommandId && !workspaceCommand) {
       res.status(404).json({ error: "Workspace command not found for this execution workspace" });
@@ -253,8 +253,8 @@ export function executionWorkspaceRoutes(db: Db) {
               config: {
                 ...existing.config,
                 provisionCommand:
-                  existing.config?.provisionCommand
-                  ?? projectPolicy?.workspaceStrategy?.provisionCommand
+                  (existing.config?.provisionCommand as string | null | undefined)
+                  ?? (projectPolicy?.workspaceStrategy?.provisionCommand as string | null | undefined)
                   ?? null,
               },
             },
@@ -295,8 +295,8 @@ export function executionWorkspaceRoutes(db: Db) {
                 }
               : null,
             workspace: availableWorkspace,
-            command: workspaceCommand.rawConfig,
-            adapterEnv: {},
+            command: workspaceCommand.rawConfig ?? {} as Record<string, unknown>,
+            adapterEnv: {} as Record<string, string>,
             recorder,
             metadata: {
               action,
@@ -349,7 +349,7 @@ export function executionWorkspaceRoutes(db: Db) {
             workspace: availableWorkspace,
             executionWorkspaceId: existing.id,
             config: { workspaceRuntime: effectiveRuntimeConfig },
-            adapterEnv: {},
+            adapterEnv: {} as Record<string, string>,
             onLog,
             serviceIndex: selectedServiceIndex,
           });
@@ -359,7 +359,7 @@ export function executionWorkspaceRoutes(db: Db) {
         }
 
         const currentDesiredState: WorkspaceRuntimeDesiredState =
-          existing.config?.desiredState
+          (existing.config?.desiredState as WorkspaceRuntimeDesiredState | undefined)
           ?? ((existing.runtimeServices ?? []).some((service) => service.status === "starting" || service.status === "running")
             ? "running"
             : "stopped");
@@ -369,12 +369,12 @@ export function executionWorkspaceRoutes(db: Db) {
         } = selectedRuntimeServiceId && (selectedServiceIndex === undefined || selectedServiceIndex === null)
           ? {
               desiredState: currentDesiredState,
-              serviceStates: existing.config?.serviceStates ?? null,
+              serviceStates: (existing.config?.serviceStates as WorkspaceRuntimeServiceStateMap | null | undefined) ?? null,
             }
           : buildWorkspaceRuntimeDesiredStatePatch({
               config: { workspaceRuntime: effectiveRuntimeConfig },
               currentDesiredState,
-              currentServiceStates: existing.config?.serviceStates ?? null,
+              currentServiceStates: (existing.config?.serviceStates as WorkspaceRuntimeServiceStateMap | null | undefined) ?? null,
               action,
               serviceIndex: selectedServiceIndex,
             });
@@ -489,7 +489,7 @@ export function executionWorkspaceRoutes(db: Db) {
 
       if (readiness.state === "blocked") {
         res.status(409).json({
-          error: readiness.blockingReasons[0] ?? "Execution workspace cannot be closed right now",
+          error: (readiness.blockingReasons as string[])[0] ?? "Execution workspace cannot be closed right now",
           closeReadiness: readiness,
         });
         return;

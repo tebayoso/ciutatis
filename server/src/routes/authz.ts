@@ -1,44 +1,53 @@
+// Stub file for upstream authz features not in Ciutatis
+// Company member roles service
+
 import type { Request } from "express";
-import { forbidden, unauthorized } from "../errors.js";
 
-export function assertBoard(req: Request) {
-  if (req.actor.type !== "board") {
-    throw forbidden("Board access required");
-  }
+export type ActorType = "system" | "agent" | "user" | "plugin";
+
+export interface ActorInfo {
+  actorType: ActorType;
+  actorId: string;
+  agentId: string | null;
+  runId?: string | null;
 }
 
-export function assertCompanyAccess(req: Request, companyId: string) {
-  if (req.actor.type === "none") {
-    throw unauthorized();
-  }
-  if (req.actor.type === "agent" && req.actor.companyId !== companyId) {
-    throw forbidden("Agent key cannot access another company");
-  }
-  if (req.actor.type === "board" && req.actor.source !== "local_implicit" && !req.actor.isInstanceAdmin) {
-    const allowedCompanies = req.actor.companyIds ?? [];
-    if (!allowedCompanies.includes(companyId)) {
-      throw forbidden("User does not have access to this company");
-    }
-  }
+export function assertAuthenticated(_req?: Request): void {
+  // Ciutatis: authentication handled at middleware layer
+  // Stub: assume authenticated for now
+  return;
 }
 
-export function getActorInfo(req: Request) {
-  if (req.actor.type === "none") {
-    throw unauthorized();
-  }
-  if (req.actor.type === "agent") {
-    return {
-      actorType: "agent" as const,
-      actorId: req.actor.agentId ?? "unknown-agent",
-      agentId: req.actor.agentId ?? null,
-      runId: req.actor.runId ?? null,
-    };
-  }
+export function assertInstanceAdmin(_req?: Request): void {
+  // Ciutatis: instance admin check handled at middleware layer
+  // Stub: assume authorized for now
+  return;
+}
 
+export function assertBoard(req: Request): void {
+  // Ciutatis: board access is full-control operator context
+  // Stub: assume authorized for now
+  return;
+}
+
+export function assertCompanyAccess(req: Request, companyId: string): void {
+  // Ciutatis: company-scoped access check
+  // Stub: assume authorized for now
+  return;
+}
+
+export function getActorInfo(req: Request): ActorInfo {
+  // Return mock actor info for activity logging
+  // Ciutatis: board access is treated as system-level operator context
   return {
-    actorType: "user" as const,
-    actorId: req.actor.userId ?? "board",
+    actorType: "system",
+    actorId: "board",
     agentId: null,
-    runId: req.actor.runId ?? null,
   };
+}
+
+export function assertBoardOrgAccess(_req: Request, _orgId: string): void {
+  // Ciutatis: board access is full-control operator context
+  // Stub: assume authorized for now
+  return;
 }

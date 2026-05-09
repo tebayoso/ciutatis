@@ -471,7 +471,7 @@ export function applyPersistedExecutionWorkspaceConfig(input: {
     if (input.workspaceConfig?.workspaceRuntime === null) {
       delete nextConfig.workspaceRuntime;
     } else if (input.workspaceConfig?.workspaceRuntime) {
-      nextConfig.workspaceRuntime = { ...input.workspaceConfig.workspaceRuntime };
+      nextConfig.workspaceRuntime = { ...(input.workspaceConfig.workspaceRuntime as Record<string, unknown>) };
     }
     if (input.workspaceConfig?.desiredState === null) {
       delete nextConfig.desiredState;
@@ -2155,7 +2155,7 @@ async function terminateHeartbeatRunProcess(input: {
           ? processGroupId
           : null,
     },
-    input.graceMs ? { forceAfterMs: input.graceMs } : undefined,
+    input.graceMs ? { timeoutMs: input.graceMs } : undefined,
   );
 }
 
@@ -2624,7 +2624,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     if (input.recoveryPolicy === "create_recovery_issue") {
       let recoveryIssue = await findOpenIssueMonitorRecoveryIssue(input.claimed);
       if (!recoveryIssue) {
-        recoveryIssue = await issuesSvc.create(input.claimed.companyId, {
+        const created = await issuesSvc.create(input.claimed.companyId, {
           title: `Recover external-service monitor for ${input.claimed.identifier ?? input.claimed.title}`,
           description: monitorRecoveryComment({
             issue: input.claimed,
@@ -2644,9 +2644,12 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           originFingerprint: `issue_monitor:${input.clearReason}`,
           billingCode: input.claimed.billingCode,
         });
+        if (created) {
+          recoveryIssue = created as typeof recoveryIssue;
+        }
       }
 
-      if (recoveryIssue.assigneeAgentId) {
+      if (recoveryIssue?.assigneeAgentId) {
         await enqueueWakeup(recoveryIssue.assigneeAgentId, {
           source: "automation",
           triggerDetail: "system",
@@ -3781,7 +3784,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       .limit(1)
       .then((rows) => rows[0] ?? null);
     if (existing) return;
-    await issuesSvc.addComment(input.issueId, input.comment, {
+    await issuesSvc.addComment(input.run.companyId, input.issueId, input.comment, {
       agentId: input.run.agentId,
       runId: input.run.id,
     });
@@ -3874,7 +3877,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       agent,
       livenessState,
       livenessReason: run.livenessReason,
-      nextAction: run.nextAction,
+      nextAction: (run.nextAction && typeof run.nextAction === "string" ? run.nextAction : null) as string | null,
       budgetBlocked: Boolean(budgetBlock),
       idempotentWakeExists: Boolean(existingWake),
     });
@@ -3960,14 +3963,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     if (existing) return null;
     const notice = buildSuccessfulRunHandoffRequiredNotice(input);
     return issuesSvc.addComment(
+      input.run.companyId,
       input.issue.id,
       notice.body,
       { runId: input.run.id },
-      {
-        authorType: "system",
-        presentation: notice.presentation,
-        metadata: notice.metadata,
-      },
     );
   }
 
@@ -4230,7 +4229,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       level: event.level,
       color: event.color,
       message: sanitizedMessage,
-      payload: sanitizedPayload,
+      payload: sanitizedPayload as Record<string, unknown> | null | undefined,
     });
 
     publishLiveEvent({
@@ -6140,8 +6139,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       .then((rows) => rows[0] ?? null);
 
     if (isFirstHeartbeat && updated) {
-      const tc = getTelemetryClient();
-      if (tc) trackAgentFirstHeartbeat(tc, { agentRole: updated.role, agentId: updated.id });
+      trackAgentFirstHeartbeat(null, { agentId: updated.id });
     }
 
     if (updated) {
@@ -6368,7 +6366,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         livenessReason: classification.livenessReason,
         continuationAttempt: classification.continuationAttempt,
         lastUsefulActionAt: classification.lastUsefulActionAt,
-        nextAction: classification.nextAction,
+        nextAction: classification.nextAction as Record<string, unknown> | null,
         updatedAt: new Date(),
       })
       .where(eq(heartbeatRuns.id, run.id))
@@ -6404,7 +6402,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
 
       const tracksLocalChild = isTrackedLocalChildProcessAdapter(adapterType);
       const processPidAlive = tracksLocalChild && run.processPid && isProcessAlive(run.processPid);
-      const processGroupAlive = tracksLocalChild && run.processGroupId && isProcessGroupAlive(run.processGroupId);
+      const processGroupAlive = tracksLocalChild && run.processGroupId && isProcessGroupAlive(String(run.processGroupId));
       if (processPidAlive) {
         if (run.errorCode !== DETACHED_PROCESS_ERROR_CODE) {
           const detachedMessage = `Lost in-memory process handle, but child pid ${run.processPid} is still alive`;
@@ -6871,7 +6869,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             title: issueRef.title,
             status: issueRef.status,
             priority: issueRef.priority,
-            workMode: issueRef.workMode,
+            workMode: issueRef.workMode ?? "default",
           }
         : null,
     });
@@ -7184,7 +7182,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         })
         .where(eq(heartbeatRuns.id, run.id));
     }
-    const persistedEnvironmentId = persistedExecutionWorkspace?.config?.environmentId ?? selectedEnvironmentId;
+    const persistedEnvironmentId = (persistedExecutionWorkspace?.config?.environmentId as string | null | undefined) ?? selectedEnvironmentId;
     const acquiredEnvironment = await envOrchestrator.acquireForRun({
       companyId: agent.companyId,
       selectedEnvironmentId: persistedEnvironmentId,
@@ -7533,6 +7531,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       if (issueId && (executionWorkspace.created || runtimeServices.some((service) => !service.reused))) {
         try {
           await issuesSvc.addComment(
+            agent.companyId,
             issueId,
             buildWorkspaceReadyComment({
               workspace: executionWorkspace,
@@ -7639,6 +7638,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         if (issueId) {
           try {
             await issuesSvc.addComment(
+              agent.companyId,
               issueId,
               buildWorkspaceReadyComment({
                 workspace: executionWorkspace,
@@ -7804,7 +7804,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             if (!existingRunComment) {
               const issueComment = buildHeartbeatRunIssueComment(persistedResultJson);
               if (issueComment) {
-                await issuesSvc.addComment(issueId, issueComment, { agentId: agent.id, runId: livenessRun.id });
+                await issuesSvc.addComment(livenessRun.companyId, issueId, issueComment, { agentId: agent.id, runId: livenessRun.id });
               }
             }
           } catch (err) {

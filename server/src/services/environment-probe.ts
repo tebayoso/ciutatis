@@ -1,6 +1,6 @@
 import type { Environment, EnvironmentProbeResult } from "@paperclipai/shared";
 import type { Db } from "@paperclipai/db";
-import { ensureSshWorkspaceReady } from "@paperclipai/adapter-utils/ssh";
+import { ensureSshWorkspaceReady, type SshConnectionConfig } from "@paperclipai/adapter-utils/ssh";
 import {
   resolveEnvironmentDriverConfigForRuntime,
   type ParsedEnvironmentConfig,
@@ -20,6 +20,7 @@ export async function probeEnvironment(
   if (parsed.driver === "local") {
     return {
       ok: true,
+      success: true,
       driver: "local",
       summary: "Local environment is available on this Paperclip host.",
       details: {
@@ -30,10 +31,11 @@ export async function probeEnvironment(
   }
 
   if (parsed.driver === "sandbox") {
-    if (!isBuiltinSandboxProvider(parsed.config.provider)) {
+    if (!isBuiltinSandboxProvider(parsed.config.provider!)) {
       if (!options.pluginWorkerManager) {
         return {
           ok: false,
+          success: false,
           driver: "sandbox",
           summary: `Sandbox provider "${parsed.config.provider}" requires a running provider plugin.`,
           details: {
@@ -57,6 +59,7 @@ export async function probeEnvironment(
     if (!options.pluginWorkerManager) {
       return {
         ok: false,
+        success: false,
         driver: "plugin",
         summary: `Plugin environment probes require a plugin worker manager for "${parsed.config.pluginKey}:${parsed.config.driverKey}".`,
         details: {
@@ -75,10 +78,11 @@ export async function probeEnvironment(
   }
 
   try {
-    const { remoteCwd } = await ensureSshWorkspaceReady(parsed.config);
+    const { remoteCwd } = await ensureSshWorkspaceReady(parsed.config as unknown as SshConnectionConfig);
 
     return {
       ok: true,
+      success: true,
       driver: "ssh",
       summary: `Connected to ${parsed.config.username}@${parsed.config.host} and verified the remote workspace path.`,
       details: {
@@ -110,6 +114,7 @@ export async function probeEnvironment(
 
     return {
       ok: false,
+      success: false,
       driver: "ssh",
       summary: `SSH probe failed for ${parsed.config.username}@${parsed.config.host}.`,
       details: {

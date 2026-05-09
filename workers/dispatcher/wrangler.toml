@@ -19,9 +19,18 @@ LANDING_ORIGIN = "https://ciutatis.com"
 binding = "ROUTING_CACHE"
 id = "9e5684759e4c44c9afb714a552f709b0"
 
-[[dispatch_namespaces]]
-binding = "TENANT_RUNTIME"
-namespace = "ciutatis-tenants"
+[[kv_namespaces]]
+binding = "TENANT_CACHE"
+id = "9e5684759e4c44c9afb714a552f709b0"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ciutatis-db"
+database_id = "2978f493-067e-40c8-ab7d-ca4b2926d17c"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "ciutatis-assets"
 
 [observability]
 enabled = true

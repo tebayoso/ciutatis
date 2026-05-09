@@ -129,8 +129,9 @@ export function resolveExecutionWorkspaceEnvironmentId(input: {
   if (input.workspaceConfig?.environmentId !== undefined) {
     return input.workspaceConfig.environmentId ?? input.defaultEnvironmentId;
   }
-  if (input.issueSettings?.environmentId !== undefined) {
-    return input.issueSettings.environmentId ?? input.defaultEnvironmentId;
+  const issueSettingsEnvId = (input.issueSettings as { environmentId?: string | null } | null)?.environmentId;
+  if (issueSettingsEnvId !== undefined) {
+    return issueSettingsEnvId ?? input.defaultEnvironmentId;
   }
   if (input.projectPolicy?.environmentId !== undefined) {
     return input.projectPolicy.environmentId ?? input.defaultEnvironmentId;
@@ -216,4 +217,11 @@ export function buildExecutionWorkspaceAdapterConfig(input: {
   }
 
   return nextConfig;
+}
+
+// Stub for upstream feature not used in ciutatis
+export function issueExecutionWorkspaceModeForPersistedWorkspace(
+  _mode: string | null | undefined
+): string | null {
+  return null;
 }

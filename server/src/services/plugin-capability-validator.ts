@@ -50,9 +50,6 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "projects.managed.get": ["projects.managed"],
   "projects.managed.reconcile": ["projects.managed"],
   "projects.managed.reset": ["projects.managed"],
-  "routines.managed.get": ["routines.managed"],
-  "routines.managed.reconcile": ["routines.managed"],
-  "routines.managed.reset": ["routines.managed"],
   "project.workspaces.list": ["project.workspaces.read"],
   "project.workspaces.get": ["project.workspaces.read"],
   "issues.list": ["issues.read"],
@@ -95,8 +92,7 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "issue.interactions.create": ["issue.interactions.create"],
   "activity.log": ["activity.log.write"],
   "metrics.write": ["metrics.write"],
-  "telemetry.track": ["telemetry.track"],
-  "db.migrate": ["database.namespace.migrate"],
+  "db.migrate": ["database.namespace.write"],
   "db.execute": ["database.namespace.write"],
 
   // Plugin state operations
@@ -148,7 +144,6 @@ const UI_SLOT_CAPABILITIES: Record<PluginUiSlotType, PluginCapability> = {
   commentAnnotation: "ui.commentAnnotation.register",
   commentContextMenuItem: "ui.action.register",
   settingsPage: "instance.settings.register",
-  routeSidebar: "ui.sidebar.register",
 };
 
 /**
@@ -181,11 +176,10 @@ const FEATURE_CAPABILITIES: Record<string, PluginCapability> = {
   tools: "agent.tools.register",
   jobs: "jobs.schedule",
   webhooks: "webhooks.receive",
-  database: "database.namespace.migrate",
+  database: "database.namespace.write",
   environmentDrivers: "environment.drivers.register",
   agents: "agents.managed",
   projects: "projects.managed",
-  routines: "routines.managed",
 };
 
 // ---------------------------------------------------------------------------

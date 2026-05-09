@@ -73,7 +73,7 @@ export async function logActivity(db: Db, input: LogActivityInput) {
     entityId: input.entityId,
     agentId: input.agentId ?? null,
     runId: input.runId ?? null,
-    details: redactedDetails,
+    details: redactedDetails as Record<string, unknown> | null,
   });
 
   publishLiveEvent({
@@ -103,7 +103,7 @@ export async function logActivity(db: Db, input: LogActivityInput) {
       entityType: input.entityType,
       companyId: input.companyId,
       payload: {
-        ...redactedDetails,
+        ...(redactedDetails ?? {}),
         agentId: input.agentId ?? null,
         runId: input.runId ?? null,
       },

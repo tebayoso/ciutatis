@@ -27,6 +27,7 @@ export interface ProjectWorkspace {
   sharedWorkspaceKey: string | null;
   metadata: Record<string, unknown> | null;
   isPrimary: boolean;
+  runtimeConfig: Record<string, unknown> | null;
   runtimeServices?: WorkspaceRuntimeService[];
   createdAt: Date;
   updatedAt: Date;

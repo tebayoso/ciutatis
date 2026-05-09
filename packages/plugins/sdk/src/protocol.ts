@@ -16,7 +16,6 @@
  */
 
 import type {
-  CiutatisPluginManifestV1,
   PluginLauncherBounds,
   PluginLauncherRenderContextSnapshot,
   PluginLauncherRenderEnvironment,
@@ -27,16 +26,8 @@ import type {
   IssueComment,
   IssueDocument,
   IssueDocumentSummary,
-  IssueThreadInteraction,
-  CreateIssueThreadInteraction,
-  PluginManagedAgentResolution,
-  PluginManagedProjectResolution,
-  PluginManagedRoutineResolution,
-  Routine,
-  RoutineRun,
   Agent,
   Goal,
-  PluginLocalFolderDeclaration,
 } from "@paperclipai/shared";
 export type { PluginLauncherRenderContextSnapshot } from "@paperclipai/shared";
 
@@ -54,6 +45,12 @@ import type {
   ToolResult,
   PluginLocalFolderListing,
   PluginLocalFolderStatus,
+  PaperclipPluginManifestV1,
+  PluginLocalFolderDeclaration,
+  PluginManagedProjectResolution,
+  CreateIssueThreadInteraction,
+  IssueThreadInteraction,
+  PluginManagedAgentResolution,
 } from "./types.js";
 import type {
   PluginHealthDiagnostics,
@@ -225,7 +222,7 @@ export type PluginRpcErrorCode =
  */
 export interface InitializeParams {
   /** Full plugin manifest snapshot. */
-  manifest: CiutatisPluginManifestV1;
+  manifest: PaperclipPluginManifestV1;
   /** Resolved operator configuration (validated against `instanceConfigSchema`). */
   config: Record<string, unknown>;
   /** Instance-level metadata. */
@@ -584,7 +581,7 @@ export interface WorkerToHostMethods {
       companyId: string;
       folderKey: string;
       path: string;
-      access?: "read" | "readWrite";
+      access?: "read" | "write" | "readWrite";
       requiredDirectories?: string[];
       requiredFiles?: string[];
     },
@@ -775,45 +772,6 @@ export interface WorkerToHostMethods {
   "projects.managed.reset": [
     params: { projectKey: string; companyId: string },
     result: PluginManagedProjectResolution,
-  ];
-  "routines.managed.get": [
-    params: { routineKey: string; companyId: string },
-    result: PluginManagedRoutineResolution,
-  ];
-  "routines.managed.reconcile": [
-    params: {
-      routineKey: string;
-      companyId: string;
-      assigneeAgentId?: string | null;
-      projectId?: string | null;
-    },
-    result: PluginManagedRoutineResolution,
-  ];
-  "routines.managed.reset": [
-    params: {
-      routineKey: string;
-      companyId: string;
-      assigneeAgentId?: string | null;
-      projectId?: string | null;
-    },
-    result: PluginManagedRoutineResolution,
-  ];
-  "routines.managed.update": [
-    params: {
-      routineKey: string;
-      companyId: string;
-      status?: string;
-    },
-    result: Routine,
-  ];
-  "routines.managed.run": [
-    params: {
-      routineKey: string;
-      companyId: string;
-      assigneeAgentId?: string | null;
-      projectId?: string | null;
-    },
-    result: RoutineRun,
   ];
 
   // Issues

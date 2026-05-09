@@ -1,9 +1,17 @@
 import { Hono } from "hono";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, sql } from "drizzle-orm";
 import { projects, projectWorkspaces } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 import { assertCompanyAccess, getActorInfo } from "../lib/authz.js";
 import { notFound } from "../lib/errors.js";
+
+function normalizeUrlKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 export function projectRoutes() {
   const app = new Hono<AppEnv>();
@@ -51,13 +59,27 @@ export function projectRoutes() {
     assertCompanyAccess(c, companyId);
     const db = c.get("db");
 
-    const [project] = await db
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+
+    if (isUuid) {
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.companyId, companyId)));
+
+      if (project) return c.json(project);
+    }
+
+    const normalizedKey = normalizeUrlKey(projectId);
+    const allProjects = await db
       .select()
       .from(projects)
-      .where(and(eq(projects.id, projectId), eq(projects.companyId, companyId)));
+      .where(eq(projects.companyId, companyId));
 
-    if (!project) throw notFound("Project not found");
-    return c.json(project);
+    const matched = allProjects.find((p) => normalizeUrlKey(p.name) === normalizedKey);
+
+    if (!matched) throw notFound("Project not found");
+    return c.json(matched);
   });
 
   app.patch("/companies/:companyId/projects/:projectId", async (c) => {

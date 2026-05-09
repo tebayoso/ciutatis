@@ -336,7 +336,7 @@ function toExecutionWorkspace(
     closedAt: row.closedAt ?? null,
     cleanupEligibleAt: row.cleanupEligibleAt ?? null,
     cleanupReason: row.cleanupReason ?? null,
-    config: readExecutionWorkspaceConfig((row.metadata as Record<string, unknown> | null) ?? null),
+    config: readExecutionWorkspaceConfig((row.metadata as Record<string, unknown> | null) ?? null) as Record<string, unknown> | null,
     metadata: (row.metadata as Record<string, unknown> | null) ?? null,
     runtimeServices,
     createdAt: row.createdAt,
@@ -599,18 +599,22 @@ export function executionWorkspaceService(db: Db) {
             : `The workspace has ${git.untrackedEntryCount} untracked files.`,
         );
       }
-      if (git?.aheadCount && git.aheadCount > 0 && git.isMergedIntoBase === false) {
+      const aheadCount = git?.aheadCount as number | null | undefined;
+      const behindCount = git?.behindCount as number | null | undefined;
+      const isMergedIntoBase = git?.isMergedIntoBase as boolean | null | undefined;
+      const baseRef = git?.baseRef as string | null | undefined;
+      if (aheadCount && aheadCount > 0 && isMergedIntoBase === false) {
         warnings.push(
-          git.aheadCount === 1
-            ? `This workspace is 1 commit ahead of ${git.baseRef ?? "the base ref"} and is not merged.`
-            : `This workspace is ${git.aheadCount} commits ahead of ${git.baseRef ?? "the base ref"} and is not merged.`,
+          aheadCount === 1
+            ? `This workspace is 1 commit ahead of ${baseRef ?? "the base ref"} and is not merged.`
+            : `This workspace is ${aheadCount} commits ahead of ${baseRef ?? "the base ref"} and is not merged.`,
         );
       }
-      if (git?.behindCount && git.behindCount > 0) {
+      if (behindCount && behindCount > 0) {
         warnings.push(
-          git.behindCount === 1
-            ? `This workspace is 1 commit behind ${git.baseRef ?? "the base ref"}.`
-            : `This workspace is ${git.behindCount} commits behind ${git.baseRef ?? "the base ref"}.`,
+          behindCount === 1
+            ? `This workspace is 1 commit behind ${baseRef ?? "the base ref"}.`
+            : `This workspace is ${behindCount} commits behind ${baseRef ?? "the base ref"}.`,
         );
       }
 

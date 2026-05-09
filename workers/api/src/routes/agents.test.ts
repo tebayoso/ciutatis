@@ -119,7 +119,7 @@ describe("workers agent adapter routes", () => {
       ]),
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/ai/run/@cf/moonshotai/kimi-k2.5"),
+      expect.stringContaining("/ai/run/@cf/moonshotai/kimi-k2.6"),
       expect.objectContaining({ method: "POST" }),
     );
   });

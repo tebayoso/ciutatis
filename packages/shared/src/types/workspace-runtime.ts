@@ -51,12 +51,14 @@ export interface ProjectExecutionWorkspacePolicy {
   pullRequestPolicy?: Record<string, unknown> | null;
   runtimePolicy?: Record<string, unknown> | null;
   cleanupPolicy?: Record<string, unknown> | null;
+  environmentId?: string | null;
 }
 
 export interface IssueExecutionWorkspaceSettings {
   mode?: ExecutionWorkspaceMode;
   workspaceStrategy?: ExecutionWorkspaceStrategy | null;
   workspaceRuntime?: Record<string, unknown> | null;
+  environmentId?: string | null;
 }
 
 export interface ExecutionWorkspace {
@@ -82,6 +84,8 @@ export interface ExecutionWorkspace {
   cleanupEligibleAt: Date | null;
   cleanupReason: string | null;
   metadata: Record<string, unknown> | null;
+  config: Record<string, unknown> | null;
+  runtimeServices: WorkspaceRuntimeService[] | null;
   createdAt: Date;
   updatedAt: Date;
 }

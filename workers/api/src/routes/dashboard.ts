@@ -128,6 +128,7 @@ export function dashboardRoutes() {
         pausedAgents,
         pausedProjects,
       },
+      runActivity: [],
     } satisfies DashboardSummary);
   });
 

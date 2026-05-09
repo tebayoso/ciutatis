@@ -13,7 +13,7 @@ import { badRequest, forbidden, notFound } from "../errors.js";
 
 export interface StoredPluginLocalFolderConfig {
   path: string;
-  access?: "read" | "readWrite";
+  access?: "read" | "readWrite" | "write";
   requiredDirectories?: string[];
   requiredFiles?: string[];
   updatedAt?: string;

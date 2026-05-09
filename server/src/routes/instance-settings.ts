@@ -28,7 +28,7 @@ export function instanceSettingsRoutes(db: Db) {
   router.get("/instance/settings/general", async (req, res) => {
     // General settings (e.g. keyboardShortcuts) are readable by any
     // authenticated org member or instance admin. Only PATCH requires instance-admin.
-    assertBoardOrgAccess(req);
+    assertBoardOrgAccess(req, "instance");
     res.json(await svc.getGeneral());
   });
 
@@ -65,7 +65,7 @@ export function instanceSettingsRoutes(db: Db) {
   router.get("/instance/settings/experimental", async (req, res) => {
     // Experimental settings are readable by any authenticated org member
     // or instance admin. Only PATCH requires instance-admin.
-    assertBoardOrgAccess(req);
+    assertBoardOrgAccess(req, "instance");
     res.json(await svc.getExperimental());
   });
 

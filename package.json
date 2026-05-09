@@ -10,6 +10,7 @@
     "dev:admin": "pnpm --filter @paperclipai/ui dev",
     "dev:ui": "pnpm --filter @paperclipai/ui dev",
     "dev:landing": "pnpm --filter @ciutatis/landing dev",
+    "preflight:workspace-links": "node cli/node_modules/tsx/dist/cli.mjs scripts/ensure-workspace-package-links.ts",
     "storybook": "pnpm --filter @paperclipai/ui storybook",
     "build-storybook": "pnpm --filter @paperclipai/ui build-storybook",
     "build": "pnpm run preflight:workspace-links && pnpm -r build",
@@ -61,9 +62,6 @@
   },
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
-    "patchedDependencies": {
-      "embedded-postgres@18.1.0-beta.16": "patches/embedded-postgres@18.1.0-beta.16.patch"
-    },
     "overrides": {
       "rollup": ">=4.59.0"
     }

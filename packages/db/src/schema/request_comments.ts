@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { institutions } from "./institutions.js";
 import { requests } from "./requests.js";
 import { agents } from "./agents.js";
@@ -12,6 +12,11 @@ export const requestComments = pgTable(
     authorAgentId: uuid("author_agent_id").references(() => agents.id),
     authorUserId: text("author_user_id"),
     body: text("body").notNull(),
+    // Upstream-only columns for type compatibility (not used in Ciutatis V1)
+    authorType: text("author_type"),
+    presentation: text("presentation"),
+    metadata: jsonb("metadata"),
+    createdByRunId: uuid("created_by_run_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

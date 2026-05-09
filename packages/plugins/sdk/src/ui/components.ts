@@ -403,55 +403,6 @@ export interface ProjectPickerProps {
   onConfirm?: () => void;
 }
 
-export interface ManagedRoutinesListAgent {
-  id: string;
-  name: string;
-  icon?: string | null;
-}
-
-export interface ManagedRoutinesListProject {
-  id: string;
-  name: string;
-  color?: string | null;
-}
-
-export interface ManagedRoutineMissingRef {
-  resourceKind: string;
-  resourceKey: string;
-}
-
-export interface ManagedRoutinesListItem {
-  key: string;
-  title: string;
-  status: string;
-  routineId?: string | null;
-  href?: string | null;
-  resourceKey?: string | null;
-  projectId?: string | null;
-  assigneeAgentId?: string | null;
-  cronExpression?: string | null;
-  lastRunAt?: Date | string | null;
-  lastRunStatus?: string | null;
-  managedByPluginDisplayName?: string | null;
-  missingRefs?: ManagedRoutineMissingRef[];
-}
-
-export interface ManagedRoutinesListProps {
-  routines: ManagedRoutinesListItem[];
-  agents?: ManagedRoutinesListAgent[];
-  projects?: ManagedRoutinesListProject[];
-  pluginDisplayName?: string | null;
-  emptyMessage?: string;
-  runningRoutineKey?: string | null;
-  statusMutationRoutineKey?: string | null;
-  reconcilingRoutineKey?: string | null;
-  resettingRoutineKey?: string | null;
-  onRunNow?: (routine: ManagedRoutinesListItem) => void;
-  onToggleEnabled?: (routine: ManagedRoutinesListItem, enabled: boolean) => void;
-  onReconcile?: (routine: ManagedRoutinesListItem) => void;
-  onReset?: (routine: ManagedRoutinesListItem) => void;
-}
-
 // ---------------------------------------------------------------------------
 // Component declarations (provided by host at runtime)
 // ---------------------------------------------------------------------------
@@ -583,7 +534,4 @@ export const AssigneePicker = createSdkUiComponent<AssigneePickerProps>("Assigne
  */
 export const ProjectPicker = createSdkUiComponent<ProjectPickerProps>("ProjectPicker");
 
-/**
- * Renders Paperclip's native managed routines list for plugin settings pages.
- */
-export const ManagedRoutinesList = createSdkUiComponent<ManagedRoutinesListProps>("ManagedRoutinesList");
+

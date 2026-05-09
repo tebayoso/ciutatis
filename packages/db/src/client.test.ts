@@ -42,7 +42,11 @@ if (!embeddedPostgresSupport.supported) {
   );
 }
 
-describeEmbeddedPostgres("applyPendingMigrations", () => {
+// NOTE: Skipped because these tests reference upstream migrations (0044, 0046, 0047, 0048, 0050)
+// that were removed from Ciutatis as part of removing: routines, feedback, telemetry,
+// board-auth, worktree-merge-history, company-skills features.
+// Migration replay safety is an upstream concern; Ciutatis starts fresh with a reduced schema.
+describeEmbeddedPostgres.skip("applyPendingMigrations", () => {
   it(
     "applies an inserted earlier migration without replaying later legacy migrations",
     async () => {
@@ -170,7 +174,7 @@ describeEmbeddedPostgres("applyPendingMigrations", () => {
     20_000,
   );
 
-  it(
+  it.skip(
     "replays migration 0046 safely when document revision columns already exist",
     async () => {
       const connectionString = await createTempDatabase();
@@ -242,7 +246,7 @@ describeEmbeddedPostgres("applyPendingMigrations", () => {
     20_000,
   );
 
-  it(
+  it.skip(
     "replays migration 0047 safely when feedback tables and run columns already exist",
     async () => {
       const connectionString = await createTempDatabase();
@@ -336,7 +340,7 @@ describeEmbeddedPostgres("applyPendingMigrations", () => {
     20_000,
   );
 
-  it(
+  it.skip(
     "replays migration 0048 safely when routines.variables already exists",
     async () => {
       const connectionString = await createTempDatabase();
@@ -402,7 +406,7 @@ describeEmbeddedPostgres("applyPendingMigrations", () => {
     20_000,
   );
 
-  it(
+  it.skip(
     "replays migration 0050 safely when projects.env already exists",
     async () => {
       const connectionString = await createTempDatabase();

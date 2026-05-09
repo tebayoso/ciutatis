@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
-import type { PluginCategory, PluginStatus, CiutatisPluginManifestV1 } from "@paperclipai/shared";
+import type { PluginCategory, PluginStatus, PaperclipPluginManifestV1 } from "@paperclipai/shared";
 
 /**
  * `plugins` table — stores one row per installed plugin.
@@ -20,7 +20,7 @@ export const plugins = sqliteTable(
     version: text("version").notNull(),
     apiVersion: integer("api_version").notNull().default(1),
     categories: text("categories", { mode: "json" }).$type<PluginCategory[]>().notNull().default([]),
-    manifestJson: text("manifest_json", { mode: "json" }).$type<CiutatisPluginManifestV1>().notNull(),
+    manifestJson: text("manifest_json", { mode: "json" }).$type<PaperclipPluginManifestV1>().notNull(),
     status: text("status").$type<PluginStatus>().notNull().default("installed"),
     installOrder: integer("install_order"),
     /** Resolved package path for local-path installs; used to find worker entrypoint. */

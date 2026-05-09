@@ -96,7 +96,7 @@ export interface AgentWakeupRequest {
   payload: Record<string, unknown> | null;
   status: WakeupRequestStatus;
   coalescedCount: number;
-  requestedByActorType: "user" | "agent" | "system" | null;
+  requestedByActorType: "user" | "agent" | "system" | "plugin" | null;
   requestedByActorId: string | null;
   idempotencyKey: string | null;
   runId: string | null;

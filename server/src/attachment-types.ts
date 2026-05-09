@@ -14,10 +14,9 @@
  *   - Exact types:   "application/pdf"
  *   - Wildcards:     "image/*"  or  "application/vnd.openxmlformats-officedocument.*"
  */
-import {
-  DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES,
-  MAX_COMPANY_ATTACHMENT_MAX_BYTES,
-} from "@paperclipai/shared";
+// Attachment size limits - defined locally (removed from shared in ciutatis fork)
+const DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_COMPANY_ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
 
 export const DEFAULT_ALLOWED_TYPES: readonly string[] = [
   "image/png",

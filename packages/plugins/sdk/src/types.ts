@@ -10,7 +10,7 @@
  */
 
 import type {
-  PaperclipPluginManifestV1,
+  CiutatisPluginManifestV1,
   PluginStateScopeKind,
   PluginEventType,
   PluginToolDeclaration,
@@ -21,57 +21,138 @@ import type {
   IssueComment,
   IssueDocument,
   IssueDocumentSummary,
-  IssueRelationIssueSummary,
-  IssueThreadInteraction,
-  SuggestTasksInteraction,
-  AskUserQuestionsInteraction,
-  RequestConfirmationInteraction,
-  CreateIssueThreadInteraction,
-  PluginIssueOriginKind,
-  IssueSurfaceVisibility,
-  PluginManagedAgentResolution,
-  PluginManagedProjectResolution,
-  PluginManagedRoutineResolution,
-  Routine,
-  RoutineRun,
   Agent,
   Goal,
 } from "@paperclipai/shared";
 
+export type PaperclipPluginManifestV1 = CiutatisPluginManifestV1 & {
+  localFolders?: PluginLocalFolderDeclaration[];
+  database?: any;
+  routines?: RoutineDeclaration[];
+  agents?: ManagedAgentDeclaration[];
+  projects?: ManagedProjectDeclaration[];
+  environmentDrivers?: EnvironmentDriverDeclaration[];
+};
+
+export interface RoutineDeclaration {
+  routineKey: string;
+  displayName: string;
+  description?: string;
+}
+
+export interface ManagedAgentDeclaration {
+  agentKey: string;
+  displayName: string;
+}
+
+export interface ManagedProjectDeclaration {
+  projectKey: string;
+  displayName: string;
+}
+
+export interface EnvironmentDriverDeclaration {
+  driverKey: string;
+  kind: string;
+  displayName: string;
+  description?: string;
+  configSchema?: {
+    type: "object";
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+}
+
+export interface PluginLocalFolderDeclaration {
+  folderKey: string;
+  displayName: string;
+  access: "read" | "write" | "readWrite";
+  requiredDirectories?: string[];
+  requiredFiles?: string[];
+}
+
+export interface IssueRelationIssueSummary {
+  id: string;
+  identifier: string | null;
+  title: string;
+  status: Issue["status"];
+  priority: Issue["priority"];
+  assigneeAgentId: string | null;
+  assigneeUserId: string | null;
+}
+
+export interface IssueThreadInteraction {
+  id: string;
+  kind: string;
+  createdAt: string | Date;
+  companyId?: string;
+  issueId?: string;
+  status?: string;
+  continuationPolicy?: string | null;
+  idempotencyKey?: string | null;
+  sourceCommentId?: string | null;
+  sourceRunId?: string | null;
+  title?: string | null;
+  summary?: string | null;
+  createdByAgentId?: string | null;
+  createdByUserId?: string | null;
+  payload?: unknown;
+  result?: unknown;
+  updatedAt?: string | Date;
+}
+export interface SuggestTasksInteraction extends IssueThreadInteraction { kind: "suggest_tasks"; suggestions: Array<{ title: string; description?: string }>; }
+export interface AskUserQuestionsInteraction extends IssueThreadInteraction { kind: "ask_user_questions"; questions: string[]; }
+export interface RequestConfirmationInteraction extends IssueThreadInteraction { kind: "request_confirmation"; prompt: string; }
+export type CreateIssueThreadInteraction = Omit<IssueThreadInteraction, "id" | "createdAt">;
+export type PluginIssueOriginKind = string;
+export type IssueSurfaceVisibility = string;
+export interface PluginManagedAgentResolution { pluginKey: string; resourceKind: string; resourceKey: string; companyId: string; agentId: string | null; agent: any | null; status: string; approvalId: string | null; agentKey?: string; }
+export interface PluginManagedProjectResolution { pluginKey: string; resourceKind: string; resourceKey: string; companyId: string; projectId: string | null; project: any | null; status: string; projectKey?: string; projectWorkspaceId?: string | null; }
+export interface PluginManagedRoutineResolution { pluginKey: string; resourceKind: string; resourceKey: string; companyId: string; routineId: string | null; routine: any | null; status: string; missingRefs?: Array<{ resourceKind: string; resourceKey: string; pluginKey: string }>; }
+export interface Routine { id: string; companyId: string; projectId: string | null; goalId: string | null; parentIssueId: string | null; title: string; description: string | null; assigneeAgentId: string | null; priority: string; status: string; concurrencyPolicy: string; catchUpPolicy: string; variables: unknown[]; createdByAgentId: string | null; createdByUserId: string | null; updatedByAgentId: string | null; updatedByUserId: string | null; lastTriggeredAt: string | null; lastEnqueuedAt: string | null; latestRevisionId: string | null; latestRevisionNumber: number; createdAt: Date; updatedAt: Date; managedByPlugin: any; }
+export interface RoutineRun { id: string; routineId: string; status: string; }
+export interface PluginManagedResourceKind { kind: string; }
+export interface PluginManagedResourceRef { resourceKind: string; resourceKey: string; }
+export type PluginManagedRoutineDeclaration = Routine;
+export interface PluginCompanySettings { [key: string]: unknown; }
+export interface PluginDatabaseDeclaration { [key: string]: unknown; }
+export interface PluginApiRouteDeclaration { [key: string]: unknown; }
+export interface PluginApiRouteCompanyResolution { [key: string]: unknown; }
+export interface PluginDatabaseNamespaceRecord { [key: string]: unknown; }
+export interface PluginMigrationRecord { [key: string]: unknown; }
+export type PluginDatabaseCoreReadTable = string;
+export type PluginDatabaseMigrationStatus = string;
+export type PluginDatabaseNamespaceMode = string;
+export type PluginDatabaseNamespaceStatus = string;
+export type PluginApiRouteAuthMode = string;
+export type PluginApiRouteCheckoutPolicy = string;
+export type PluginApiRouteMethod = string;
+
 // ---------------------------------------------------------------------------
-// Re-exports from @paperclipai/shared (plugin authors import from one place)
+// Re-exports from @paperclipai/shared (for types still available in shared)
 // ---------------------------------------------------------------------------
 
 export type {
-  PaperclipPluginManifestV1,
+  Company,
+  Project,
+  Issue,
+  IssueComment,
+  IssueDocument,
+  IssueDocumentSummary,
+  Agent,
+  Goal,
+  PluginStateScopeKind,
+  PluginEventType,
+  PluginToolDeclaration,
+  PluginLauncherDeclaration,
+  // Additional plugin types re-exported from shared
   PluginJobDeclaration,
   PluginWebhookDeclaration,
-  PluginToolDeclaration,
-  PluginEnvironmentDriverDeclaration,
-  PluginManagedAgentDeclaration,
-  PluginManagedAgentResolution,
-  PluginManagedProjectDeclaration,
-  PluginManagedProjectResolution,
-  PluginManagedRoutineDeclaration,
-  PluginManagedRoutineResolution,
-  Routine,
-  RoutineRun,
-  PluginLocalFolderDeclaration,
-  PluginCompanySettings,
-  PluginManagedResourceKind,
-  PluginManagedResourceRef,
   PluginUiSlotDeclaration,
   PluginUiDeclaration,
   PluginLauncherActionDeclaration,
   PluginLauncherRenderDeclaration,
-  PluginLauncherDeclaration,
   PluginMinimumHostVersion,
-  PluginDatabaseDeclaration,
-  PluginApiRouteDeclaration,
-  PluginApiRouteCompanyResolution,
   PluginRecord,
-  PluginDatabaseNamespaceRecord,
-  PluginMigrationRecord,
   PluginConfig,
   JsonSchema,
   PluginStatus,
@@ -83,36 +164,11 @@ export type {
   PluginLauncherAction,
   PluginLauncherBounds,
   PluginLauncherRenderEnvironment,
-  PluginStateScopeKind,
   PluginJobStatus,
   PluginJobRunStatus,
   PluginJobRunTrigger,
   PluginWebhookDeliveryStatus,
-  PluginDatabaseCoreReadTable,
-  PluginDatabaseMigrationStatus,
-  PluginDatabaseNamespaceMode,
-  PluginDatabaseNamespaceStatus,
-  PluginApiRouteAuthMode,
-  PluginApiRouteCheckoutPolicy,
-  PluginApiRouteMethod,
-  PluginEventType,
   PluginBridgeErrorCode,
-  Company,
-  Project,
-  Issue,
-  IssueComment,
-  IssueDocument,
-  IssueDocumentSummary,
-  IssueRelationIssueSummary,
-  IssueThreadInteraction,
-  SuggestTasksInteraction,
-  AskUserQuestionsInteraction,
-  RequestConfirmationInteraction,
-  CreateIssueThreadInteraction,
-  PluginIssueOriginKind,
-  IssueSurfaceVisibility,
-  Agent,
-  Goal,
 } from "@paperclipai/shared";
 
 // ---------------------------------------------------------------------------
@@ -390,7 +446,7 @@ export interface PluginLocalFolderStatus {
   configured: boolean;
   path: string | null;
   realPath: string | null;
-  access: "read" | "readWrite";
+  access: "read" | "write" | "readWrite";
   readable: boolean;
   writable: boolean;
   requiredDirectories: string[];
@@ -406,7 +462,7 @@ export interface PluginLocalFolderConfigureInput {
   companyId: string;
   folderKey: string;
   path: string;
-  access?: "read" | "readWrite";
+  access?: "read" | "write" | "readWrite";
   requiredDirectories?: string[];
   requiredFiles?: string[];
 }
@@ -433,8 +489,7 @@ export interface PluginLocalFolderListing {
 }
 
 export interface PluginLocalFoldersClient {
-  /** Manifest-declared local folders for this plugin. */
-  declarations(): import("@paperclipai/shared").PluginLocalFolderDeclaration[];
+  declarations(): PluginLocalFolderDeclaration[];
   /** Persist a company-scoped local folder path after validating it. */
   configure(input: PluginLocalFolderConfigureInput): Promise<PluginLocalFolderStatus>;
   /** Check the stored folder readiness for a company and folder key. */
@@ -1257,7 +1312,6 @@ export interface PluginIssuesClient {
     title: string;
     description?: string;
     status?: Issue["status"];
-    workMode?: Issue["workMode"];
     priority?: Issue["priority"];
     assigneeAgentId?: string;
     assigneeUserId?: string | null;
@@ -1281,17 +1335,14 @@ export interface PluginIssuesClient {
       | "title"
       | "description"
       | "status"
-      | "workMode"
       | "priority"
       | "assigneeAgentId"
       | "assigneeUserId"
       | "billingCode"
-      | "originKind"
-      | "originId"
-      | "originRunId"
       | "requestDepth"
       | "executionWorkspaceId"
       | "executionWorkspacePreference"
+      | "executionWorkspaceSettings"
     >> & {
       blockedByIssueIds?: string[];
       labelIds?: string[];

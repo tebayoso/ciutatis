@@ -2635,7 +2635,7 @@ export function accessRoutes(
       throw badRequest("Current board API key context is required");
     }
     const key = await boardAuth.assertCurrentBoardKey(
-      req.actor.keyId,
+      req.actor.keyId!,
       req.actor.userId,
     );
     await boardAuth.revokeBoardApiKey(key.id);
@@ -4317,7 +4317,7 @@ export function accessRoutes(
   router.get("/admin/users", async (req, res) => {
     await assertInstanceAdmin(req);
     const query = searchAdminUsersQuerySchema.parse(req.query);
-    const needle = query.query.trim().toLowerCase();
+    const needle = query.query?.trim().toLowerCase() ?? "";
     const users = await db
       .select({
         id: authUsers.id,

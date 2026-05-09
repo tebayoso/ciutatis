@@ -103,7 +103,7 @@ async function main() {
     const result = await runDatabaseBackup({
       connectionString,
       backupDir,
-      retentionDays,
+      retention: { dailyDays: retentionDays, weeklyWeeks: 4, monthlyMonths: 3 },
       filenamePrefix: "paperclip",
     });
 

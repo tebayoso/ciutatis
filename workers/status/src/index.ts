@@ -250,6 +250,29 @@ async function runMonitor(definition: MonitorDefinition, env: Env): Promise<Moni
 
     const { response, latencyMs } = await fetchWithTiming(definition.url, { redirect: "manual" });
     const contentType = response.headers.get("content-type") ?? "";
+    const location = response.headers.get("location");
+    const redirectsToAuth =
+      definition.id === "admin-shell" &&
+      location !== null &&
+      response.status >= 300 &&
+      response.status < 400 &&
+      new URL(location, definition.url).pathname === "/auth";
+    if (redirectsToAuth) {
+      return {
+        id: definition.id,
+        name: definition.name,
+        url: definition.url,
+        category: definition.category,
+        ok: true,
+        status: "operational",
+        summary: "Redirects to sign-in",
+        details: "Admin hostname redirects unauthenticated visitors to the sign-in shell.",
+        checkedAt,
+        latencyMs,
+        statusCode: response.status,
+      };
+    }
+
     const bodyText = await response.text();
     const ok =
       response.status === 200 &&

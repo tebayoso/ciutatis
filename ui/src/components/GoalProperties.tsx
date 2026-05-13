@@ -140,7 +140,7 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
         {goal.parentId && (
           <PropertyRow label="Parent Goal">
             <Link
-              to={`/goals/${goal.parentId}`}
+              to={`/objectives/${goal.parentId}`}
               className="text-sm hover:underline"
             >
               {parentGoal?.title ?? goal.parentId.slice(0, 8)}

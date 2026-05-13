@@ -65,14 +65,19 @@ export async function prepareOpenCodeRuntimeConfig(input: {
 
   await fs.mkdir(runtimeConfigDir, { recursive: true });
   try {
+    const sourceStats = await fs.stat(sourceConfigDir);
+    if (!sourceStats.isDirectory()) {
+      throw Object.assign(new Error("OpenCode config path is not a directory."), { code: "ENOTDIR" });
+    }
     await fs.cp(sourceConfigDir, runtimeConfigDir, {
       recursive: true,
       force: true,
       errorOnExist: false,
-      dereference: false,
+      dereference: true,
     });
   } catch (err) {
-    if ((err as NodeJS.ErrnoException | null)?.code !== "ENOENT") {
+    const code = (err as NodeJS.ErrnoException | null)?.code;
+    if (code !== "ENOENT" && code !== "ENOTDIR") {
       throw err;
     }
   }

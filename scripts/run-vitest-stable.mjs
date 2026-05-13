@@ -7,15 +7,18 @@ import path from "node:path";
 const repoRoot = process.cwd();
 const serverRoot = path.join(repoRoot, "server");
 const serverTestsDir = path.join(repoRoot, "server", "src", "__tests__");
-const nonServerProjects = [
-  "@paperclipai/shared",
-  "@paperclipai/db",
-  "@paperclipai/adapter-utils",
-  "@paperclipai/adapter-acpx-local",
-  "@paperclipai/adapter-codex-local",
-  "@paperclipai/adapter-opencode-local",
-  "@paperclipai/ui",
-  "paperclipai",
+const nonServerSuites = [
+  { label: "@paperclipai/shared", args: ["--project", "@paperclipai/shared"] },
+  { label: "@paperclipai/db", args: ["--project", "@paperclipai/db"] },
+  { label: "@paperclipai/adapter-utils", args: ["--project", "@paperclipai/adapter-utils"] },
+  { label: "@paperclipai/adapter-claude-local", args: ["--project", "@paperclipai/adapter-claude-local"] },
+  { label: "@paperclipai/adapter-codex-local", args: ["--project", "@paperclipai/adapter-codex-local"] },
+  { label: "@paperclipai/adapter-cursor-local", args: ["--project", "@paperclipai/adapter-cursor-local"] },
+  { label: "@paperclipai/adapter-gemini-local", args: ["--project", "@paperclipai/adapter-gemini-local"] },
+  { label: "@paperclipai/adapter-opencode-local", args: ["--project", "@paperclipai/adapter-opencode-local"] },
+  { label: "@paperclipai/adapter-pi-local", args: ["--project", "@paperclipai/adapter-pi-local"] },
+  { label: "@paperclipai/ui", args: [], cwd: path.join(repoRoot, "ui") },
+  { label: "paperclipai", args: [], cwd: path.join(repoRoot, "cli") },
 ];
 const routeTestPattern = /[^/]*(?:route|routes|authz)[^/]*\.test\.ts$/;
 const additionalSerializedServerTests = new Set([
@@ -204,7 +207,7 @@ function selectSerializedSuites(routeTests, shardIndex, shardCount) {
   return routeTests.filter((_, index) => index % shardCount === shardIndex);
 }
 
-function runVitest(args, label) {
+function runVitest(args, label, cwd = repoRoot) {
   console.log(`\n[test:run] ${label}`);
   invocationIndex += 1;
   const testRoot = mkdtempSync(path.join(os.tmpdir(), `paperclip-vitest-${process.pid}-${invocationIndex}-`));
@@ -212,12 +215,13 @@ function runVitest(args, label) {
     ...process.env,
     PAPERCLIP_HOME: path.join(testRoot, "home"),
     PAPERCLIP_INSTANCE_ID: `vitest-${process.pid}-${invocationIndex}`,
+    PAPERCLIP_ENV_LIVE_SSH_NO_AUTO_FIXTURE: process.env.PAPERCLIP_ENV_LIVE_SSH_NO_AUTO_FIXTURE ?? "true",
     TMPDIR: path.join(testRoot, "tmp"),
   };
   mkdirSync(env.PAPERCLIP_HOME, { recursive: true });
   mkdirSync(env.TMPDIR, { recursive: true });
   const result = spawnSync("pnpm", ["exec", "vitest", "run", ...args], {
-    cwd: repoRoot,
+    cwd,
     env,
     stdio: "inherit",
   });
@@ -232,8 +236,8 @@ function runVitest(args, label) {
 
 function runGeneralSuites(routeTests) {
   const excludeRouteArgs = routeTests.flatMap((file) => ["--exclude", file.serverPath]);
-  for (const project of nonServerProjects) {
-    runVitest(["--project", project], `non-server project ${project}`);
+  for (const suite of nonServerSuites) {
+    runVitest(suite.args, `non-server project ${suite.label}`, suite.cwd ?? repoRoot);
   }
 
   runVitest(

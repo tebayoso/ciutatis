@@ -1,16 +1,24 @@
 import { useMemo, useState } from "react";
 import { NavLink, useLocation } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { Link } from "@/lib/router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, MoreHorizontal, Pause, Pencil, Play, Plus } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
+import { useDialogActions } from "../context/DialogContext";
 import { useSidebar } from "../context/SidebarContext";
+import { useToastActions } from "../context/ToastContext";
 import { agentsApi } from "../api/agents";
 import { heartbeatsApi } from "../api/heartbeats";
 import { queryKeys } from "../lib/queryKeys";
 import { cn, agentRouteRef, agentUrl } from "../lib/utils";
 import { AgentIcon } from "./AgentIconPicker";
 import { BudgetSidebarMarker } from "./BudgetSidebarMarker";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,9 +49,12 @@ function sortByHierarchy(agents: Agent[]): Agent[] {
 
 export function SidebarAgents() {
   const [open, setOpen] = useState(true);
+  const [updatingAgentId, setUpdatingAgentId] = useState<string | null>(null);
   const { selectedCompanyId } = useCompany();
-  const { openNewAgent } = useDialog();
+  const { openNewAgent } = useDialogActions();
   const { isMobile, setSidebarOpen } = useSidebar();
+  const { pushToast } = useToastActions();
+  const queryClient = useQueryClient();
   const location = useLocation();
 
   const { data: agents } = useQuery({
@@ -76,6 +87,50 @@ export function SidebarAgents() {
 
   const agentMatch = location.pathname.match(/^\/(?:[^/]+\/)?agents\/([^/]+)/);
   const activeAgentId = agentMatch?.[1] ?? null;
+  const invalidateAgents = () => {
+    if (!selectedCompanyId) return;
+    queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId) });
+  };
+  const pauseMutation = useMutation({
+    mutationFn: (agent: Agent) => agentsApi.pause(agent.id, selectedCompanyId ?? undefined),
+    onMutate: (agent) => {
+      setUpdatingAgentId(agent.id);
+    },
+    onSuccess: () => {
+      invalidateAgents();
+      pushToast({ title: "Agent paused", tone: "success" });
+    },
+    onError: (error) => {
+      pushToast({
+        title: "Unable to pause agent",
+        body: error instanceof Error ? error.message : String(error),
+        tone: "error",
+      });
+    },
+    onSettled: () => {
+      setUpdatingAgentId(null);
+    },
+  });
+  const resumeMutation = useMutation({
+    mutationFn: (agent: Agent) => agentsApi.resume(agent.id, selectedCompanyId ?? undefined),
+    onMutate: (agent) => {
+      setUpdatingAgentId(agent.id);
+    },
+    onSuccess: () => {
+      invalidateAgents();
+      pushToast({ title: "Agent resumed", tone: "success" });
+    },
+    onError: (error) => {
+      pushToast({
+        title: "Unable to resume agent",
+        body: error instanceof Error ? error.message : String(error),
+        tone: "error",
+      });
+    },
+    onSettled: () => {
+      setUpdatingAgentId(null);
+    },
+  });
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -143,6 +198,57 @@ export function SidebarAgents() {
                     ) : null}
                   </span>
                 )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+                      aria-label={`Open actions for ${agent.name}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem asChild>
+                      <Link to={`${agentUrl(agent)}/configuration`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit agent
+                      </Link>
+                    </DropdownMenuItem>
+                    {agent.pauseReason === "budget" ? (
+                      <DropdownMenuItem disabled>
+                        <Pause className="h-3.5 w-3.5" />
+                        Budget paused
+                      </DropdownMenuItem>
+                    ) : agent.status === "paused" ? (
+                      <DropdownMenuItem
+                        disabled={updatingAgentId === agent.id}
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          resumeMutation.mutate(agent);
+                        }}
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        {updatingAgentId === agent.id ? "Updating..." : "Resume agent"}
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        disabled={updatingAgentId === agent.id}
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          pauseMutation.mutate(agent);
+                        }}
+                      >
+                        <Pause className="h-3.5 w-3.5" />
+                        {updatingAgentId === agent.id ? "Updating..." : "Pause agent"}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </NavLink>
             );
           })}

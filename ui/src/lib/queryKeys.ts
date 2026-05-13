@@ -36,6 +36,8 @@ export const queryKeys = {
     liveRuns: (issueId: string) => ["issues", "live-runs", issueId] as const,
     activeRun: (issueId: string) => ["issues", "active-run", issueId] as const,
     workProducts: (issueId: string) => ["issues", "work-products", issueId] as const,
+    listPluginOperationsByProject: (companyId: string, projectId: string, pluginId?: string | null) =>
+      ["issues", companyId, "plugin-operations", projectId, pluginId ?? "__all-plugins__"] as const,
   },
   executionWorkspaces: {
     list: (companyId: string, filters?: Record<string, string | boolean | undefined>) =>
@@ -49,6 +51,13 @@ export const queryKeys = {
   goals: {
     list: (companyId: string) => ["goals", companyId] as const,
     detail: (id: string) => ["goals", "detail", id] as const,
+  },
+  routines: {
+    list: (companyId: string) => ["routines", companyId] as const,
+    detail: (routineId: string) => ["routines", "detail", routineId] as const,
+    revisions: (routineId: string) => ["routines", "revisions", routineId] as const,
+    runs: (routineId: string) => ["routines", "runs", routineId] as const,
+    activity: (companyId: string, routineId: string) => ["routines", companyId, routineId, "activity"] as const,
   },
   budgets: {
     overview: (companyId: string) => ["budgets", "overview", companyId] as const,
@@ -64,6 +73,7 @@ export const queryKeys = {
     joinRequests: (companyId: string, status: string = "pending_approval") =>
       ["access", "join-requests", companyId, status] as const,
     invite: (token: string) => ["access", "invite", token] as const,
+    companyUserDirectory: (companyId: string) => ["access", "company-user-directory", companyId] as const,
   },
   auth: {
     session: ["auth", "session"] as const,
@@ -84,6 +94,19 @@ export const queryKeys = {
     tenantJobs: (tenantId: string) => ["instance", "tenant-jobs", tenantId] as const,
   },
   health: ["health"] as const,
+  companySearch: {
+    search: (
+      companyId: string,
+      query: string,
+      scope: string,
+      limit: number,
+      offset: number,
+    ) => ["company-search", companyId, query, scope, limit, offset] as const,
+  },
+  environments: {
+    list: (companyId: string) => ["environments", companyId] as const,
+    capabilities: (companyId: string) => ["environments", companyId, "capabilities"] as const,
+  },
   secrets: {
     list: (companyId: string) => ["secrets", companyId] as const,
     providers: (companyId: string) => ["secret-providers", companyId] as const,
@@ -116,6 +139,7 @@ export const queryKeys = {
   liveRuns: (companyId: string) => ["live-runs", companyId] as const,
   runIssues: (runId: string) => ["run-issues", runId] as const,
   org: (companyId: string) => ["org", companyId] as const,
+  userProfile: (companyId: string, userSlug: string) => ["user-profile", companyId, userSlug] as const,
   skills: {
     available: ["skills", "available"] as const,
   },
@@ -128,5 +152,7 @@ export const queryKeys = {
     config: (pluginId: string) => ["plugins", pluginId, "config"] as const,
     dashboard: (pluginId: string) => ["plugins", pluginId, "dashboard"] as const,
     logs: (pluginId: string) => ["plugins", pluginId, "logs"] as const,
+    localFolders: (pluginId: string, companyId: string) =>
+      ["plugins", pluginId, "local-folders", companyId] as const,
   },
 };

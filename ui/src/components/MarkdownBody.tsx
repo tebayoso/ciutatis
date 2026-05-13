@@ -8,6 +8,10 @@ import { useTheme } from "../context/ThemeContext";
 interface MarkdownBodyProps {
   children: string;
   className?: string;
+  softBreaks?: boolean;
+  enableWikiLinks?: boolean;
+  wikiLinkRoot?: string;
+  resolveWikiLinkHref?: (target: string, label: string) => string | null | undefined;
 }
 
 let mermaidLoaderPromise: Promise<typeof import("mermaid").default> | null = null;

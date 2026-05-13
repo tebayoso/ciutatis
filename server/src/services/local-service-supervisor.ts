@@ -37,10 +37,55 @@ export function getProcessGroupStatus(
 }
 
 export function terminateLocalService(
-  _input: { pid: number; processGroupId?: number | string | null },
-  _opts?: { timeoutMs?: number; signal?: NodeJS.Signals }
+  input: { pid: number; processGroupId?: number | string | null },
+  opts?: { timeoutMs?: number; signal?: NodeJS.Signals },
 ): Promise<boolean> {
-  return Promise.resolve(false);
+  const timeoutMs = Math.max(100, opts?.timeoutMs ?? 2_000);
+  const signal = opts?.signal ?? "SIGTERM";
+  const processGroupId = Number(input.processGroupId ?? 0);
+  const target =
+    process.platform !== "win32" && Number.isInteger(processGroupId) && processGroupId > 0
+      ? -processGroupId
+      : input.pid;
+
+  function isAlive() {
+    try {
+      process.kill(input.pid, 0);
+      return true;
+    } catch (err) {
+      if (err && typeof err === "object" && "code" in err && err.code === "ESRCH") {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  async function waitForExit(deadline: number) {
+    while (Date.now() < deadline) {
+      if (!isAlive()) return true;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return !isAlive();
+  }
+
+  return (async () => {
+    try {
+      process.kill(target, signal);
+    } catch (err) {
+      if (err && typeof err === "object" && "code" in err && err.code === "ESRCH") {
+        return false;
+      }
+    }
+
+    if (await waitForExit(Date.now() + timeoutMs)) return true;
+
+    try {
+      process.kill(target, "SIGKILL");
+    } catch {
+      return !isAlive();
+    }
+    return waitForExit(Date.now() + 1_000);
+  })();
 }
 
 export interface CreateLocalServiceKeyInput {

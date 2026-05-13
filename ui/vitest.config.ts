@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: "@paperclipai/ui",
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
   },

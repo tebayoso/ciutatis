@@ -372,6 +372,27 @@ export interface PluginUiDeclaration {
   launchers?: PluginLauncherDeclaration[];
 }
 
+export type PluginApiRouteMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+export type PluginApiRouteAuthMode = "board" | "agent" | "any";
+export type PluginApiRouteCheckoutPolicy =
+  | "none"
+  | "required-for-agent-in-progress"
+  | "always-for-agent";
+
+export type PluginApiRouteCompanyResolution =
+  | { from: "query"; key: string }
+  | { from: "issue"; param: string };
+
+export interface PluginApiRouteDeclaration {
+  routeKey: string;
+  method: PluginApiRouteMethod;
+  path: string;
+  auth: PluginApiRouteAuthMode;
+  capability: PluginCapability;
+  checkoutPolicy?: PluginApiRouteCheckoutPolicy;
+  companyResolution?: PluginApiRouteCompanyResolution;
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -422,12 +443,16 @@ export interface CiutatisPluginManifestV1 {
   jobs?: PluginJobDeclaration[];
   /** Webhook endpoints this plugin declares. Requires `webhooks.receive` capability. */
   webhooks?: PluginWebhookDeclaration[];
+  /** Scoped JSON API routes served under `/api/plugins/:pluginId/api/*`. */
+  apiRoutes?: PluginApiRouteDeclaration[];
   /** Agent tools this plugin contributes. Requires `agent.tools.register` capability. */
   tools?: PluginToolDeclaration[];
   /** Suggested company-scoped agents this plugin can provision and resolve by stable key. */
   agents?: PluginManagedAgentDeclaration[];
   /** Suggested company-scoped projects this plugin can provision and resolve by stable key. */
   projects?: PluginManagedProjectDeclaration[];
+  /** Company-scoped local folders this plugin asks the operator to configure. */
+  localFolders?: PluginLocalFolderDeclaration[];
   /**
    * Legacy top-level launcher declarations.
    * Prefer `ui.launchers` for new manifests.

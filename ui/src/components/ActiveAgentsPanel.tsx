@@ -20,18 +20,44 @@ function isRunActive(run: LiveRunForIssue): boolean {
 
 interface ActiveAgentsPanelProps {
   companyId: string;
+  title?: string;
+  minRunCount?: number;
+  fetchLimit?: number;
+  cardLimit?: number;
+  gridClassName?: string;
+  cardClassName?: string;
+  emptyMessage?: string;
+  queryScope?: string;
+  showMoreLink?: boolean;
 }
 
-export function ActiveAgentsPanel({ companyId }: ActiveAgentsPanelProps) {
+export function ActiveAgentsPanel({
+  companyId,
+  title = "Agents",
+  minRunCount = MIN_DASHBOARD_RUNS,
+  fetchLimit,
+  cardLimit,
+  gridClassName,
+  cardClassName,
+  emptyMessage = "No recent agent runs.",
+  queryScope = "dashboard",
+  showMoreLink = true,
+}: ActiveAgentsPanelProps) {
   const { data: liveRuns } = useQuery({
-    queryKey: [...queryKeys.liveRuns(companyId), "dashboard"],
-    queryFn: () => heartbeatsApi.liveRunsForCompany(companyId, MIN_DASHBOARD_RUNS),
+    queryKey: [...queryKeys.liveRuns(companyId), queryScope, fetchLimit ?? minRunCount],
+    queryFn: () => heartbeatsApi.liveRunsForCompany(companyId, {
+      minCount: minRunCount,
+      limit: fetchLimit,
+    }),
   });
 
-  const runs = liveRuns ?? [];
+  const runs = (liveRuns ?? []).slice(0, cardLimit ?? minRunCount);
   const { data: issues } = useQuery({
-    queryKey: queryKeys.issues.list(companyId),
-    queryFn: () => issuesApi.list(companyId),
+    queryKey: ["active-agents-panel", companyId, "issues", runs.map((run) => run.issueId).filter(Boolean)],
+    queryFn: async () => {
+      const ids = [...new Set(runs.map((run) => run.issueId).filter((id): id is string => Boolean(id)))];
+      return Promise.all(ids.map((id) => issuesApi.get(id)));
+    },
     enabled: runs.length > 0,
   });
 
@@ -52,25 +78,35 @@ export function ActiveAgentsPanel({ companyId }: ActiveAgentsPanelProps) {
   return (
     <div>
       <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Agents
+        {title}
       </h3>
       {runs.length === 0 ? (
         <div className="rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">No recent agent runs.</p>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-          {runs.map((run) => (
-            <AgentRunCard
-              key={run.id}
-              run={run}
-              issue={run.issueId ? issueById.get(run.issueId) : undefined}
-              transcript={transcriptByRun.get(run.id) ?? []}
-              hasOutput={hasOutputForRun(run.id)}
-              isActive={isRunActive(run)}
-            />
-          ))}
-        </div>
+        <>
+          <div className={cn("grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4", gridClassName)}>
+            {runs.map((run) => (
+              <AgentRunCard
+                key={run.id}
+                run={run}
+                issue={run.issueId ? issueById.get(run.issueId) : undefined}
+                transcript={transcriptByRun.get(run.id) ?? []}
+                hasOutput={hasOutputForRun(run.id)}
+                isActive={isRunActive(run)}
+                className={cardClassName}
+              />
+            ))}
+          </div>
+          {showMoreLink && (liveRuns?.length ?? 0) > runs.length ? (
+            <div className="mt-3">
+              <Link to="/dashboard/live" className="text-sm text-muted-foreground hover:text-foreground">
+                {liveRuns!.length - runs.length} more active/recent runs
+              </Link>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );
@@ -82,12 +118,14 @@ function AgentRunCard({
   transcript,
   hasOutput,
   isActive,
+  className,
 }: {
   run: LiveRunForIssue;
   issue?: Issue;
   transcript: TranscriptEntry[];
   hasOutput: boolean;
   isActive: boolean;
+  className?: string;
 }) {
   return (
     <div className={cn(
@@ -95,6 +133,7 @@ function AgentRunCard({
       isActive
         ? "border-cyan-500/25 bg-cyan-500/[0.04] shadow-[0_16px_40px_rgba(6,182,212,0.08)]"
         : "border-border bg-background/70",
+      className,
     )}>
       <div className="border-b border-border/60 px-3 py-3">
         <div className="flex items-start justify-between gap-2">

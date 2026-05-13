@@ -605,6 +605,7 @@ export async function startSandboxCallbackBridgeWorker(input: {
   let settled = false;
   let stopDeadline = Number.POSITIVE_INFINITY;
   let settleResolve: (() => void) | null = null;
+  const abortedRequestIds = new Set<string>();
   const settledPromise = new Promise<void>((resolve) => {
     settleResolve = resolve;
   });
@@ -612,6 +613,22 @@ export async function startSandboxCallbackBridgeWorker(input: {
     ((request: SandboxCallbackBridgeRequest) => authorizeSandboxCallbackBridgeRequestWithRoutes(request));
   const buildWorkerFailureMessage = (error: unknown) =>
     `Sandbox callback bridge worker failed: ${error instanceof Error ? error.message : String(error)}`;
+  const stoppedBeforeHandledMessage = "Bridge worker stopped before request could be handled.";
+
+  const writeStoppedResponse = async (
+    request: SandboxCallbackBridgeRequest,
+    requestPath: string,
+    responsePath: string,
+  ) => {
+    abortedRequestIds.add(request.id);
+    await writeBridgeResponse(input.client, requestPath, responsePath, {
+      id: request.id,
+      status: 503,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ error: stoppedBeforeHandledMessage }),
+      completedAt: new Date().toISOString(),
+    });
+  };
 
   const processRequestFile = async (fileName: string) => {
     const requestPath = path.posix.join(directories.requestsDir, fileName);
@@ -652,6 +669,13 @@ export async function startSandboxCallbackBridgeWorker(input: {
       if (Buffer.byteLength(responseBody, "utf8") > maxBodyBytes) {
         throw new Error(`Bridge response body exceeded the configured size limit of ${maxBodyBytes} bytes.`);
       }
+      if (abortedRequestIds.has(request.id)) {
+        return;
+      }
+      if (stopping && Date.now() >= stopDeadline) {
+        await writeStoppedResponse(request, requestPath, responsePath);
+        return;
+      }
       await writeBridgeResponse(input.client, requestPath, responsePath, {
         id: request.id,
         status: result.status,
@@ -663,6 +687,13 @@ export async function startSandboxCallbackBridgeWorker(input: {
       console.warn(
         `[paperclip] sandbox callback bridge handler failed for ${request.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
+      if (abortedRequestIds.has(request.id)) {
+        return;
+      }
+      if (stopping && Date.now() >= stopDeadline) {
+        await writeStoppedResponse(request, requestPath, responsePath);
+        return;
+      }
       await writeBridgeResponse(input.client, requestPath, responsePath, {
         id: request.id,
         status: 502,
@@ -693,6 +724,7 @@ export async function startSandboxCallbackBridgeWorker(input: {
           body: JSON.stringify({ error: message }),
           completedAt: new Date().toISOString(),
         });
+        abortedRequestIds.add(typeof parsed.id === "string" && parsed.id.length > 0 ? parsed.id : requestId);
       } catch (error) {
         console.warn(
           `[paperclip] sandbox callback bridge failed to abort pending request ${requestId}: ${error instanceof Error ? error.message : String(error)}`,
@@ -758,7 +790,7 @@ export async function startSandboxCallbackBridgeWorker(input: {
           new Promise<void>((resolve) => setTimeout(resolve, drainMs)),
         ]);
       }
-      await failPendingRequests("Bridge worker stopped before request could be handled.");
+      await failPendingRequests(stoppedBeforeHandledMessage);
     },
   };
 }

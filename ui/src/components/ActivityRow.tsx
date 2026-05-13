@@ -73,7 +73,7 @@ function entityLink(entityType: string, entityId: string, name?: string | null):
     case "issue": return `/issues/${name ?? entityId}`;
     case "agent": return `/agents/${entityId}`;
     case "project": return `/projects/${deriveProjectUrlKey(name, entityId)}`;
-    case "goal": return `/goals/${entityId}`;
+    case "goal": return `/objectives/${entityId}`;
     case "approval": return `/approvals/${entityId}`;
     default: return null;
   }

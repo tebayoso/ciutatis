@@ -65,6 +65,14 @@ import {
   agentConfigurationDoc as openclawGatewayAgentConfigurationDoc,
   models as openclawGatewayModels,
 } from "@paperclipai/adapter-openclaw-gateway";
+import {
+  execute as cloudflareWorkersAiExecute,
+  testEnvironment as cloudflareWorkersAiTestEnvironment,
+} from "@ciutatis/adapter-cloudflare-workers-ai/server";
+import {
+  agentConfigurationDoc as cloudflareWorkersAiAgentConfigurationDoc,
+  models as cloudflareWorkersAiModels,
+} from "@ciutatis/adapter-cloudflare-workers-ai";
 import { listCodexModels, refreshCodexModels } from "./codex-models.js";
 import { listCursorModels } from "./cursor-models.js";
 import {
@@ -116,6 +124,11 @@ function buildNpmRuntimeCommandSpec(
 function buildCursorRuntimeCommandSpec(config: Record<string, unknown>): AdapterRuntimeCommandSpec {
   const command = typeof config.command === "string" && config.command.trim() ? config.command.trim() : "agent";
   return { command, detectCommand: command, installCommand: null };
+}
+
+async function listOpenCodeModelsWithFallback(): Promise<AdapterModel[]> {
+  const discovered = await listOpenCodeModels();
+  return discovered.length > 0 ? dedupeAdapterModels(discovered) : openCodeModels;
 }
 
 const claudeLocalAdapter: ServerAdapterModule = {
@@ -207,13 +220,53 @@ const openCodeLocalAdapter: ServerAdapterModule = {
   models: openCodeModels,
   modelProfiles: openCodeModelProfiles,
   sessionManagement: getAdapterSessionManagement("opencode_local") ?? undefined,
-  listModels: listOpenCodeModels,
+  listModels: listOpenCodeModelsWithFallback,
   supportsLocalAgentJwt: true,
   supportsInstructionsBundle: true,
   instructionsPathKey: "instructionsFilePath",
   requiresMaterializedRuntimeSkills: true,
   getRuntimeCommandSpec: (config) => buildNpmRuntimeCommandSpec(config, "opencode", "opencode-ai"),
   agentConfigurationDoc: openCodeAgentConfigurationDoc,
+};
+
+const acpxLocalAdapter: ServerAdapterModule = {
+  type: "acpx_local",
+  execute: async () => {
+    throw new Error("The ACPX local adapter is not available in this Ciutatis build.");
+  },
+  testEnvironment: async () => ({
+    adapterType: "acpx_local",
+    status: "fail",
+    checks: [{
+      code: "acpx_local_unavailable",
+      level: "error",
+      message: "The ACPX local adapter is not available in this Ciutatis build.",
+    }],
+    testedAt: new Date().toISOString(),
+  }),
+  models: dedupeAdapterModels([
+    ...prefixAdapterModelLabels(claudeModels, "Claude"),
+    ...prefixAdapterModelLabels(codexModels, "Codex"),
+  ]),
+  listModels: async () => acpxLocalAdapter.models ?? [],
+  supportsLocalAgentJwt: true,
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: true,
+  agentConfigurationDoc: "ACPX local adapter compatibility entry.",
+};
+
+const cloudflareWorkersAiAdapter: ServerAdapterModule = {
+  type: "cloudflare_workers_ai",
+  execute: cloudflareWorkersAiExecute,
+  testEnvironment: cloudflareWorkersAiTestEnvironment,
+  models: cloudflareWorkersAiModels,
+  listModels: async () => cloudflareWorkersAiModels,
+  supportsLocalAgentJwt: false,
+  supportsInstructionsBundle: true,
+  instructionsPathKey: "instructionsFilePath",
+  requiresMaterializedRuntimeSkills: false,
+  agentConfigurationDoc: cloudflareWorkersAiAgentConfigurationDoc,
 };
 
 const piLocalAdapter: ServerAdapterModule = {
@@ -234,14 +287,17 @@ const piLocalAdapter: ServerAdapterModule = {
 };
 
 const adaptersByType = new Map<string, ServerAdapterModule>();
+const pausedAdapterOverrides = new Set<string>();
 for (const adapter of [
   claudeLocalAdapter,
   codexLocalAdapter,
   cursorLocalAdapter,
   geminiLocalAdapter,
+  acpxLocalAdapter,
   openCodeLocalAdapter,
   piLocalAdapter,
   openclawGatewayAdapter,
+  cloudflareWorkersAiAdapter,
   processAdapter,
   httpAdapter,
 ]) {
@@ -257,6 +313,7 @@ export function findServerAdapter(type: string): ServerAdapterModule | null {
 }
 
 export function findActiveServerAdapter(type: string): ServerAdapterModule | null {
+  if (pausedAdapterOverrides.has(type)) return null;
   return findServerAdapter(type);
 }
 
@@ -306,4 +363,17 @@ export function registerServerAdapter(adapter: ServerAdapterModule): void {
 export function unregisterServerAdapter(type: string): void {
   if (type === processAdapter.type || type === httpAdapter.type) return;
   adaptersByType.delete(type);
+  pausedAdapterOverrides.delete(type);
+}
+
+export function setOverridePaused(type: string, paused: boolean): void {
+  if (paused) {
+    pausedAdapterOverrides.add(type);
+  } else {
+    pausedAdapterOverrides.delete(type);
+  }
+}
+
+export function isOverridePaused(type: string): boolean {
+  return pausedAdapterOverrides.has(type);
 }

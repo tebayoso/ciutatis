@@ -162,34 +162,34 @@ export function App() {
       {/* Background accents (subtle) */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(196,169,98,0.03),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0)_0%,#fdfcfb_100%)] pointer-events-none" />
 
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-8 lg:px-12 border-b border-[var(--border)]">
+      <header className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-12 lg:py-8 border-b border-[var(--border)]">
         <div className="flex items-center gap-3 text-sm uppercase tracking-[0.2em] text-[var(--ink)] font-serif">
           <Landmark className="h-5 w-5 text-[var(--accent)]" />
           <span className="font-semibold">Ciutatis</span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-6">
           <button onClick={toggleLocale} className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-strong)] hover:text-[var(--ink)] transition-colors">
             {t.nav.langSwitch}
           </button>
           <a className="text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--ink)] transition-colors hidden sm:block" href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
             {t.nav.github}
           </a>
-          <a className="hero-button" href={`${adminShellUrl}/auth`}>
+          <a className="hero-button min-w-0 flex-1 sm:flex-none" href={`${adminShellUrl}/auth`}>
             {t.nav.admin}
             <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-col px-6 pb-24 pt-16 lg:px-12 lg:pb-32 lg:pt-24">
+      <main className="mx-auto flex w-full max-w-7xl flex-col px-4 pb-20 pt-10 sm:px-6 lg:px-12 lg:pb-32 lg:pt-24">
         {/* HERO */}
-        <section className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-10">
+        <section className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-7 sm:space-y-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-strong)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-strong)] bg-white/50 backdrop-blur-md">
             <Scale className="h-3.5 w-3.5 text-[var(--accent)]" />
             {t.hero.eyebrow}
           </div>
 
-          <h1 className="text-5xl font-normal leading-[1.05] tracking-tight text-[var(--ink)] md:text-7xl font-serif">
+          <h1 className="text-4xl font-normal leading-tight text-[var(--ink)] sm:text-5xl md:text-7xl font-serif">
             {t.hero.title}
           </h1>
           
@@ -197,7 +197,7 @@ export function App() {
             {t.hero.subtitle}
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          <div className="flex w-full flex-col items-stretch justify-center gap-3 pt-4 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <a className="hero-button-solid" href={`${adminShellUrl}/auth`}>
               {t.hero.ctaPrimary}
               <ArrowRight className="h-4 w-4" />
@@ -209,7 +209,7 @@ export function App() {
         </section>
 
         {/* DIVIDER */}
-        <div className="w-full max-w-3xl mx-auto h-[1px] bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent my-24 lg:my-32" />
+        <div className="w-full max-w-3xl mx-auto h-[1px] bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent my-16 lg:my-32" />
 
         {/* ARCHITECTURE / HOW IT WORKS */}
         <section id="architecture" className="space-y-16">
@@ -240,7 +240,7 @@ export function App() {
 
         {/* PRINCIPLES */}
         <section className="mt-24 lg:mt-32 grid gap-12 lg:grid-cols-[1fr_2fr] items-start border-t border-[var(--border)] pt-16">
-          <div className="sticky top-12">
+          <div className="lg:sticky lg:top-12">
             <h2 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">
               {t.principles.eyebrow}
             </h2>

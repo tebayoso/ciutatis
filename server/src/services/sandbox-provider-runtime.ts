@@ -102,7 +102,6 @@ function assertProviderConfig<T extends SandboxEnvironmentConfig>(
 
 function buildFakeSandboxProbe(config: FakeSandboxEnvironmentConfig): EnvironmentProbeResult {
   return {
-    success: true,
     ok: true,
     driver: "sandbox",
     summary: `Fake sandbox provider is ready for image ${config.image}.`,

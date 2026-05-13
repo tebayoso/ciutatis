@@ -110,6 +110,11 @@ export const accessApi = {
   listJoinRequests: (companyId: string, status: "pending_approval" | "approved" | "rejected" = "pending_approval") =>
     api.get<JoinRequest[]>(`/companies/${companyId}/join-requests?status=${status}`),
 
+  listUserDirectory: (companyId: string) =>
+    api.get<{ users: Array<{ id: string; name: string | null; email: string | null }> }>(
+      `/companies/${companyId}/users`,
+    ),
+
   approveJoinRequest: (companyId: string, requestId: string) =>
     api.post<JoinRequest>(`/companies/${companyId}/join-requests/${requestId}/approve`, {}),
 

@@ -1265,6 +1265,9 @@ function resolvePageKey(pathname: string, locale: Locale): PageKey | null {
   if (pathname === "/" || pathname === "/en" || pathname === "/es") {
     return "home";
   }
+  if (pathname === "/contact" || pathname === "/en/contact" || pathname === "/es/contacto") {
+    return "home";
+  }
   if (pathname === "/platform" || pathname === "/en/platform" || pathname === "/es/plataforma" || pathname === "/es/procesos") {
     return "platform";
   }
@@ -1282,6 +1285,10 @@ function resolvePageKey(pathname: string, locale: Locale): PageKey | null {
   const match = Object.entries(PAGE_SLUGS[locale]).find(([, value]) => value === slug);
   const aliasMatch = PAGE_SLUG_ALIASES[locale]?.[slug];
   return (match?.[0] as PageKey | undefined) ?? aliasMatch ?? null;
+}
+
+function isContactPath(pathname: string) {
+  return pathname === "/contact" || pathname === "/en/contact" || pathname === "/es/contacto";
 }
 
 function pathFor(locale: Locale, page: PageKey): string {
@@ -1383,7 +1390,7 @@ function SectionShell({
 }
 
 function ContentShell({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10">{children}</div>;
+  return <div className="mx-auto w-full max-w-7xl px-3 sm:px-8 lg:px-10">{children}</div>;
 }
 
 function PublicCard({ children, className }: { children: ReactNode; className?: string }) {
@@ -1483,9 +1490,9 @@ function PublicHeader({
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/86 backdrop-blur-xl">
       <ContentShell>
         <div className="py-4">
-          <div className="public-panel public-shadow rounded-[26px] px-4 py-4 sm:px-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <Link className="group flex items-center gap-3 text-foreground focus-visible:rounded-[14px]" to={pathFor(locale, "home")}>
+          <div className="public-panel public-shadow rounded-[18px] px-3 py-3 sm:px-5 sm:py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+              <Link className="group flex min-w-0 items-center gap-3 text-foreground focus-visible:rounded-[14px]" to={pathFor(locale, "home")}>
                 <div className="flex size-11 items-center justify-center rounded-[14px] border border-border bg-background/90 text-primary transition-colors group-hover:border-primary/70">
                   <Landmark className="size-4" aria-hidden="true" />
                 </div>
@@ -1514,7 +1521,7 @@ function PublicHeader({
                 ))}
               </nav>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none sm:gap-3">
                 <a
                   className="hidden text-sm font-medium text-primary transition-colors hover:text-foreground focus-visible:rounded-[10px] lg:inline-flex"
                   href={portalPathFor(locale)}
@@ -1538,7 +1545,7 @@ function PublicHeader({
                 >
                   {site.nav.github}
                 </a>
-                <Button asChild className="rounded-[10px] px-5 shadow-none">
+                <Button asChild className="rounded-[10px] px-3 shadow-none sm:px-5">
                   <Link to="/auth">{site.nav.signIn}</Link>
                 </Button>
               </div>
@@ -1583,7 +1590,7 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
   return (
     <SectionShell className="border-b-0 pt-8 sm:pt-10 lg:pt-14" id="public-hero">
       <ContentShell>
-        <div className="public-panel public-shadow public-ornament relative overflow-hidden rounded-[32px] px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+        <div className="public-panel public-shadow public-ornament relative overflow-hidden rounded-[20px] px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
           <div aria-hidden="true" className="absolute inset-0">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--accent)_24%,transparent),transparent_36%),radial-gradient(circle_at_bottom_left,color-mix(in_oklab,var(--primary)_16%,transparent),transparent_34%)]" />
             <div className="absolute -right-10 top-0 hidden h-full w-[58%] overflow-hidden xl:block">
@@ -1604,18 +1611,18 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
                 <Landmark className="size-3.5 text-primary" aria-hidden="true" />
                 {hero.eyebrow}
               </div>
-              <h1 className="public-display mt-6 max-w-5xl text-5xl leading-[0.9] text-foreground sm:text-6xl lg:text-[5.35rem]">
+              <h1 className="public-display mt-6 max-w-5xl break-words text-4xl leading-none text-foreground sm:text-6xl lg:text-[5rem]">
                 {hero.title}
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-[1.14rem] sm:leading-8">{hero.body}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild size="lg" className="rounded-full px-6">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild size="lg" className="w-full rounded-full px-6 sm:w-auto">
                   <Link to={pathFor(locale, "platform")}>
                     {site.home.primaryCta}
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="rounded-full border-border bg-background/88 px-6">
+                <Button asChild size="lg" variant="outline" className="w-full rounded-full border-border bg-background/88 px-6 sm:w-auto">
                   <Link to={portalPathFor(locale)}>{site.home.secondaryCta}</Link>
                 </Button>
               </div>
@@ -1632,7 +1639,7 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
             </div>
 
             <div className="relative xl:pl-8">
-              <div className="public-panel public-shadow relative overflow-hidden rounded-[26px] border border-white/60 bg-background/74 p-5 backdrop-blur-xl sm:p-6">
+              <div className="public-panel public-shadow relative overflow-hidden rounded-[18px] border border-white/60 bg-background/74 p-4 backdrop-blur-xl sm:p-6">
                 <div aria-hidden="true" className="absolute inset-0">
                   <div className="absolute inset-x-0 top-0 h-32 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--accent)_16%,white_84%),transparent)]" />
                   <div className="absolute right-0 top-0 h-full w-full xl:w-[78%]">
@@ -1647,7 +1654,7 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
 
                 <div className="relative">
                   <SectionEyebrow>{site.home.board.eyebrow}</SectionEyebrow>
-                  <h2 className="public-display mt-4 max-w-2xl text-4xl leading-[0.96] text-foreground sm:text-5xl">
+                  <h2 className="public-display mt-4 max-w-2xl break-words text-3xl leading-tight text-foreground sm:text-5xl">
                     {site.home.board.title}
                   </h2>
 
@@ -2136,6 +2143,7 @@ export function PublicSite() {
   const location = useLocation();
   const locale = useMemo(() => resolveLocale(location.pathname), [location.pathname]);
   const currentPage = useMemo(() => resolvePageKey(location.pathname, locale), [locale, location.pathname]);
+  const contactRoute = useMemo(() => isContactPath(location.pathname), [location.pathname]);
   const site = SITE[locale];
   const page = currentPage ? site.pages[currentPage] : null;
   const homeSections = useMemo(
@@ -2255,6 +2263,14 @@ export function PublicSite() {
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, [currentPage, homeSections]);
+
+  useEffect(() => {
+    if (!contactRoute || currentPage !== "home") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("public-contact")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [contactRoute, currentPage]);
 
   return (
     <div className="public-site h-[100dvh] w-full overflow-y-auto bg-background text-foreground" data-locale={locale}>

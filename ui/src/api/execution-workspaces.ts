@@ -1,5 +1,13 @@
-import type { ExecutionWorkspace } from "@paperclipai/shared";
+import type { ExecutionWorkspace, WorkspaceOperation } from "@paperclipai/shared";
 import { api } from "./client";
+
+export type WorkspaceRuntimeControlAction = "start" | "stop" | "restart" | "run";
+
+export interface WorkspaceRuntimeControlTarget {
+  workspaceCommandId?: string | null;
+  runtimeServiceId?: string | null;
+  serviceIndex?: number | null;
+}
 
 export const executionWorkspacesApi = {
   list: (
@@ -22,5 +30,18 @@ export const executionWorkspacesApi = {
     return api.get<ExecutionWorkspace[]>(`/companies/${companyId}/execution-workspaces${qs ? `?${qs}` : ""}`);
   },
   get: (id: string) => api.get<ExecutionWorkspace>(`/execution-workspaces/${id}`),
+  closeReadiness: (id: string) =>
+    api.get<Record<string, unknown>>(`/execution-workspaces/${id}/close-readiness`),
+  workspaceOperations: (id: string) =>
+    api.get<WorkspaceOperation[]>(`/execution-workspaces/${id}/workspace-operations`),
+  controlRuntimeServices: (
+    id: string,
+    action: WorkspaceRuntimeControlAction,
+    target: WorkspaceRuntimeControlTarget = {},
+  ) =>
+    api.post<{ workspace: ExecutionWorkspace; operation: WorkspaceOperation }>(
+      `/execution-workspaces/${id}/runtime-services/${action}`,
+      target,
+    ),
   update: (id: string, data: Record<string, unknown>) => api.patch<ExecutionWorkspace>(`/execution-workspaces/${id}`, data),
 };

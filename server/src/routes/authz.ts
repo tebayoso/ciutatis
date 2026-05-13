@@ -2,6 +2,7 @@
 // Company member roles service
 
 import type { Request } from "express";
+import { forbidden, unauthorized } from "../errors.js";
 
 export type ActorType = "system" | "agent" | "user" | "plugin";
 
@@ -12,33 +13,59 @@ export interface ActorInfo {
   runId?: string | null;
 }
 
-export function assertAuthenticated(_req?: Request): void {
-  // Ciutatis: authentication handled at middleware layer
-  // Stub: assume authenticated for now
-  return;
+export function assertAuthenticated(req?: Request): void {
+  if (!req?.actor || req.actor.type === "none") {
+    throw unauthorized();
+  }
 }
 
 export function assertInstanceAdmin(_req?: Request): void {
-  // Ciutatis: instance admin check handled at middleware layer
-  // Stub: assume authorized for now
-  return;
+  assertAuthenticated(_req);
+  if (_req?.actor.type === "board" && (_req.actor.source === "local_implicit" || _req.actor.isInstanceAdmin)) {
+    return;
+  }
+  throw forbidden();
 }
 
 export function assertBoard(req: Request): void {
-  // Ciutatis: board access is full-control operator context
-  // Stub: assume authorized for now
-  return;
+  assertAuthenticated(req);
+  if (req.actor.type !== "board") {
+    throw forbidden("Board access required");
+  }
 }
 
 export function assertCompanyAccess(req: Request, companyId: string): void {
-  // Ciutatis: company-scoped access check
-  // Stub: assume authorized for now
-  return;
+  assertAuthenticated(req);
+  if (req.actor.type === "board" && req.actor.source === "local_implicit") return;
+  if (req.actor.isInstanceAdmin) return;
+  if (req.actor.type === "board") {
+    const allowed = new Set(req.actor.companyIds ?? []);
+    if (allowed.has(companyId)) return;
+  }
+  if (req.actor.type === "agent") {
+    if (req.actor.companyId === companyId) return;
+    throw forbidden("Agent key cannot access another company");
+  }
+  throw forbidden();
 }
 
 export function getActorInfo(req: Request): ActorInfo {
-  // Return mock actor info for activity logging
-  // Ciutatis: board access is treated as system-level operator context
+  if (req.actor?.type === "agent" && req.actor.agentId) {
+    return {
+      actorType: "agent",
+      actorId: req.actor.agentId,
+      agentId: req.actor.agentId,
+      runId: req.actor.runId ?? null,
+    };
+  }
+  if (req.actor?.type === "board" && req.actor.userId) {
+    return {
+      actorType: "user",
+      actorId: req.actor.userId,
+      agentId: null,
+      runId: req.actor.runId ?? null,
+    };
+  }
   return {
     actorType: "system",
     actorId: "board",
@@ -46,8 +73,14 @@ export function getActorInfo(req: Request): ActorInfo {
   };
 }
 
-export function assertBoardOrgAccess(_req: Request, _orgId: string): void {
-  // Ciutatis: board access is full-control operator context
-  // Stub: assume authorized for now
-  return;
+export function assertBoardOrgAccess(req: Request, orgId: string): void {
+  assertBoard(req);
+  if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) return;
+  if (orgId !== "instance") {
+    assertCompanyAccess(req, orgId);
+    return;
+  }
+  if ((req.actor.companyIds ?? []).length > 0) return;
+  if ((req.actor.memberships ?? []).some((membership) => membership.status === "active")) return;
+  throw forbidden();
 }

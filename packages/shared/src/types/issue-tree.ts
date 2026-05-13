@@ -4,11 +4,12 @@ export type IssueTreeControlMode = "pause" | "resume" | "cancel" | "restore";
 
 export type IssueTreeHoldStatus = "active" | "released" | "superseded";
 
-export type IssueTreeHoldReleasePolicyStrategy = "manual" | "auto_on_ready";
+export type IssueTreeHoldReleasePolicyStrategy = "manual" | "auto_on_ready" | "after_active_runs_finish";
 
 export interface IssueTreeHoldReleasePolicy {
   strategy: IssueTreeHoldReleasePolicyStrategy;
   readyAfterMinutes?: number | null;
+  note?: string | null;
 }
 
 export interface IssueTreePreviewTotals {

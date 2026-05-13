@@ -6,6 +6,9 @@ import type {
   IssueComment,
   IssueDocument,
   IssueLabel,
+  IssueRetryNowResponse,
+  IssueTreeControlPreview,
+  IssueTreeHold,
   IssueWorkProduct,
   UpsertIssueDocument,
 } from "@paperclipai/shared";
@@ -23,6 +26,15 @@ export const issuesApi = {
       unreadForUserId?: string;
       labelId?: string;
       q?: string;
+      parentId?: string;
+      descendantOf?: string;
+      originKind?: string;
+      originKindPrefix?: string;
+      originId?: string;
+      participantAgentId?: string;
+      workspaceId?: string;
+      executionWorkspaceId?: string;
+      includeRoutineExecutions?: boolean;
     },
   ) => {
     const params = new URLSearchParams();
@@ -34,6 +46,17 @@ export const issuesApi = {
     if (filters?.unreadForUserId) params.set("unreadForUserId", filters.unreadForUserId);
     if (filters?.labelId) params.set("labelId", filters.labelId);
     if (filters?.q) params.set("q", filters.q);
+    if (filters?.parentId) params.set("parentId", filters.parentId);
+    if (filters?.descendantOf) params.set("descendantOf", filters.descendantOf);
+    if (filters?.originKind) params.set("originKind", filters.originKind);
+    if (filters?.originKindPrefix) params.set("originKindPrefix", filters.originKindPrefix);
+    if (filters?.originId) params.set("originId", filters.originId);
+    if (filters?.participantAgentId) params.set("participantAgentId", filters.participantAgentId);
+    if (filters?.workspaceId) params.set("workspaceId", filters.workspaceId);
+    if (filters?.executionWorkspaceId) params.set("executionWorkspaceId", filters.executionWorkspaceId);
+    if (filters?.includeRoutineExecutions !== undefined) {
+      params.set("includeRoutineExecutions", String(filters.includeRoutineExecutions));
+    }
     const qs = params.toString();
     return api.get<Issue[]>(`/companies/${companyId}/issues${qs ? `?${qs}` : ""}`);
   },
@@ -97,4 +120,40 @@ export const issuesApi = {
   updateWorkProduct: (id: string, data: Record<string, unknown>) =>
     api.patch<IssueWorkProduct>(`/work-products/${id}`, data),
   deleteWorkProduct: (id: string) => api.delete<IssueWorkProduct>(`/work-products/${id}`),
+  retryScheduledRetryNow: (id: string) =>
+    api.post<IssueRetryNowResponse>(`/issues/${id}/scheduled-retry/retry-now`, {}),
+  previewTreeControl: (
+    id: string,
+    data: { mode: string; releasePolicy?: Record<string, unknown> | null },
+  ) => api.post<IssueTreeControlPreview>(`/issues/${id}/tree-control/preview`, data),
+  getTreeControlState: (id: string) =>
+    api.get<{ activePauseHold: {
+      holdId: string;
+      rootIssueId: string;
+      issueId: string;
+      isRoot: boolean;
+      mode: "pause";
+      reason: string | null;
+      releasePolicy: IssueTreeHold["releasePolicy"];
+    } | null }>(`/issues/${id}/tree-control/state`),
+  listTreeHolds: (id: string, filters?: { mode?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.mode) params.set("mode", filters.mode);
+    const qs = params.toString();
+    return api.get<IssueTreeHold[]>(`/issues/${id}/tree-holds${qs ? `?${qs}` : ""}`);
+  },
+  createTreeHold: (
+    id: string,
+    data: {
+      mode: string;
+      reason?: string | null;
+      releasePolicy?: Record<string, unknown> | null;
+      metadata?: Record<string, unknown> | null;
+    },
+  ) => api.post<{ hold: IssueTreeHold; preview?: IssueTreeControlPreview }>(`/issues/${id}/tree-holds`, data),
+  releaseTreeHold: (
+    id: string,
+    holdId: string,
+    data: { reason?: string | null; metadata?: Record<string, unknown> | null },
+  ) => api.post<IssueTreeHold>(`/issues/${id}/tree-holds/${holdId}/release`, data),
 };

@@ -1002,9 +1002,12 @@ function readNonEmptyString(value: unknown): string | null {
 }
 
 function readModelProfileKey(value: unknown): ModelProfileKey | null {
-  return MODEL_PROFILE_KEYS.includes(value as ModelProfileKey)
-    ? (value as ModelProfileKey)
-    : null;
+  const key = readNonEmptyString(value);
+  if (!key) return null;
+  if (MODEL_PROFILE_KEYS.length > 0 && !MODEL_PROFILE_KEYS.includes(key as ModelProfileKey)) {
+    return null;
+  }
+  return /^[A-Za-z0-9_-]+$/.test(key) ? (key as ModelProfileKey) : null;
 }
 
 function readContextModelProfile(

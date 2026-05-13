@@ -29,20 +29,100 @@ export type CompanyPortabilityIssueRoutineTriggerManifestEntry = Record<string, 
 export type CompanyPortabilityIssueManifestEntry = Record<string, unknown>;
 export type CompanyPortabilitySidebarOrder = Record<string, unknown>;
 export type CompanySkill = Record<string, unknown>;
-export type RoutineVariable = Record<string, unknown>;
+export type RoutineVariable = {
+  name: string;
+  label?: string | null;
+  type?: string;
+  defaultValue?: unknown;
+  required?: boolean;
+  options?: unknown[];
+};
+export interface RoutineListItem {
+  id: string;
+  companyId: string;
+  projectId: string | null;
+  goalId: string | null;
+  parentIssueId: string | null;
+  title: string;
+  description: string | null;
+  assigneeAgentId: string | null;
+  priority: string;
+  status: string;
+  concurrencyPolicy: string;
+  catchUpPolicy: string;
+  variables: Array<{ name: string; [key: string]: unknown }>;
+  latestRevisionId: string | null;
+  latestRevisionNumber: number | null;
+  createdByAgentId: string | null;
+  createdByUserId: string | null;
+  updatedByAgentId: string | null;
+  updatedByUserId: string | null;
+  lastTriggeredAt: Date | string | null;
+  lastEnqueuedAt: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  triggers: unknown[];
+  lastRun: unknown | null;
+  activeIssue: unknown | null;
+}
+export type Routine = Omit<RoutineListItem, "triggers" | "lastRun" | "activeIssue"> & {
+  triggers?: unknown[];
+  lastRun?: unknown | null;
+  activeIssue?: unknown | null;
+};
+export interface RoutineRevisionSnapshotTriggerV1 {
+  id?: string;
+  kind?: string;
+  enabled?: boolean;
+  [key: string]: unknown;
+}
+export interface RoutineRevisionSnapshotV1 {
+  version: 1;
+  routine: Partial<Routine>;
+  triggers: RoutineRevisionSnapshotTriggerV1[];
+}
+export interface RoutineRevision {
+  id: string;
+  companyId: string;
+  routineId: string;
+  revisionNumber: number;
+  title: string;
+  description: string | null;
+  snapshot: RoutineRevisionSnapshotV1 | Record<string, unknown>;
+  changeSummary: string | null;
+  restoredFromRevisionId: string | null;
+  createdByAgentId: string | null;
+  createdByUserId: string | null;
+  createdByRunId: string | null;
+  createdAt: Date | string;
+}
 
 export const ROUTINE_CATCH_UP_POLICIES: string[] = [];
 export const ROUTINE_CONCURRENCY_POLICIES: string[] = [];
 export const ROUTINE_STATUSES: string[] = [];
 export const ROUTINE_TRIGGER_KINDS: string[] = [];
 export const ROUTINE_TRIGGER_SIGNING_MODES: string[] = [];
+export const WORKSPACE_BRANCH_ROUTINE_VARIABLE = "workspaceBranch";
+
+export function extractRoutineVariableNames(values: Array<string | null | undefined>): string[] {
+  const names = new Set<string>();
+  const variablePattern = /\{\{\s*([a-zA-Z_][\w.-]*)\s*\}\}/g;
+  for (const value of values) {
+    if (!value) continue;
+    for (const match of value.matchAll(variablePattern)) {
+      const name = match[1];
+      if (name) names.add(name);
+    }
+  }
+  return [...names];
+}
 
 // Upstream-only environment constants (not used in Ciutatis V1)
 export const ENVIRONMENT_DRIVERS = ["local", "ssh", "sandbox", "plugin"] as const;
 export const ENVIRONMENT_LEASE_CLEANUP_STATUSES = ["success", "failed"] as const;
 export const ENVIRONMENT_LEASE_POLICIES = ["ephemeral", "reuse_by_environment", "retain_on_failure", "retain"] as const;
 export const ENVIRONMENT_LEASE_STATUSES = ["active", "pending", "ready", "error", "released", "failed", "expired", "retained"] as const;
-export const ENVIRONMENT_STATUSES = ["active", "inactive", "error"] as const;
+export const ENVIRONMENT_STATUSES = ["active", "inactive", "error", "archived"] as const;
 
 // Upstream-only types for environment system
 export type EnvironmentDriver = typeof ENVIRONMENT_DRIVERS[number];
@@ -71,11 +151,34 @@ export function isSystemIssueDocumentKey(_key?: string): boolean {
   return false;
 }
 
-// Upstream-only user profile types
-export type UserProfileDailyPoint = Record<string, unknown>;
-export type UserProfileIdentity = Record<string, unknown>;
-export type UserProfileResponse = Record<string, unknown>;
-export type UserProfileWindowStats = Record<string, unknown>;
+export type {
+  UserProfileDailyPoint,
+  UserProfileIdentity,
+  UserProfileIssueSummary,
+  UserProfileResponse,
+  UserProfileWindowStats,
+} from "./types/user-profile.js";
+export type {
+  CompanySearchHighlight,
+  CompanySearchIssueSummary,
+  CompanySearchResponse,
+  CompanySearchResult,
+  CompanySearchResultType,
+  CompanySearchScope,
+  CompanySearchSnippet,
+} from "./types/search.js";
+export {
+  COMPANY_SEARCH_SCOPES,
+} from "./types/search.js";
+export {
+  COMPANY_SEARCH_DEFAULT_LIMIT,
+  COMPANY_SEARCH_MAX_LIMIT,
+  COMPANY_SEARCH_MAX_OFFSET,
+  COMPANY_SEARCH_MAX_QUERY_LENGTH,
+  COMPANY_SEARCH_MAX_TOKENS,
+  companySearchQuerySchema,
+  type CompanySearchQuery,
+} from "./validators/search.js";
 
 // Upstream-only issue reference types
 export type IssueReferenceSourceKind = "title" | "description" | "document" | "comment";
@@ -374,6 +477,7 @@ export type {
   InstanceSchedulerHeartbeatAgent,
   LiveEvent,
   DashboardSummary,
+  DashboardRunActivityDay,
   ActivityEvent,
   SidebarBadges,
   InstitutionMembership,
@@ -423,6 +527,7 @@ export type {
   PluginJobDeclaration,
   PluginWebhookDeclaration,
   PluginToolDeclaration,
+  PluginLocalFolderDeclaration,
   PluginUiSlotDeclaration,
   PluginLauncherActionDeclaration,
   PluginLauncherRenderDeclaration,
@@ -430,6 +535,11 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
+  PluginApiRouteMethod,
+  PluginApiRouteAuthMode,
+  PluginApiRouteCheckoutPolicy,
+  PluginApiRouteCompanyResolution,
+  PluginApiRouteDeclaration,
   PluginRecord,
   PluginStateRecord,
   PluginConfig,
@@ -440,18 +550,12 @@ export type {
   PluginWebhookDeliveryRecord,
   QuotaWindow,
   ProviderQuotaResult,
+  SuccessfulRunHandoffState,
 } from "./types/index.js";
 
 import type { CiutatisPluginManifestV1 } from "./types/index.js";
 export type { CiutatisPluginManifestV1 };
 export type PaperclipPluginManifestV1 = CiutatisPluginManifestV1;
-
-export type PluginApiRouteDeclaration = {
-  path: string;
-  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  handler: string;
-  description?: string;
-};
 
 export {
   instanceExperimentalSettingsSchema,
@@ -769,6 +873,7 @@ export interface IssueRelationIssueSummary {
   priority: string | null;
   assigneeAgentId: string | null;
   assigneeUserId: string | null;
+  terminalBlockers?: IssueRelationIssueSummary[];
 }
 
 // Issue comment types  
@@ -819,6 +924,14 @@ export function extractAgentMentionIds(_text: string): string[] {
   return [];
 }
 export function normalizeIssueIdentifier(_id: string): string {
+  const value = _id.trim();
+  if (!value) return "";
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+    return "";
+  }
+  if (/^[a-z0-9]+-\d+$/i.test(value)) {
+    return value.toUpperCase();
+  }
   return "";
 }
 
@@ -828,7 +941,7 @@ export type RunLivenessState = string;
 // Environment / Sandbox types
 export type EnvironmentLeaseStatus = typeof ENVIRONMENT_LEASE_STATUSES[number];
 export type EnvironmentProbeResult = {
-  success: boolean;
+  success?: boolean;
   ok: boolean;
   summary: string;
   message?: string;
@@ -910,8 +1023,11 @@ export interface WorkspaceRuntimeServiceState {
 export type WorkspaceRuntimeServiceStateMap = Record<string, WorkspaceRuntimeDesiredState>;
 
 export interface WorkspaceServiceCommandDefinition {
+  id: string;
   name: string;
   command: string;
+  kind: "service" | "job";
+  serviceIndex?: number;
   description?: string;
   category?: string;
   rawConfig?: Record<string, unknown>;
@@ -919,10 +1035,78 @@ export interface WorkspaceServiceCommandDefinition {
   [key: string]: unknown;
 }
 
-export function listWorkspaceServiceCommandDefinitions(
-  _runtime?: Record<string, unknown> | null,
-): WorkspaceServiceCommandDefinition[] {
+function readRuntimeArray(runtime: Record<string, unknown>, keys: string[]): unknown[] {
+  for (const key of keys) {
+    const value = runtime[key];
+    if (Array.isArray(value)) return value;
+  }
   return [];
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+export function listWorkspaceServiceCommandDefinitions(
+  runtime?: Record<string, unknown> | null,
+): WorkspaceServiceCommandDefinition[] {
+  if (!runtime) return [];
+  const serviceEntries: WorkspaceServiceCommandDefinition[] = [];
+  for (const [index, entry] of readRuntimeArray(runtime, ["services", "serviceCommands"]).entries()) {
+    const record = readRecord(entry);
+    if (!record) continue;
+    const name = readString(record.name) ?? readString(record.serviceName) ?? `service-${index + 1}`;
+    const command = readString(record.command) ?? readString(record.startCommand);
+    if (!command) continue;
+    serviceEntries.push({
+      id: readString(record.id) ?? `service:${name}`,
+      name,
+      command,
+      kind: "service" as const,
+      serviceIndex: index,
+      description: readString(record.description) ?? undefined,
+      category: readString(record.category) ?? "service",
+      rawConfig: record,
+    });
+  }
+
+  const jobEntries: WorkspaceServiceCommandDefinition[] = [];
+  for (const [index, entry] of readRuntimeArray(runtime, ["jobs", "commands", "tasks"]).entries()) {
+    const record = readRecord(entry);
+    if (!record) continue;
+    const declaredKind = readString(record.kind);
+    const name = readString(record.name) ?? readString(record.id) ?? `job-${index + 1}`;
+    const command = readString(record.command) ?? readString(record.run);
+    if (!command) continue;
+    if (declaredKind === "service") {
+      serviceEntries.push({
+        id: readString(record.id) ?? `service:${name}`,
+        name,
+        command,
+        kind: "service" as const,
+        serviceIndex: serviceEntries.length,
+        description: readString(record.description) ?? undefined,
+        category: readString(record.category) ?? "service",
+        rawConfig: record,
+      });
+      continue;
+    }
+    jobEntries.push({
+      id: readString(record.id) ?? `job:${name}`,
+      name,
+      command,
+      kind: "job" as const,
+      description: readString(record.description) ?? undefined,
+      category: readString(record.category) ?? "job",
+      rawConfig: record,
+    });
+  }
+
+  return [...serviceEntries, ...jobEntries];
 }
 
 export interface ExecutionWorkspaceConfig {
@@ -1031,9 +1215,220 @@ export interface WorkspaceRealizationRequest {
 }
 
 // Execution policy types
-export type IssueBlockerAttention = unknown;
+export interface IssueBlockerAttention {
+  state: "none" | "covered" | "stalled" | "needs_attention" | string;
+  reason?: "active_child" | "active_dependency" | "stalled_review" | "attention_required" | string | null;
+  coveredBlockerCount?: number;
+  sampleBlockerIdentifier?: string | null;
+  stalledBlockerCount?: number;
+  sampleStalledBlockerIdentifier?: string | null;
+  attentionBlockerCount?: number;
+  unresolvedBlockerCount?: number;
+}
 export type IssueProductivityReview = unknown;
 export type IssueProductivityReviewTrigger = unknown;
+export type IssueWorkMode = "managed" | "manual" | "background" | string;
+
+export interface IssueScheduledRetry {
+  runId: string;
+  status: string;
+  agentId: string;
+  agentName?: string | null;
+  retryOfRunId: string | null;
+  scheduledRetryAt: string | Date | null;
+  scheduledRetryAttempt: number | null;
+  scheduledRetryReason: string | null;
+  retryExhaustedReason: string | null;
+  error: string | null;
+  errorCode: string | null;
+}
+
+export type IssueRetryNowOutcome =
+  | "promoted"
+  | "already_promoted"
+  | "no_scheduled_retry"
+  | "gate_suppressed";
+
+export interface IssueRetryNowResponse {
+  outcome: IssueRetryNowOutcome;
+  message: string;
+  scheduledRetry: IssueScheduledRetry | null;
+}
+
+export type IssueThreadInteractionStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "answered"
+  | "cancelled"
+  | "expired"
+  | "failed";
+export type IssueThreadInteractionContinuationPolicy =
+  | "none"
+  | "wake_assignee"
+  | "wake_assignee_on_accept";
+
+export interface IssueThreadInteractionActorFields {
+  createdByAgentId: string | null;
+  createdByUserId: string | null;
+  resolvedByAgentId: string | null;
+  resolvedByUserId: string | null;
+}
+
+export interface IssueThreadInteractionBase extends IssueThreadInteractionActorFields {
+  id: string;
+  companyId: string;
+  issueId: string;
+  kind: "suggest_tasks" | "ask_user_questions" | "request_confirmation";
+  title?: string | null;
+  summary?: string | null;
+  status: IssueThreadInteractionStatus;
+  continuationPolicy: IssueThreadInteractionContinuationPolicy;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  resolvedAt: Date | string | null;
+}
+
+export interface SuggestedTaskDraft {
+  clientKey: string;
+  parentClientKey?: string | null;
+  title: string;
+  description?: string | null;
+  priority?: string | null;
+  assigneeAgentId?: string | null;
+  assigneeUserId?: string | null;
+  billingCode?: string | null;
+  projectId?: string | null;
+  labels?: string[];
+  hiddenInPreview?: boolean;
+}
+
+export interface SuggestTasksResultCreatedTask {
+  clientKey: string;
+  issueId: string;
+  identifier?: string | null;
+  title?: string | null;
+  parentIssueId?: string | null;
+  [key: string]: unknown;
+}
+
+export interface SuggestTasksPayload {
+  version: 1;
+  defaultParentId?: string | null;
+  tasks: SuggestedTaskDraft[];
+}
+
+export interface SuggestTasksResult {
+  version?: number;
+  createdTasks?: SuggestTasksResultCreatedTask[];
+  skippedClientKeys?: string[];
+  selectedClientKeys?: string[];
+  rejectionReason?: string | null;
+  [key: string]: unknown;
+}
+
+export interface SuggestTasksInteraction extends IssueThreadInteractionBase {
+  kind: "suggest_tasks";
+  payload: SuggestTasksPayload;
+  result: SuggestTasksResult | null;
+}
+
+export interface AskUserQuestionsQuestionOption {
+  id: string;
+  label: string;
+  description?: string | null;
+}
+
+export interface AskUserQuestionsQuestion {
+  id: string;
+  prompt: string;
+  helpText?: string | null;
+  selectionMode: "single" | "multi";
+  required: boolean;
+  options: AskUserQuestionsQuestionOption[];
+}
+
+export interface AskUserQuestionsAnswer {
+  questionId: string;
+  optionIds: string[];
+}
+
+export interface AskUserQuestionsPayload {
+  version: 1;
+  title?: string | null;
+  submitLabel?: string | null;
+  questions: AskUserQuestionsQuestion[];
+}
+
+export interface AskUserQuestionsResult {
+  version?: number;
+  answers?: AskUserQuestionsAnswer[];
+  summaryMarkdown?: string | null;
+  cancellationReason?: string | null;
+  [key: string]: unknown;
+}
+
+export interface AskUserQuestionsInteraction extends IssueThreadInteractionBase {
+  kind: "ask_user_questions";
+  payload: AskUserQuestionsPayload;
+  result: AskUserQuestionsResult | null;
+}
+
+export interface RequestConfirmationIssueDocumentTarget {
+  type: "issue_document";
+  issueId?: string | null;
+  key: string;
+  revisionId?: string | null;
+  revisionNumber?: number | null;
+  label?: string | null;
+  href?: string | null;
+}
+
+export type RequestConfirmationTarget =
+  | RequestConfirmationIssueDocumentTarget
+  | {
+    type: string;
+    key?: string;
+    label?: string | null;
+    href?: string | null;
+    revisionNumber?: number | null;
+    [key: string]: unknown;
+  };
+
+export interface RequestConfirmationPayload {
+  version: 1;
+  prompt: string;
+  acceptLabel?: string | null;
+  rejectLabel?: string | null;
+  rejectRequiresReason?: boolean;
+  rejectReasonLabel?: string | null;
+  declineReasonPlaceholder?: string | null;
+  allowDeclineReason?: boolean;
+  detailsMarkdown?: string | null;
+  supersedeOnUserComment?: boolean;
+  target?: RequestConfirmationTarget | null;
+}
+
+export interface RequestConfirmationResult {
+  version?: number;
+  outcome?: "accepted" | "rejected" | "superseded_by_comment" | "stale_target" | "failed" | string;
+  reason?: string | null;
+  commentId?: string | null;
+  staleTarget?: RequestConfirmationTarget | null;
+  error?: string | null;
+  [key: string]: unknown;
+}
+
+export interface RequestConfirmationInteraction extends IssueThreadInteractionBase {
+  kind: "request_confirmation";
+  payload: RequestConfirmationPayload;
+  result: RequestConfirmationResult | null;
+}
+
+export type IssueThreadInteraction =
+  | SuggestTasksInteraction
+  | AskUserQuestionsInteraction
+  | RequestConfirmationInteraction;
 
 // Redaction options
 export interface CurrentUserRedactionOptions { 
@@ -1141,13 +1536,20 @@ export function assertInstanceAdmin(_req: unknown, _res: unknown, _next: unknown
 // Environment stub exports
 export const createEnvironmentSchema = z.object({
   name: z.string(),
+  description: z.string().nullable().optional(),
   driver: z.string(),
+  status: z.enum(ENVIRONMENT_STATUSES).default("active"),
   config: z.record(z.unknown()).optional(),
+  metadata: z.record(z.unknown()).nullable().optional(),
 });
 
 export const updateEnvironmentSchema = z.object({
   name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  driver: z.string().optional(),
+  status: z.enum(ENVIRONMENT_STATUSES).optional(),
   config: z.record(z.unknown()).optional(),
+  metadata: z.record(z.unknown()).nullable().optional(),
 });
 
 export const probeEnvironmentConfigSchema = z.object({
@@ -1155,45 +1557,129 @@ export const probeEnvironmentConfigSchema = z.object({
   config: z.record(z.unknown()),
 });
 
+export type EnvironmentSupportLevel = "supported" | "unsupported";
+
+export interface AdapterEnvironmentSupport {
+  adapterType: string;
+  drivers: {
+    local: EnvironmentSupportLevel;
+    ssh: EnvironmentSupportLevel;
+    sandbox: EnvironmentSupportLevel;
+    plugin: EnvironmentSupportLevel;
+  };
+  sandboxProviders: Record<string, EnvironmentSupportLevel>;
+}
+
+export interface EnvironmentSandboxProviderCapability {
+  status: EnvironmentSupportLevel;
+  supportsSavedProbe: boolean;
+  supportsUnsavedProbe: boolean;
+  supportsRunExecution: boolean;
+  supportsReusableLeases: boolean;
+  displayName: string;
+  description: string | null;
+  source?: "core" | "plugin";
+  pluginKey?: string;
+  pluginId?: string;
+  configSchema?: Record<string, unknown>;
+}
+
+export interface EnvironmentCapabilities {
+  drivers: Record<string, EnvironmentSupportLevel>;
+  sandboxProviders: Record<string, EnvironmentSandboxProviderCapability>;
+  adapters: AdapterEnvironmentSupport[];
+}
+
+export function getAdapterEnvironmentSupport(
+  adapterType: string,
+  sandboxProviders: Record<string, EnvironmentSandboxProviderCapability> = {},
+): AdapterEnvironmentSupport {
+  const runCapableSandboxProviders = Object.fromEntries(
+    Object.entries(sandboxProviders).map(([provider, capability]) => [
+      provider,
+      capability.supportsRunExecution ? "supported" : "unsupported",
+    ] as const),
+  );
+
+  return {
+    adapterType,
+    drivers: {
+      local: "supported",
+      ssh: "supported",
+      sandbox: Object.values(runCapableSandboxProviders).some((status) => status === "supported")
+        ? "supported"
+        : "unsupported",
+      plugin: "unsupported",
+    },
+    sandboxProviders: runCapableSandboxProviders,
+  };
+}
+
 export function getEnvironmentCapabilities(
-  _drivers: readonly string[],
-  _options: {
-    sandboxProviders: Record<string, {
-      status: "supported";
-      supportsSavedProbe: boolean;
-      supportsUnsavedProbe: boolean;
-      supportsRunExecution: boolean;
-      supportsReusableLeases: boolean;
-      displayName: string;
-      description: string | null;
-      source: "plugin";
-      pluginKey: string;
-      pluginId: string;
-      configSchema: Record<string, unknown>;
-    }>;
-  },
-): string[] {
-  return [];
+  adapters: readonly string[],
+  options: {
+    sandboxProviders?: Record<string, EnvironmentSandboxProviderCapability>;
+  } = {},
+): EnvironmentCapabilities {
+  const sandboxProviders: Record<string, EnvironmentSandboxProviderCapability> = {
+    fake: {
+      status: "supported",
+      supportsSavedProbe: true,
+      supportsUnsavedProbe: true,
+      supportsRunExecution: false,
+      supportsReusableLeases: false,
+      displayName: "Fake sandbox",
+      description: "Deterministic test provider for probes only.",
+      source: "core",
+      configSchema: {},
+    },
+    ...(options.sandboxProviders ?? {}),
+  };
+
+  const hasRunCapableSandbox = Object.values(sandboxProviders).some(
+    (provider) => provider.supportsRunExecution,
+  );
+
+  return {
+    drivers: {
+      local: "supported",
+      ssh: "supported",
+      sandbox: hasRunCapableSandbox ? "supported" : "unsupported",
+      plugin: "unsupported",
+    },
+    sandboxProviders,
+    adapters: adapters.map((adapterType) => getAdapterEnvironmentSupport(adapterType, sandboxProviders)),
+  };
 }
 
 // Workspace execution stub exports
 export function findWorkspaceCommandDefinition(
-  _config: Record<string, unknown> | null,
-  _commandId: string | null,
+  config: Record<string, unknown> | null,
+  commandId: string | null,
 ): WorkspaceServiceCommandDefinition & { kind: "service" | "job"; serviceIndex?: number; id: string } | null {
-  return null;
+  const commands = listWorkspaceServiceCommandDefinitions(config);
+  if (!commandId) {
+    return commands.find((command) => command.kind === "service") ?? commands.find((command) => command.kind === "job") ?? null;
+  }
+  return commands.find((command) => command.id === commandId || command.name === commandId) ?? null;
 }
 
 export function matchWorkspaceRuntimeServiceToCommand(
-  _command: Record<string, unknown>,
-  _services: Array<{ id: string }>,
+  command: Record<string, unknown>,
+  services: Array<{ id: string; serviceName?: string | null; command?: string | null }>,
 ): { id: string } | null {
-  return null;
+  const serviceName = readString(command.serviceName) ?? readString(command.name);
+  const commandText = readString(command.command);
+  return services.find((service) => {
+    if (serviceName && service.serviceName === serviceName) return true;
+    return Boolean(commandText && service.command === commandText);
+  }) ?? null;
 }
 
 export const issueGraphLivenessAutoRecoveryRequestSchema = z.object({
   enabled: z.boolean().optional(),
   thresholdMinutes: z.number().int().positive().optional(),
+  lookbackHours: z.number().int().positive().optional(),
 });
 
 export const patchInstanceGeneralSettingsSchema = z.object({
@@ -1203,19 +1689,31 @@ export const patchInstanceGeneralSettingsSchema = z.object({
   locale: z.string().optional(),
   backupRetention: z.number().optional(),
   censorUsernameInLogs: z.boolean().optional(),
+  keyboardShortcuts: z.boolean().optional(),
+  feedbackDataSharingPreference: z.enum(["prompt", "allowed", "denied"]).optional(),
   autoRestartDevServerWhenIdle: z.boolean().optional(),
 });
 
+const issueTreeControlModeSchema = z.enum(["pause", "resume", "cancel", "restore"]);
+const issueTreeHoldReleasePolicySchema = z.object({
+  strategy: z.enum(["manual", "auto_on_ready", "after_active_runs_finish"]),
+  readyAfterMinutes: z.number().int().positive().optional().nullable(),
+  note: z.string().optional().nullable(),
+}).optional();
+
 export const createIssueTreeHoldSchema = z.object({
-  issueId: z.string(),
-  reason: z.string(),
+  mode: issueTreeControlModeSchema,
+  reason: z.string().optional(),
+  releasePolicy: issueTreeHoldReleasePolicySchema,
+  metadata: z.record(z.unknown()).optional(),
   durationMinutes: z.number().int().positive().optional(),
 });
 
 export const previewIssueTreeControlSchema = z.object({
-  command: z.string(),
-  targetIssueId: z.string().optional(),
-  parameters: z.record(z.unknown()).optional(),
+  mode: issueTreeControlModeSchema,
+  reason: z.string().optional(),
+  releasePolicy: issueTreeHoldReleasePolicySchema,
+  metadata: z.record(z.unknown()).optional(),
 });
 
 export const releaseIssueTreeHoldSchema = z.object({
@@ -1247,11 +1745,13 @@ export {
   MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
 } from "./types/issue-tree.js";
 
-export const workspaceRuntimeControlTargetSchema = z.object({
-  executionWorkspaceId: z.string(),
-  serviceName: z.string(),
-  desiredState: z.enum(["stopped", "running", "manual"]),
-});
+export const workspaceRuntimeControlTargetSchema = z
+  .object({
+    workspaceCommandId: z.string().optional().nullable(),
+    runtimeServiceId: z.string().optional().nullable(),
+    serviceIndex: z.coerce.number().int().nonnegative().optional().nullable(),
+  })
+  .strict();
 
 // Re-export plugin types from types/plugin.ts
 export type {

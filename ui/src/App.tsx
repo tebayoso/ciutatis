@@ -14,6 +14,8 @@ import { ProjectDetail } from "./pages/ProjectDetail";
 import { Requests } from "./pages/Requests";
 import { RequestDetail } from "./pages/RequestDetail";
 import { ExecutionWorkspaceDetail } from "./pages/ExecutionWorkspaceDetail";
+import { Search } from "./pages/Search";
+import { Workspaces } from "./pages/Workspaces";
 import { Objectives } from "./pages/Objectives";
 import { ObjectiveDetail } from "./pages/ObjectiveDetail";
 import { Approvals } from "./pages/Approvals";
@@ -22,6 +24,8 @@ import { Costs } from "./pages/Costs";
 import { Activity } from "./pages/Activity";
 import { Inbox } from "./pages/Inbox";
 import { InstitutionSettings } from "./pages/InstitutionSettings";
+import { CompanyEnvironments } from "./pages/CompanyEnvironments";
+import { UserProfile } from "./pages/UserProfile";
 import { DesignGuide } from "./pages/DesignGuide";
 import { InstanceSettings } from "./pages/InstanceSettings";
 import { InstanceAdminOverview } from "./pages/InstanceAdminOverview";
@@ -164,6 +168,9 @@ function councilRoutes() {
       <Route path="onboarding" element={<OnboardingRoutePage />} />
       <Route path="institutions" element={<Institutions />} />
       <Route path="institution/settings" element={<InstitutionSettings />} />
+      <Route path="institution/settings/environments" element={<CompanyEnvironments />} />
+      <Route path="company/settings" element={<Navigate to="/institution/settings" replace />} />
+      <Route path="company/settings/environments" element={<Navigate to="/institution/settings/environments" replace />} />
       <Route path="settings" element={<LegacySettingsRedirect />} />
       <Route path="settings/*" element={<LegacySettingsRedirect />} />
       <Route path="plugins/:pluginId" element={<PluginPage />} />
@@ -184,8 +191,12 @@ function councilRoutes() {
       <Route path="projects/:projectId/requests/:filter" element={<ProjectDetail />} />
       <Route path="projects/:projectId/issues" element={<ProjectDetail />} />
       <Route path="projects/:projectId/issues/:filter" element={<ProjectDetail />} />
+      <Route path="projects/:projectId/workspaces" element={<ProjectDetail />} />
       <Route path="projects/:projectId/configuration" element={<ProjectDetail />} />
       <Route path="projects/:projectId/budget" element={<ProjectDetail />} />
+      <Route path="search" element={<Search />} />
+      <Route path="workspaces" element={<Workspaces />} />
+      <Route path="users/:userSlug" element={<UserProfile />} />
       <Route path="requests" element={<Requests />} />
       <Route path="requests/all" element={<Navigate to="/requests" replace />} />
       <Route path="requests/active" element={<Navigate to="/requests" replace />} />
@@ -387,6 +398,7 @@ export function App() {
     <>
       <Routes>
         <Route path="/" element={publicEntryElement} />
+        <Route path="contact" element={publicEntryElement} />
         <Route path="platform" element={publicEntryElement} />
         <Route path="about" element={publicEntryElement} />
         <Route path="partners" element={publicEntryElement} />
@@ -394,6 +406,7 @@ export function App() {
         <Route path="portal/requests/:publicId" element={<PublicPortalRequestPage />} />
         <Route path="portal/:institutionSlug" element={<PublicPortalPage />} />
         <Route path="en" element={publicEntryElement} />
+        <Route path="en/contact" element={publicEntryElement} />
         <Route path="en/platform" element={publicEntryElement} />
         <Route path="en/about" element={publicEntryElement} />
         <Route path="en/partners" element={publicEntryElement} />
@@ -401,6 +414,7 @@ export function App() {
         <Route path="en/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
         <Route path="en/portal/:institutionSlug" element={<PublicPortalPage />} />
         <Route path="es" element={publicEntryElement} />
+        <Route path="es/contacto" element={publicEntryElement} />
         <Route path="es/procesos" element={publicEntryElement} />
         <Route path="es/modulos" element={publicEntryElement} />
         <Route path="es/casos" element={publicEntryElement} />
@@ -429,6 +443,15 @@ export function App() {
             <Route path="plugins/:pluginId" element={<PluginSettings />} />
           </Route>
           <Route path="institutions" element={<UnprefixedBoardRedirect />} />
+          <Route path="institution/settings" element={<UnprefixedBoardRedirect />} />
+          <Route path="institution/settings/environments" element={<UnprefixedBoardRedirect />} />
+          <Route path="company/settings" element={<UnprefixedBoardRedirect />} />
+          <Route path="company/settings/environments" element={<UnprefixedBoardRedirect />} />
+          <Route path="dashboard" element={<UnprefixedBoardRedirect />} />
+          <Route path="org" element={<UnprefixedBoardRedirect />} />
+          <Route path="search" element={<UnprefixedBoardRedirect />} />
+          <Route path="workspaces" element={<UnprefixedBoardRedirect />} />
+          <Route path="users/:userSlug" element={<UnprefixedBoardRedirect />} />
           <Route path="requests" element={<UnprefixedBoardRedirect />} />
           <Route path="requests/:issueId" element={<UnprefixedBoardRedirect />} />
           <Route path="issues" element={<UnprefixedBoardRedirect />} />
@@ -445,7 +468,18 @@ export function App() {
           <Route path="projects/:projectId/overview" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/requests" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/requests/:filter" element={<UnprefixedBoardRedirect />} />
+          <Route path="projects/:projectId/issues" element={<UnprefixedBoardRedirect />} />
+          <Route path="projects/:projectId/issues/:filter" element={<UnprefixedBoardRedirect />} />
+          <Route path="projects/:projectId/workspaces" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
+          <Route path="projects/:projectId/budget" element={<UnprefixedBoardRedirect />} />
+          <Route path="execution-workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+          <Route path="approvals" element={<UnprefixedBoardRedirect />} />
+          <Route path="approvals/:approvalId" element={<UnprefixedBoardRedirect />} />
+          <Route path="costs" element={<UnprefixedBoardRedirect />} />
+          <Route path="activity" element={<UnprefixedBoardRedirect />} />
+          <Route path="inbox" element={<UnprefixedBoardRedirect />} />
+          <Route path="inbox/:tab" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
           <Route path="objectives" element={<UnprefixedBoardRedirect />} />
           <Route path="objectives/:goalId" element={<UnprefixedBoardRedirect />} />

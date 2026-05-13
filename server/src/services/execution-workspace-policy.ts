@@ -221,7 +221,10 @@ export function buildExecutionWorkspaceAdapterConfig(input: {
 
 // Stub for upstream feature not used in ciutatis
 export function issueExecutionWorkspaceModeForPersistedWorkspace(
-  _mode: string | null | undefined
-): string | null {
-  return null;
+  mode: string | null | undefined,
+): "agent_default" | "isolated_workspace" | "operator_branch" | "shared_workspace" {
+  if (mode === "isolated_workspace" || mode === "operator_branch" || mode === "shared_workspace") {
+    return mode;
+  }
+  return "agent_default";
 }

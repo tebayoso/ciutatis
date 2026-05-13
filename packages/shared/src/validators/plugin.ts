@@ -90,6 +90,32 @@ export const pluginWebhookDeclarationSchema = z.object({
 
 export type PluginWebhookDeclarationInput = z.infer<typeof pluginWebhookDeclarationSchema>;
 
+const pluginApiRouteCompanyResolutionSchema = z.discriminatedUnion("from", [
+  z.object({
+    from: z.literal("query"),
+    key: z.string().min(1),
+  }),
+  z.object({
+    from: z.literal("issue"),
+    param: z.string().min(1),
+  }),
+]);
+
+export const pluginApiRouteDeclarationSchema = z.object({
+  routeKey: z.string().min(1),
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
+  path: z.string().min(1).refine(
+    (path) => path.startsWith("/") && !/^\/api(?:\/|$)/i.test(path) && !path.includes(".."),
+    "path must stay inside the plugin api namespace",
+  ),
+  auth: z.enum(["board", "agent", "any"]),
+  capability: z.enum(PLUGIN_CAPABILITIES),
+  checkoutPolicy: z.enum(["none", "required-for-agent-in-progress", "always-for-agent"]).optional(),
+  companyResolution: pluginApiRouteCompanyResolutionSchema.optional(),
+});
+
+export type PluginApiRouteDeclarationInput = z.infer<typeof pluginApiRouteDeclarationSchema>;
+
 /**
  * Validates a {@link PluginToolDeclaration} — an agent tool contributed by the
  * plugin. Requires `name`, `displayName`, `description`, and a valid
@@ -486,7 +512,17 @@ export const pluginManifestV1Schema = z.object({
   instanceConfigSchema: jsonSchemaSchema.optional(),
   jobs: z.array(pluginJobDeclarationSchema).optional(),
   webhooks: z.array(pluginWebhookDeclarationSchema).optional(),
+  apiRoutes: z.array(pluginApiRouteDeclarationSchema).optional(),
   tools: z.array(pluginToolDeclarationSchema).optional(),
+  agents: z.array(pluginManagedAgentDeclarationSchema).optional(),
+  projects: z.array(pluginManagedProjectDeclarationSchema).optional(),
+  localFolders: z.array(pluginLocalFolderDeclarationSchema).optional(),
+  environmentDrivers: z.array(pluginEnvironmentDriverDeclarationSchema).optional(),
+  database: z.object({
+    namespaceSlug: z.string().min(1).max(100).optional(),
+    migrationsDir: z.string().min(1),
+    coreReadTables: z.array(z.string().min(1)).optional(),
+  }).optional(),
   launchers: z.array(pluginLauncherDeclarationSchema).optional(),
   ui: z.object({
     slots: z.array(pluginUiSlotDeclarationSchema).min(1).optional(),
@@ -556,6 +592,66 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  if (manifest.apiRoutes && manifest.apiRoutes.length > 0) {
+    if (!manifest.capabilities.includes("api.routes.register")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'api.routes.register' is required when apiRoutes are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
+    if (!manifest.capabilities.includes("environment.drivers.register")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.localFolders && manifest.localFolders.length > 0) {
+    if (!manifest.capabilities.includes("local.folders")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'local.folders' is required when localFolders are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.agents && manifest.agents.length > 0) {
+    if (!manifest.capabilities.includes("agents.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'agents.managed' is required when managed agents are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.projects && manifest.projects.length > 0) {
+    if (!manifest.capabilities.includes("projects.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'projects.managed' is required when managed projects are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.database) {
+    if (!manifest.capabilities.includes("database.namespace.write")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'database.namespace.write' is required when database is declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
   if (
     manifest.minimumHostVersion
     && manifest.minimumCiutatisVersion
@@ -606,6 +702,16 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
+    if (!manifest.capabilities.includes("environment.drivers.register")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
   // ── Uniqueness checks ──────────────────────────────────────────────────
   // Duplicate keys within a plugin's own manifest are always a bug. The host
   // would not know which declaration takes precedence, so we reject early.
@@ -645,6 +751,18 @@ export const pluginManifestV1Schema = z.object({
         code: z.ZodIssueCode.custom,
         message: `Duplicate tool names: ${[...new Set(duplicates)].join(", ")}`,
         path: ["tools"],
+      });
+    }
+  }
+
+  if (manifest.environmentDrivers) {
+    const driverKeys = manifest.environmentDrivers.map((driver) => driver.driverKey);
+    const duplicates = driverKeys.filter((key, i) => driverKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate environment driver keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["environmentDrivers"],
       });
     }
   }

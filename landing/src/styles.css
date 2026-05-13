@@ -60,22 +60,22 @@
 
 @layer components {
   .hero-button-solid {
-    @apply inline-flex items-center justify-center gap-2 rounded bg-ink px-6 py-3.5 text-sm font-medium text-white transition-all duration-200 hover:bg-black hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-none;
+    @apply inline-flex min-w-0 items-center justify-center gap-2 rounded bg-ink px-5 py-3.5 text-sm font-medium text-white transition-all duration-200 hover:bg-black hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-none;
   }
 
   .hero-button {
-    @apply inline-flex items-center justify-center gap-2 rounded border border-border-strong bg-white px-5 py-2.5 text-sm font-medium text-ink transition-all duration-200 hover:bg-panel-strong hover:shadow-sm;
+    @apply inline-flex min-w-0 items-center justify-center gap-2 rounded border border-border-strong bg-white px-4 py-2.5 text-sm font-medium text-ink transition-all duration-200 hover:bg-panel-strong hover:shadow-sm;
   }
 
   .ghost-button {
-    @apply inline-flex items-center justify-center gap-2 rounded px-5 py-3.5 text-sm font-medium text-muted-strong transition-colors duration-200 hover:text-ink hover:bg-border;
+    @apply inline-flex min-w-0 items-center justify-center gap-2 rounded px-5 py-3.5 text-sm font-medium text-muted-strong transition-colors duration-200 hover:text-ink hover:bg-border;
   }
 
   .service-card {
-    @apply flex flex-col p-8 border border-border bg-panel shadow-sm transition-all duration-300 hover:shadow-md;
+    @apply flex flex-col p-6 sm:p-8 border border-border bg-panel shadow-sm transition-all duration-300 hover:shadow-md;
   }
 
   .principle-card {
-    @apply flex flex-col p-6 bg-panel border-l border-border;
+    @apply flex flex-col p-5 sm:p-6 bg-panel border-l border-border;
   }
 }

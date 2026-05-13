@@ -164,7 +164,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 export function useOptionalToastActions() {
-  return useContext(ToastActionsContext);
+  return useContext(ToastContext);
 }
 
 export function useToast() {
@@ -173,4 +173,8 @@ export function useToast() {
     throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
+}
+
+export function useToastActions() {
+  return useToast();
 }

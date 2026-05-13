@@ -388,7 +388,7 @@
 
 .public-site .public-display {
   font-family: var(--public-font-display);
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .public-site .public-shadow {
@@ -438,7 +438,7 @@
 
 .public-site .public-stat {
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .public-site .public-ornament {

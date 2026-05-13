@@ -1,5 +1,6 @@
-import type { Project, ProjectWorkspace } from "@paperclipai/shared";
+import type { Project, ProjectWorkspace, WorkspaceOperation } from "@paperclipai/shared";
 import { api } from "./client";
+import type { WorkspaceRuntimeControlAction, WorkspaceRuntimeControlTarget } from "./execution-workspaces";
 
 function projectPath(companyId: string, id: string, suffix = "") {
   return `/companies/${encodeURIComponent(companyId)}/projects/${encodeURIComponent(id)}${suffix}`;
@@ -20,6 +21,17 @@ export const projectsApi = {
     api.patch<ProjectWorkspace>(
       projectPath(companyId, projectId, `/workspaces/${encodeURIComponent(workspaceId)}`),
       data,
+    ),
+  controlWorkspaceRuntimeServices: (
+    projectId: string,
+    workspaceId: string,
+    action: WorkspaceRuntimeControlAction,
+    _companyId: string,
+    target: WorkspaceRuntimeControlTarget = {},
+  ) =>
+    api.post<{ workspace: ProjectWorkspace; operation: WorkspaceOperation }>(
+      `/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/runtime-services/${action}`,
+      target,
     ),
   removeWorkspace: (projectId: string, workspaceId: string, companyId: string) =>
     api.delete<ProjectWorkspace>(projectPath(companyId, projectId, `/workspaces/${encodeURIComponent(workspaceId)}`)),

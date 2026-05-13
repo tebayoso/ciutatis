@@ -6,6 +6,7 @@ import {
   DollarSign,
   History,
   Search,
+  Boxes,
   SquarePen,
   Network,
   Settings,
@@ -18,6 +19,7 @@ import { SidebarAgents } from "./SidebarAgents";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { heartbeatsApi } from "../api/heartbeats";
+import { instanceSettingsApi } from "../api/instanceSettings";
 import { queryKeys } from "../lib/queryKeys";
 import { useInboxBadge } from "../hooks/useInboxBadge";
 import { Button } from "@/components/ui/button";
@@ -35,9 +37,11 @@ export function Sidebar() {
   });
   const liveRunCount = liveRuns?.length ?? 0;
 
-  function openSearch() {
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
-  }
+  const { data: experimentalSettings } = useQuery({
+    queryKey: queryKeys.instance.experimentalSettings,
+    queryFn: () => instanceSettingsApi.getExperimental(),
+  });
+  const isolatedWorkspacesEnabled = experimentalSettings?.enableIsolatedWorkspaces === true;
 
   const pluginContext = {
     companyId: selectedCompanyId,
@@ -58,12 +62,14 @@ export function Sidebar() {
           {selectedCompany?.name ?? "Select institution"}
         </span>
         <Button
+          asChild
           variant="ghost"
           size="icon-sm"
           className="text-muted-foreground shrink-0"
-          onClick={openSearch}
         >
-          <Search className="h-4 w-4" />
+          <a href="/search" aria-label="Search" title="Search">
+            <Search className="h-4 w-4" />
+          </a>
         </Button>
       </div>
 
@@ -98,6 +104,9 @@ export function Sidebar() {
         <SidebarSection label="Work">
           <SidebarNavItem to="/requests" label="Requests" icon={CircleDot} />
           <SidebarNavItem to="/objectives" label="Objectives" icon={Target} />
+          {isolatedWorkspacesEnabled ? (
+            <SidebarNavItem to="/workspaces" label="Workspaces" icon={Boxes} />
+          ) : null}
         </SidebarSection>
 
         <SidebarProjects />

@@ -26,6 +26,7 @@ export type {
   DocumentFormat,
   DocumentRevision,
   LegacyPlanDocument,
+  SuccessfulRunHandoffState,
 } from "./request.js";
 export type {
   RequestWorkProduct,
@@ -187,7 +188,7 @@ export type {
   InstanceSchedulerHeartbeatAgent,
 } from "./heartbeat.js";
 export type { LiveEvent } from "./live.js";
-export type { DashboardSummary } from "./dashboard.js";
+export type { DashboardRunActivityDay, DashboardSummary } from "./dashboard.js";
 export type { ActivityEvent } from "./activity.js";
 export type { SidebarBadges } from "./sidebar-badges.js";
 export type {
@@ -202,6 +203,7 @@ export type {
   PluginJobDeclaration,
   PluginWebhookDeclaration,
   PluginToolDeclaration,
+  PluginLocalFolderDeclaration,
   PluginUiSlotDeclaration,
   PluginLauncherActionDeclaration,
   PluginLauncherRenderDeclaration,
@@ -209,6 +211,11 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
+  PluginApiRouteMethod,
+  PluginApiRouteAuthMode,
+  PluginApiRouteCheckoutPolicy,
+  PluginApiRouteCompanyResolution,
+  PluginApiRouteDeclaration,
   CiutatisPluginManifestV1,
   PluginRecord,
   PluginStateRecord,
@@ -220,4 +227,10 @@ export type {
   PluginWebhookDeliveryRecord,
   PluginManagedProjectDeclaration,
   PluginManagedProjectResolution,
+  PluginManagedAgentDeclaration,
+  PluginManagedAgentResolution,
+  PluginCompanySettings,
+  PluginDatabaseCoreReadTable,
+  PluginDatabaseNamespaceDeclaration,
+  PluginMigrationRecord,
 } from "./plugin.js";

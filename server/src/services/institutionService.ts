@@ -319,3 +319,5 @@ export function companyService(db: Db) {
       }),
   };
 }
+
+export const institutionService = companyService;

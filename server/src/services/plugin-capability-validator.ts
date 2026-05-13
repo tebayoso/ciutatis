@@ -135,6 +135,7 @@ const UI_SLOT_CAPABILITIES: Record<PluginUiSlotType, PluginCapability> = {
   sidebarPanel: "ui.sidebar.register",
   projectSidebarItem: "ui.sidebar.register",
   page: "ui.page.register",
+  routeSidebar: "ui.page.register",
   detailTab: "ui.detailTab.register",
   taskDetailView: "ui.detailTab.register",
   dashboardWidget: "ui.dashboardWidget.register",

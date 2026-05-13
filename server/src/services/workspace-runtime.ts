@@ -2264,6 +2264,7 @@ function registerRuntimeService(db: Db | undefined, record: RuntimeServiceRecord
 
 function readRuntimeServiceEntries(config: Record<string, unknown>): Record<string, unknown>[] {
   return listWorkspaceServiceCommandDefinitions(parseObject(config.workspaceRuntime))
+    .filter((command) => command.kind === "service")
     .map((command) => command.rawConfig)
     .filter((rawConfig): rawConfig is Record<string, unknown> => rawConfig !== undefined);
 }

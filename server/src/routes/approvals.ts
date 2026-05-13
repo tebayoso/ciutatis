@@ -19,6 +19,7 @@ import {
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
+import { notFound } from "../errors.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -39,6 +40,17 @@ export function approvalRoutes(
   const issueApprovalsSvc = issueApprovalService(db);
   const secretsSvc = secretService(db);
   const strictSecretsMode = process.env.PAPERCLIP_SECRETS_STRICT_MODE === "true";
+
+  async function assertDecisionAccess(req: Parameters<typeof assertBoard>[0], approvalId: string) {
+    const approval = await svc.getById(approvalId);
+    if (!approval) throw notFound("Approval not found");
+    assertCompanyAccess(req, approval.companyId);
+    return approval;
+  }
+
+  function decisionUserId(req: Parameters<typeof assertBoard>[0]): string {
+    return req.actor.userId ?? "board";
+  }
 
   router.get("/companies/:companyId/approvals", async (req, res) => {
     const companyId = req.params.companyId as string;
@@ -127,9 +139,10 @@ export function approvalRoutes(
   router.post("/approvals/:id/approve", validate(resolveApprovalSchema), async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    await assertDecisionAccess(req, id);
     const { approval, applied } = await svc.approve(
       id,
-      req.body.decidedByUserId ?? "board",
+      decisionUserId(req),
       req.body.decisionNote,
     );
 
@@ -222,9 +235,10 @@ export function approvalRoutes(
   router.post("/approvals/:id/reject", validate(resolveApprovalSchema), async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    await assertDecisionAccess(req, id);
     const { approval, applied } = await svc.reject(
       id,
-      req.body.decidedByUserId ?? "board",
+      decisionUserId(req),
       req.body.decisionNote,
     );
 
@@ -249,9 +263,10 @@ export function approvalRoutes(
     async (req, res) => {
       assertBoard(req);
       const id = req.params.id as string;
+      await assertDecisionAccess(req, id);
       const approval = await svc.requestRevision(
         id,
-        req.body.decidedByUserId ?? "board",
+        decisionUserId(req),
         req.body.decisionNote,
       );
 

@@ -16,6 +16,8 @@ import { queryKeys } from "../lib/queryKeys";
 import type { CompanySelectionSource } from "../lib/company-selection";
 import { isPublicSitePath } from "../lib/public-site-paths";
 type CompanySelectionOptions = { source?: CompanySelectionSource };
+type CompanyQueryResult = { companies: Company[]; unauthorized: boolean };
+type CompanySelectionCompany = Pick<Company, "id">;
 
 interface CompanyContextValue {
   companies: Company[];
@@ -37,21 +39,70 @@ const STORAGE_KEY = "paperclip.selectedCompanyId";
 
 const CompanyContext = createContext<CompanyContextValue | null>(null);
 
+export function resolveBootstrapCompanySelection({
+  companies,
+  sidebarCompanies,
+  selectedCompanyId,
+  storedCompanyId,
+}: {
+  companies: CompanySelectionCompany[];
+  sidebarCompanies: CompanySelectionCompany[];
+  selectedCompanyId: string | null;
+  storedCompanyId: string | null;
+}) {
+  if (companies.length === 0) return null;
+  const selectableCompanies = sidebarCompanies.length > 0 ? sidebarCompanies : companies;
+  if (selectedCompanyId && selectableCompanies.some((company) => company.id === selectedCompanyId)) {
+    return selectedCompanyId;
+  }
+  if (storedCompanyId && selectableCompanies.some((company) => company.id === storedCompanyId)) {
+    return storedCompanyId;
+  }
+  return selectableCompanies[0]?.id ?? null;
+}
+
+export function shouldClearStoredCompanySelection({
+  companies,
+  isLoading,
+  unauthorized,
+}: {
+  companies: CompanySelectionCompany[];
+  isLoading: boolean;
+  unauthorized: boolean;
+}) {
+  return !isLoading && !unauthorized && companies.length === 0;
+}
+
+function normalizeCompaniesQueryResult(data: CompanyQueryResult | Company[] | undefined): CompanyQueryResult {
+  if (Array.isArray(data)) {
+    return { companies: data, unauthorized: false };
+  }
+  return data ?? { companies: [], unauthorized: false };
+}
+
+function useSafeLocationPathname() {
+  try {
+    return useLocation().pathname;
+  } catch {
+    return typeof window === "undefined" ? "/" : window.location.pathname;
+  }
+}
+
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const location = useLocation();
+  const pathname = useSafeLocationPathname();
   const queryClient = useQueryClient();
   const [selectionSource, setSelectionSource] = useState<CompanySelectionSource>("bootstrap");
-  const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
-  const isPublicRoute = isPublicSitePath(location.pathname);
+  const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(null);
+  const isPublicRoute = isPublicSitePath(pathname);
 
-  const { data: companies = [], isLoading, error } = useQuery({
+  const { data: companiesQuery, isLoading, error } = useQuery<CompanyQueryResult>({
     queryKey: queryKeys.companies.all,
     queryFn: async () => {
       try {
-        return await companiesApi.list();
+        return { companies: await companiesApi.list(), unauthorized: false };
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
-          return [];
+          return { companies: [], unauthorized: true };
         }
         throw err;
       }
@@ -59,25 +110,29 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     enabled: !isPublicRoute,
     retry: false,
   });
+  const { companies, unauthorized } = normalizeCompaniesQueryResult(companiesQuery);
   const sidebarCompanies = useMemo(
     () => companies.filter((company) => company.status !== "archived"),
     [companies],
   );
 
-  // Auto-select first company when list loads
   useEffect(() => {
-    if (companies.length === 0) return;
-
-    const selectableCompanies = sidebarCompanies.length > 0 ? sidebarCompanies : companies;
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && selectableCompanies.some((c) => c.id === stored)) return;
-    if (selectedCompanyId && selectableCompanies.some((c) => c.id === selectedCompanyId)) return;
-
-    const next = selectableCompanies[0]!.id;
+    const next = resolveBootstrapCompanySelection({
+      companies,
+      sidebarCompanies,
+      selectedCompanyId,
+      storedCompanyId: stored,
+    });
+    if (next === selectedCompanyId) return;
     setSelectedCompanyIdState(next);
     setSelectionSource("bootstrap");
-    localStorage.setItem(STORAGE_KEY, next);
-  }, [companies, selectedCompanyId, sidebarCompanies]);
+    if (next) {
+      localStorage.setItem(STORAGE_KEY, next);
+    } else if (shouldClearStoredCompanySelection({ companies, isLoading, unauthorized })) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [companies, isLoading, selectedCompanyId, sidebarCompanies, unauthorized]);
 
   const setSelectedCompanyId = useCallback((companyId: string, options?: CompanySelectionOptions) => {
     setSelectedCompanyIdState(companyId);

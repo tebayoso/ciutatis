@@ -18,7 +18,7 @@ import { registerActivityCommands } from "./commands/client/activity.js";
 import { registerDashboardCommands } from "./commands/client/dashboard.js";
 import { applyDataDirOverride, type DataDirOptionLike } from "./config/data-dir.js";
 import { loadCiutatisEnvFile } from "./config/env.js";
-import { registerWorktreeCommands } from "./commands/worktree.js";
+import { registerWorktreeCommands } from "./commands/worktree-disabled.js";
 import { registerPluginCommands } from "./commands/client/plugin.js";
 
 const program = new Command();

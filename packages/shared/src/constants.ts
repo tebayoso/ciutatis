@@ -197,7 +197,12 @@ export const PROJECT_COLORS = [
   "#3b82f6", // blue
 ] as const;
 
-export const APPROVAL_TYPES = ["hire_agent", "approve_ceo_strategy", "budget_override_required"] as const;
+export const APPROVAL_TYPES = [
+  "hire_agent",
+  "approve_ceo_strategy",
+  "budget_override_required",
+  "request_board_approval",
+] as const;
 export type ApprovalType = (typeof APPROVAL_TYPES)[number];
 
 export const APPROVAL_STATUSES = [
@@ -465,6 +470,7 @@ export const PLUGIN_CAPABILITIES = [
   "events.subscribe",
   "events.emit",
   "jobs.schedule",
+  "api.routes.register",
   "webhooks.receive",
   "http.outbound",
   "secrets.read-ref",
@@ -507,6 +513,7 @@ export const PLUGIN_UI_SLOT_TYPES = [
   "commentAnnotation",
   "commentContextMenuItem",
   "settingsPage",
+  "routeSidebar",
 ] as const;
 export type PluginUiSlotType = (typeof PLUGIN_UI_SLOT_TYPES)[number];
 

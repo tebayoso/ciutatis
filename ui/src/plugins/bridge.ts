@@ -26,6 +26,7 @@
  */
 
 import { createContext, useCallback, useContext, useRef, useState, useEffect } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import type {
   PluginBridgeErrorCode,
   PluginLauncherBounds,
@@ -35,6 +36,8 @@ import type {
 import { pluginsApi } from "@/api/plugins";
 import { ApiError } from "@/api/client";
 import { useToast, type ToastInput } from "@/context/ToastContext";
+import { useLocation, useNavigate } from "@/lib/router";
+import { useSidebar } from "@/context/SidebarContext";
 
 // ---------------------------------------------------------------------------
 // Bridge error type (mirrors the SDK's PluginBridgeError)
@@ -362,6 +365,104 @@ export function usePluginAction(key: string): PluginActionFn {
 export function useHostContext(): PluginHostContext {
   const { hostContext } = usePluginBridgeContext();
   return hostContext;
+}
+
+const GLOBAL_HOST_PATH_PREFIXES = [
+  "/admin",
+  "/api",
+  "/auth",
+  "/instance",
+  "/login",
+  "/logout",
+  "/onboarding",
+  "/settings",
+];
+
+function hasCompanyPrefix(pathname: string, companyPrefix: string | null | undefined) {
+  if (!companyPrefix) return false;
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  return firstSegment?.toLowerCase() === companyPrefix.toLowerCase();
+}
+
+function isGlobalHostPath(pathname: string) {
+  return GLOBAL_HOST_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function safeLocationHref(href: string) {
+  try {
+    return new URL(href, window.location.origin);
+  } catch {
+    return null;
+  }
+}
+
+export function resolveHostNavigationHref(to: string, companyPrefix: string | null | undefined): string {
+  if (!to || to.startsWith("#")) return to || "/";
+  const url = safeLocationHref(to);
+  if (!url) return to;
+  if (typeof window !== "undefined" && url.origin !== window.location.origin) return to;
+  if (!url.pathname.startsWith("/")) return to;
+  if (isGlobalHostPath(url.pathname) || hasCompanyPrefix(url.pathname, companyPrefix)) {
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+  if (!companyPrefix) return `${url.pathname}${url.search}${url.hash}`;
+  return `/${companyPrefix.toUpperCase()}${url.pathname}${url.search}${url.hash}`;
+}
+
+export function shouldHandleHostNavigationClick(
+  event: ReactMouseEvent<HTMLAnchorElement>,
+  href: string,
+  target?: string | null,
+): boolean {
+  if (event.defaultPrevented || event.button !== 0) return false;
+  if (event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return false;
+  if (target && target !== "_self") return false;
+  if (event.currentTarget.hasAttribute("download")) return false;
+  const url = safeLocationHref(href);
+  if (!url) return false;
+  return typeof window === "undefined" || url.origin === window.location.origin;
+}
+
+export function useHostLocation() {
+  try {
+    return useLocation();
+  } catch {
+    return {
+      pathname: typeof window === "undefined" ? "/" : window.location.pathname,
+      search: typeof window === "undefined" ? "" : window.location.search,
+      hash: typeof window === "undefined" ? "" : window.location.hash,
+      state: null,
+    };
+  }
+}
+
+export function useHostNavigation() {
+  const { hostContext } = usePluginBridgeContext();
+  const navigate = useNavigate();
+  const sidebar = useSidebar();
+  const closeMobileSidebar = useCallback(() => {
+    const isMobileViewport = typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches;
+    if (sidebar.isMobile || isMobileViewport) {
+      sidebar.setSidebarOpen(false);
+    }
+  }, [sidebar]);
+
+  const navigateTo = useCallback(
+    (to: string, options?: { replace?: boolean }) => {
+      const href = resolveHostNavigationHref(to, hostContext.companyPrefix);
+      navigate(href, options);
+      closeMobileSidebar();
+    },
+    [closeMobileSidebar, hostContext.companyPrefix, navigate],
+  );
+
+  return {
+    navigate: navigateTo,
+    push: (to: string) => navigateTo(to),
+    replace: (to: string) => navigateTo(to, { replace: true }),
+  };
 }
 
 // ---------------------------------------------------------------------------

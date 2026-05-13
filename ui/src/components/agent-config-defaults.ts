@@ -26,6 +26,7 @@ export const defaultCreateValues: CreateConfigValues = {
   worktreeParentDir: "",
   runtimeServicesJson: "",
   maxTurnsPerRun: 300,
+  fastMode: false,
   heartbeatEnabled: false,
   intervalSec: 300,
 };

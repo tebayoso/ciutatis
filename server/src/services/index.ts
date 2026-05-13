@@ -1,4 +1,4 @@
-export { companyService } from "./companies.js";
+export { companyService } from "./institutionService.js";
 export { companySearchService } from "./company-search.js";
 // REMOVED: export { feedbackService } from "./feedback.js";
 // REMOVED: export { companySkillService } from "./company-skills.js";
@@ -22,7 +22,7 @@ export {
   issueService,
   type IssueFilters,
 } from "./issues.js";
-// REMOVED: export { issueThreadInteractionService } from "./issue-thread-interactions.js";
+export { issueThreadInteractionService } from "./issue-thread-interactions.js";
 export { issueTreeControlService } from "./issue-tree-control.js";
 export { issueApprovalService } from "./issue-approvals.js";
 export { issueReferenceService } from "./issue-references.js";
@@ -61,7 +61,7 @@ export { notifyHireApproved, type NotifyHireApprovedInput } from "./hire-hook.js
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";
-export { companyService as institutionService } from "./institutionService.js";
+export { institutionService } from "./institutionService.js";
 // REMOVED: export { issueService as requestService } from "./requestService.js";
 export { issueService as requestService } from "./requestService.js";
 export { publicPortalService } from "./public-portal.js";

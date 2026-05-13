@@ -20,7 +20,6 @@ export async function probeEnvironment(
   if (parsed.driver === "local") {
     return {
       ok: true,
-      success: true,
       driver: "local",
       summary: "Local environment is available on this Paperclip host.",
       details: {
@@ -82,7 +81,6 @@ export async function probeEnvironment(
 
     return {
       ok: true,
-      success: true,
       driver: "ssh",
       summary: `Connected to ${parsed.config.username}@${parsed.config.host} and verified the remote workspace path.`,
       details: {

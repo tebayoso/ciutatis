@@ -95,6 +95,16 @@ export interface LegacyPlanDocument {
   source: "issue_description";
 }
 
+export interface SuccessfulRunHandoffState {
+  state: "required" | "resolved" | "escalated" | string;
+  required: boolean;
+  sourceRunId: string | null;
+  correctiveRunId: string | null;
+  assigneeAgentId: string | null;
+  detectedProgressSummary: string | null;
+  createdAt: Date | string;
+}
+
 export interface Request {
   id: string;
   companyId: string;
@@ -143,6 +153,9 @@ export interface Request {
   createdAt: Date;
   updatedAt: Date;
   activeRun?: IssueTreePreviewRun | null;
+  successfulRunHandoff?: SuccessfulRunHandoffState | null;
+  workMode?: string | null;
+  blockerAttention?: { state?: string | null; [key: string]: unknown } | null;
 }
 
 export interface RequestComment {

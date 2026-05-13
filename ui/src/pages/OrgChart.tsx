@@ -188,6 +188,17 @@ export function OrgChart() {
   const [zoom, setZoom] = useState(1);
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const touchStart = useRef<{
+    panX: number;
+    panY: number;
+    zoom: number;
+    x: number;
+    y: number;
+    distance: number;
+    centerX: number;
+    centerY: number;
+  } | null>(null);
+  const suppressNextCardClick = useRef(false);
 
   // Center the chart on first load
   const hasInitialized = useRef(false);
@@ -255,6 +266,60 @@ export function OrgChart() {
     setZoom(newZoom);
   }, [zoom, pan]);
 
+  const handleTouchStart = useCallback((event: React.TouchEvent) => {
+    if (event.touches.length === 0) return;
+    const first = event.touches[0]!;
+    if (event.touches.length >= 2) {
+      const second = event.touches[1]!;
+      const centerX = (first.clientX + second.clientX) / 2;
+      const centerY = (first.clientY + second.clientY) / 2;
+      const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+      touchStart.current = { panX: pan.x, panY: pan.y, zoom, x: first.clientX, y: first.clientY, distance, centerX, centerY };
+      return;
+    }
+    touchStart.current = {
+      panX: pan.x,
+      panY: pan.y,
+      zoom,
+      x: first.clientX,
+      y: first.clientY,
+      distance: 0,
+      centerX: first.clientX,
+      centerY: first.clientY,
+    };
+  }, [pan, zoom]);
+
+  const handleTouchMove = useCallback((event: React.TouchEvent) => {
+    const start = touchStart.current;
+    if (!start || event.touches.length === 0) return;
+    event.preventDefault();
+    const first = event.touches[0]!;
+    if (event.touches.length >= 2 && start.distance > 0) {
+      const second = event.touches[1]!;
+      const nextDistance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+      const nextZoom = Math.min(Math.max(start.zoom * (nextDistance / start.distance), 0.2), 2);
+      const scale = nextZoom / start.zoom;
+      setZoom(nextZoom);
+      setPan({
+        x: start.centerX - scale * (start.centerX - start.panX),
+        y: start.centerY - scale * (start.centerY - start.panY),
+      });
+      suppressNextCardClick.current = true;
+      return;
+    }
+
+    const dx = first.clientX - start.x;
+    const dy = first.clientY - start.y;
+    if (Math.hypot(dx, dy) > 4) {
+      suppressNextCardClick.current = true;
+    }
+    setPan({ x: start.panX + dx, y: start.panY + dy });
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStart.current = null;
+  }, []);
+
   if (!selectedCompanyId) {
     return <EmptyState icon={Network} message="Select a company to view the org chart." />;
   }
@@ -270,6 +335,7 @@ export function OrgChart() {
   return (
     <div
       ref={containerRef}
+      data-testid="org-chart-viewport"
       className="w-full h-[calc(100dvh-6rem)] overflow-hidden relative bg-muted/20 border border-border rounded-lg"
       style={{ cursor: dragging ? "grabbing" : "grab" }}
       onMouseDown={handleMouseDown}
@@ -277,6 +343,10 @@ export function OrgChart() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* Zoom controls */}
       <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
@@ -366,6 +436,7 @@ export function OrgChart() {
 
       {/* Card layer */}
       <div
+        data-testid="org-chart-card-layer"
         className="absolute inset-0"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -387,7 +458,13 @@ export function OrgChart() {
                 width: CARD_W,
                 minHeight: CARD_H,
               }}
-              onClick={() => navigate(agent ? agentUrl(agent) : `/agents/${node.id}`)}
+              onClick={() => {
+                if (suppressNextCardClick.current) {
+                  suppressNextCardClick.current = false;
+                  return;
+                }
+                navigate(agent ? agentUrl(agent) : `/agents/${node.id}`);
+              }}
             >
               <div className="flex items-center px-4 py-3 gap-3">
                 {/* Agent icon + status dot */}

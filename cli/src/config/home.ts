@@ -20,10 +20,14 @@ export function resolveCiutatisInstanceId(override?: string): string {
   return raw;
 }
 
+export const resolvePaperclipInstanceId = resolveCiutatisInstanceId;
+
 export function resolveCiutatisInstanceRoot(instanceId?: string): string {
   const id = resolveCiutatisInstanceId(instanceId);
   return path.resolve(resolveCiutatisHomeDir(), "instances", id);
 }
+
+export const resolvePaperclipInstanceRoot = resolveCiutatisInstanceRoot;
 
 export function resolveDefaultConfigPath(instanceId?: string): string {
   return path.resolve(resolveCiutatisInstanceRoot(instanceId), "config.json");

@@ -150,14 +150,19 @@ interface IssuesListProps {
   isLoading?: boolean;
   error?: Error | null;
   agents?: Agent[];
+  projects?: unknown[];
   liveIssueIds?: Set<string>;
   projectId?: string;
-  viewStateKey: string;
+  viewStateKey?: string;
   issueLinkState?: unknown;
   initialAssignees?: string[];
   initialSearch?: string;
   onSearchChange?: (search: string) => void;
-  onUpdateIssue: (id: string, data: Record<string, unknown>) => void;
+  createIssueLabel?: string;
+  searchWithinLoadedIssues?: boolean;
+  issueBadgeById?: Map<string, string>;
+  showProgressSummary?: boolean;
+  onUpdateIssue?: (id: string, data: Record<string, unknown>) => void;
 }
 
 export function IssuesList({
@@ -165,14 +170,19 @@ export function IssuesList({
   isLoading,
   error,
   agents,
+  projects: _projects,
   liveIssueIds,
   projectId,
-  viewStateKey,
+  viewStateKey = "paperclip:issues-list",
   issueLinkState,
   initialAssignees,
   initialSearch,
   onSearchChange,
-  onUpdateIssue,
+  createIssueLabel: _createIssueLabel,
+  searchWithinLoadedIssues: _searchWithinLoadedIssues,
+  issueBadgeById: _issueBadgeById,
+  showProgressSummary: _showProgressSummary,
+  onUpdateIssue = () => undefined,
 }: IssuesListProps) {
   const { selectedCompanyId } = useCompany();
   const { openNewIssue } = useDialog();

@@ -248,10 +248,11 @@ export function CompanyEnvironments() {
       setProbeResults((current) => ({
         ...current,
         [environmentId]: {
+          success: false,
           ok: false,
           driver: failedEnvironment?.driver ?? "local",
           summary: error instanceof Error ? error.message : "Environment probe failed.",
-          details: null,
+          details: {},
         },
       }));
       pushToast({
@@ -295,7 +296,7 @@ export function CompanyEnvironments() {
       const ssh = readSshConfig(environment);
       setEnvironmentForm({
         ...createEmptyEnvironmentForm(),
-        name: environment.name,
+        name: environment.name ?? "",
         description: environment.description ?? "",
         driver: "ssh",
         sshHost: ssh.host,
@@ -314,7 +315,7 @@ export function CompanyEnvironments() {
       const sandbox = readSandboxConfig(environment);
       setEnvironmentForm({
         ...createEmptyEnvironmentForm(),
-        name: environment.name,
+        name: environment.name ?? "",
         description: environment.description ?? "",
         driver: "sandbox",
         sandboxProvider: sandbox.provider,
@@ -325,7 +326,7 @@ export function CompanyEnvironments() {
 
     setEnvironmentForm({
       ...createEmptyEnvironmentForm(),
-      name: environment.name,
+      name: environment.name ?? "",
       description: environment.description ?? "",
       driver: "local",
     });

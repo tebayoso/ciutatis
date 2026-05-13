@@ -88,9 +88,13 @@ export { issueTreeHoldMembers } from "./issue_tree_hold_members.js";
 
 // Stub exports for upstream compatibility - tables intentionally removed from Ciutatis
 // These are minimal table definitions to satisfy upstream type requirements
-import { pgTable, uuid, text, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { institutions } from "./institutions.js";
 import { requests } from "./requests.js";
+import { requestComments } from "./request_comments.js";
+import { heartbeatRuns } from "./heartbeat_runs.js";
+import { agents } from "./agents.js";
 
 export const companySkills = pgTable(
   "company_skills",
@@ -129,13 +133,30 @@ export const issueThreadInteractions = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     companyId: uuid("company_id").notNull().references(() => institutions.id),
     issueId: uuid("issue_id").notNull().references(() => requests.id),
-    status: text("status"),
+    kind: text("kind").notNull(),
+    status: text("status").notNull().default("pending"),
+    continuationPolicy: text("continuation_policy").notNull().default("wake_assignee"),
+    idempotencyKey: text("idempotency_key"),
+    sourceCommentId: uuid("source_comment_id").references(() => requestComments.id, { onDelete: "set null" }),
+    sourceRunId: uuid("source_run_id").references(() => heartbeatRuns.id, { onDelete: "set null" }),
+    title: text("title"),
+    summary: text("summary"),
+    createdByAgentId: uuid("created_by_agent_id").references(() => agents.id),
+    createdByUserId: text("created_by_user_id"),
+    resolvedByAgentId: uuid("resolved_by_agent_id").references(() => agents.id),
+    resolvedByUserId: text("resolved_by_user_id"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    result: jsonb("result").$type<Record<string, unknown>>(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     issueIdx: index("issue_thread_interactions_issue_idx").on(table.issueId),
     companyIdx: index("issue_thread_interactions_company_idx").on(table.companyId),
+    companyIssueIdempotencyUq: uniqueIndex("issue_thread_interactions_company_issue_idempotency_uq")
+      .on(table.companyId, table.issueId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} IS NOT NULL`),
   })
 );
 

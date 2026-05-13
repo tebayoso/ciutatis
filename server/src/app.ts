@@ -10,8 +10,10 @@ import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
+import { companyRoutes } from "./routes/companies.js";
 import { agentRoutes } from "./routes/agents.js";
 import { projectRoutes } from "./routes/projects.js";
+import { issueRoutes } from "./routes/issues.js";
 import { issueTreeControlRoutes } from "./routes/issue-tree-control.js";
 import { environmentRoutes } from "./routes/environments.js";
 import { executionWorkspaceRoutes } from "./routes/execution-workspaces.js";
@@ -30,6 +32,7 @@ import {
 import { llmRoutes } from "./routes/llms.js";
 import { assetRoutes } from "./routes/assets.js";
 import { accessRoutes } from "./routes/access.js";
+import { adapterRoutes } from "./routes/adapters.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { applyUiBranding } from "./ui-branding.js";
@@ -76,6 +79,20 @@ export function resolveViteHmrPort(serverPort: number): number {
     return serverPort + 10_000;
   }
   return Math.max(1_024, serverPort - 10_000);
+}
+
+export function isStaticUiAssetPath(pathname: string): boolean {
+  return pathname === "/assets" || pathname.startsWith("/assets/");
+}
+
+export function resolveStaticUiCacheControl(filePath: string, indexHtmlPath: string): string {
+  if (path.resolve(filePath) === path.resolve(indexHtmlPath)) {
+    return "no-cache";
+  }
+  if (filePath.split(path.sep).join("/").includes("/assets/")) {
+    return "public, max-age=31536000, immutable";
+  }
+  return "public, max-age=3600";
 }
 
 export function shouldServeViteDevHtml(req: ExpressRequest): boolean {
@@ -158,6 +175,23 @@ export async function createApp(
   );
   if (opts.betterAuthHandler) {
     app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
+  } else {
+    app.get("/api/auth/get-session", (req, res) => {
+      if (opts.deploymentMode !== "local_trusted") {
+        res.status(401).json(null);
+        return;
+      }
+      const userId = req.actor.userId ?? "local-board";
+      res.json({
+        session: { id: "local-trusted-session", userId },
+        user: {
+          id: userId,
+          email: null,
+          name: "Local Board",
+          isInstanceAdmin: true,
+        },
+      });
+    });
   }
   app.use(llmRoutes(db));
 
@@ -176,9 +210,11 @@ export async function createApp(
       companyDeletionEnabled: opts.companyDeletionEnabled,
     }),
   );
+  api.use("/companies", companyRoutes(db));
   api.use(agentRoutes(db, { pluginWorkerManager: workerManager }));
   api.use(assetRoutes(db, opts.storageService));
   api.use(projectRoutes(db));
+  api.use(issueRoutes(db, opts.storageService));
   api.use(issueTreeControlRoutes(db));
   api.use(environmentRoutes(db, { pluginWorkerManager: workerManager }));
   api.use(executionWorkspaceRoutes(db));
@@ -190,6 +226,7 @@ export async function createApp(
   api.use(userProfileRoutes(db));
   api.use(sidebarBadgeRoutes(db));
   api.use(instanceSettingsRoutes(db));
+  api.use(adapterRoutes());
   if (opts.databaseBackupService) {
     api.use(instanceDatabaseBackupRoutes(opts.databaseBackupService));
   }
@@ -336,6 +373,7 @@ export async function createApp(
 
   if (opts.uiMode === "vite-dev") {
     const uiRoot = path.resolve(__dirname, "../../ui");
+    const indexHtmlPath = path.join(uiRoot, "index.html");
     const publicUiRoot = path.resolve(uiRoot, "public");
     const hmrPort = resolveViteHmrPort(opts.serverPort);
     const { createServer: createViteServer } = await import("vite");
@@ -361,7 +399,8 @@ export async function createApp(
         return;
       }
       try {
-        const html = await vite.transformIndexHtml(req.originalUrl, "<!doctype html><html><head></head><body><div id=\"root\"></div></body></html>");
+        const indexHtml = applyUiBranding(fs.readFileSync(indexHtmlPath, "utf-8"));
+        const html = await vite.transformIndexHtml(req.originalUrl, indexHtml);
         res.status(200).set({ "Content-Type": "text/html" }).end(html);
       } catch (err) {
         next(err);

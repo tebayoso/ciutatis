@@ -531,7 +531,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                   key={goal.id}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs"
                 >
-                  <Link to={`/goals/${goal.id}`} className="hover:underline max-w-[220px] truncate">
+                  <Link to={`/objectives/${goal.id}`} className="hover:underline max-w-[220px] truncate">
                     {goal.title}
                   </Link>
                   {(onUpdate || onFieldUpdate) && (

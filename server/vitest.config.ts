@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     environment: "node",
     isolate: true,
+    testTimeout: 30_000,
     maxConcurrency: 1,
     maxWorkers: 1,
     minWorkers: 1,

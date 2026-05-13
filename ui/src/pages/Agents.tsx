@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type OrgNode } from "../api/agents";
 import { heartbeatsApi } from "../api/heartbeats";
 import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
+import { useDialogActions } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -59,9 +59,16 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab, showTerminated: boolean
   }, []);
 }
 
+function agentModelLabel(agent: Agent | undefined) {
+  const config = agent?.adapterConfig;
+  if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+  const model = (config as Record<string, unknown>).model;
+  return typeof model === "string" && model.trim() ? model : null;
+}
+
 export function Agents() {
   const { selectedCompanyId } = useCompany();
-  const { openNewAgent } = useDialog();
+  const { openNewAgent } = useDialogActions();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
   const location = useLocation();
@@ -261,6 +268,10 @@ export function Agents() {
                       <span className="text-xs text-muted-foreground font-mono w-14 text-right">
                         {adapterLabels[agent.adapterType] ?? agent.adapterType}
                       </span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {agent.adapterType}
+                        {agentModelLabel(agent) ? ` ${agentModelLabel(agent)}` : ""}
+                      </span>
                       <span className="text-xs text-muted-foreground w-16 text-right">
                         {agent.lastHeartbeatAt ? relativeTime(agent.lastHeartbeatAt) : "—"}
                       </span>
@@ -361,6 +372,10 @@ function OrgTreeNode({
               <>
                 <span className="text-xs text-muted-foreground font-mono w-14 text-right">
                   {adapterLabels[agent.adapterType] ?? agent.adapterType}
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {agent.adapterType}
+                  {agentModelLabel(agent) ? ` ${agentModelLabel(agent)}` : ""}
                 </span>
                 <span className="text-xs text-muted-foreground w-16 text-right">
                   {agent.lastHeartbeatAt ? relativeTime(agent.lastHeartbeatAt) : "—"}

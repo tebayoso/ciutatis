@@ -8,23 +8,53 @@ import {
   TENANT_PROVISIONING_STEPS,
   TENANT_ROUTING_MODES,
 } from "../constants.js";
+import {
+  getTenantRoutingCountryConfig,
+  TENANT_JURISDICTION_TYPES,
+} from "../tenant-routing-configs/index.js";
+import { normalizeTenantJurisdictionType } from "../tenant-routing.js";
 
 const slugSchema = z.string().trim().min(2).max(40).regex(/^[a-z0-9-]+$/);
+const jurisdictionTypeSchema = z.string().trim().min(2).max(40).regex(/^[a-z0-9-]+$/);
+const postalCodeSchema = z.string().trim().min(2).max(16).regex(/^[a-zA-Z0-9-]+$/);
 
-export const createTenantInstanceSchema = z.object({
+function requireConfiguredPostalCode(
+  input: { countryCode?: string; jurisdictionType?: string; postalCode?: string | null; shortCode?: string | null },
+  ctx: z.RefinementCtx,
+) {
+  if (!input.countryCode) return;
+  const config = getTenantRoutingCountryConfig(input.countryCode);
+  const jurisdictionType = normalizeTenantJurisdictionType(input.jurisdictionType, input.countryCode);
+  const jurisdictionConfig = config?.jurisdictions[jurisdictionType as typeof TENANT_JURISDICTION_TYPES[number]];
+  if (jurisdictionConfig?.requiresPostalCode && !input.postalCode && !input.shortCode) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["postalCode"],
+      message: `${jurisdictionConfig.label} routing requires a postal code or short code.`,
+    });
+  }
+}
+
+const tenantInstanceInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   municipalityName: z.string().trim().min(1).max(120),
   countryCode: z.string().trim().length(2).regex(/^[a-zA-Z]{2}$/),
+  jurisdictionType: jurisdictionTypeSchema.optional(),
+  postalCode: postalCodeSchema.optional().nullable(),
   citySlug: slugSchema,
-  shortCode: z.string().trim().min(3).max(12).regex(/^[a-zA-Z0-9]+$/),
+  shortCode: z.string().trim().min(3).max(16).regex(/^[a-zA-Z0-9-]+$/).optional().nullable(),
+  parentSubdivisionCode: slugSchema.optional().nullable(),
+  parentSubdivisionName: z.string().trim().min(2).max(120).optional().nullable(),
   routingMode: z.enum(TENANT_ROUTING_MODES).optional().default("path"),
   hostname: z.string().trim().min(3).max(255).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
 });
 
-export const updateTenantInstanceSchema = createTenantInstanceSchema.partial().extend({
+export const createTenantInstanceSchema = tenantInstanceInputSchema.superRefine(requireConfiguredPostalCode);
+
+export const updateTenantInstanceSchema = tenantInstanceInputSchema.partial().extend({
   status: z.enum(TENANT_INSTANCE_STATUSES).optional(),
-});
+}).superRefine(requireConfiguredPostalCode);
 
 export const tenantBootstrapStatusSchema = z.enum(TENANT_BOOTSTRAP_STATUSES);
 

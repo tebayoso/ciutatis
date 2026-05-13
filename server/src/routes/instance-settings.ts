@@ -8,6 +8,7 @@ import {
 import {
   cloudflareProvisioningSettingsSchema,
   createTenantInstanceSchema,
+  deriveTenantRoute,
   issueGraphLivenessAutoRecoveryRequestSchema,
   patchCloudflareProvisioningSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
@@ -64,30 +65,6 @@ function normalizeCloudflareProvisioning(raw: unknown): CloudflareProvisioningSe
   };
 }
 
-function templateValue(input: {
-  countryCode: string;
-  citySlug: string;
-  shortCode: string;
-}) {
-  return {
-    countryCode: input.countryCode.trim().toLowerCase(),
-    citySlug: input.citySlug.trim().toLowerCase(),
-    shortCode: input.shortCode.trim().toLowerCase(),
-  };
-}
-
-function renderTenantTemplate(template: string, input: {
-  countryCode: string;
-  citySlug: string;
-  shortCode: string;
-}) {
-  const values = templateValue(input);
-  return template
-    .replaceAll("{countryCode}", values.countryCode)
-    .replaceAll("{citySlug}", values.citySlug)
-    .replaceAll("{shortCode}", values.shortCode);
-}
-
 function normalizePathPrefix(pathPrefix: string) {
   const normalized = pathPrefix.trim().replace(/\/+/g, "/");
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
@@ -141,8 +118,12 @@ function toTenant(
     name: row.name,
     municipalityName: row.municipalityName,
     countryCode: row.countryCode,
+    jurisdictionType: row.jurisdictionType,
+    postalCode: row.postalCode,
     citySlug: row.citySlug,
     shortCode: row.shortCode,
+    parentSubdivisionCode: row.parentSubdivisionCode,
+    parentSubdivisionName: row.parentSubdivisionName,
     routingMode: row.routingMode,
     status: row.status,
     pathPrefix: row.pathPrefix,
@@ -569,27 +550,31 @@ export function instanceSettingsRoutes(db: Db) {
         getTenantProvisioningSettings(),
         getCloudflareProvisioningSettings(),
       ]);
-      const values = templateValue(req.body);
+      const route = deriveTenantRoute(req.body, {
+        pathTemplate: provisioning.pathTemplate,
+        workerNameTemplate: provisioning.workerNameTemplate,
+      });
       const now = new Date();
-      const pathPrefix = normalizePathPrefix(renderTenantTemplate(provisioning.pathTemplate, values));
-      const workerName = renderTenantTemplate(provisioning.workerNameTemplate, values).toLowerCase();
-      const dispatcherKey = `${values.countryCode}/${values.citySlug}-${values.shortCode}`;
       const queued = cloudflare.enabled;
       const [created] = await db
         .insert(tenantInstances)
         .values({
           name: req.body.name,
           municipalityName: req.body.municipalityName,
-          countryCode: values.countryCode,
-          citySlug: values.citySlug,
-          shortCode: values.shortCode,
+          countryCode: route.countryCode,
+          jurisdictionType: route.jurisdictionType,
+          postalCode: route.postalCode,
+          citySlug: route.citySlug,
+          shortCode: route.shortCode,
+          parentSubdivisionCode: route.parentSubdivisionCode,
+          parentSubdivisionName: route.parentSubdivisionName,
           routingMode: req.body.routingMode ?? provisioning.defaultRoutingMode,
           status: queued ? "provisioning" : "active",
-          pathPrefix,
-          dispatcherKey,
+          pathPrefix: route.pathPrefix,
+          dispatcherKey: route.dispatcherKey,
           hostname: req.body.hostname || null,
-          workerName,
-          dispatchScriptName: `${cloudflare.tenantWorkerScriptPrefix}-${values.citySlug}-${values.shortCode}`,
+          workerName: route.workerName,
+          dispatchScriptName: `${cloudflare.tenantWorkerScriptPrefix}-${route.countryCode}-${route.jurisdictionType}-${route.routeSegment}`,
           bootstrapStatus: "pending",
           lastDeploymentStartedAt: now,
           lastDeploymentFinishedAt: queued ? null : now,
@@ -626,24 +611,36 @@ export function instanceSettingsRoutes(db: Db) {
       const provisioning = await getTenantProvisioningSettings();
       const merged = {
         countryCode: req.body.countryCode ?? existing.countryCode,
+        jurisdictionType: req.body.jurisdictionType ?? existing.jurisdictionType,
+        postalCode: req.body.postalCode === undefined ? existing.postalCode : req.body.postalCode,
         citySlug: req.body.citySlug ?? existing.citySlug,
-        shortCode: req.body.shortCode ?? existing.shortCode,
+        shortCode: req.body.shortCode === undefined ? existing.shortCode : req.body.shortCode,
+        parentSubdivisionCode: req.body.parentSubdivisionCode === undefined ? existing.parentSubdivisionCode : req.body.parentSubdivisionCode,
+        parentSubdivisionName: req.body.parentSubdivisionName === undefined ? existing.parentSubdivisionName : req.body.parentSubdivisionName,
       };
-      const values = templateValue(merged);
+      const route = deriveTenantRoute(merged, {
+        pathTemplate: provisioning.pathTemplate,
+        workerNameTemplate: provisioning.workerNameTemplate,
+      });
       const [updated] = await db
         .update(tenantInstances)
         .set({
           name: req.body.name ?? existing.name,
           municipalityName: req.body.municipalityName ?? existing.municipalityName,
-          countryCode: values.countryCode,
-          citySlug: values.citySlug,
-          shortCode: values.shortCode,
+          countryCode: route.countryCode,
+          jurisdictionType: route.jurisdictionType,
+          postalCode: route.postalCode,
+          citySlug: route.citySlug,
+          shortCode: route.shortCode,
+          parentSubdivisionCode: route.parentSubdivisionCode,
+          parentSubdivisionName: route.parentSubdivisionName,
           routingMode: req.body.routingMode ?? existing.routingMode,
           status: req.body.status ?? existing.status,
-          pathPrefix: normalizePathPrefix(renderTenantTemplate(provisioning.pathTemplate, values)),
-          dispatcherKey: `${values.countryCode}/${values.citySlug}-${values.shortCode}`,
+          pathPrefix: route.pathPrefix,
+          dispatcherKey: route.dispatcherKey,
           hostname: req.body.hostname === undefined ? existing.hostname : req.body.hostname || null,
-          workerName: renderTenantTemplate(provisioning.workerNameTemplate, values).toLowerCase(),
+          workerName: route.workerName,
+          dispatchScriptName: existing.dispatchScriptName,
           notes: req.body.notes === undefined ? existing.notes : req.body.notes || null,
           updatedAt: new Date(),
         })

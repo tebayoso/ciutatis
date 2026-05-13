@@ -26,8 +26,12 @@ export interface TenantInstance {
   name: string;
   municipalityName: string;
   countryCode: string;
+  jurisdictionType: string;
+  postalCode: string | null;
   citySlug: string;
   shortCode: string;
+  parentSubdivisionCode: string | null;
+  parentSubdivisionName: string | null;
   routingMode: TenantRoutingMode;
   status: TenantInstanceStatus;
   pathPrefix: string;

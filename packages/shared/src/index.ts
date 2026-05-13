@@ -804,16 +804,33 @@ export { API_PREFIX, API } from "./api.js";
 export { normalizeAgentUrlKey, deriveAgentUrlKey, isUuidLike } from "./agent-url-key.js";
 export { deriveProjectUrlKey, normalizeProjectUrlKey } from "./project-url-key.js";
 export {
+  deriveTenantRoute,
   normalizeTenantShortCode,
   normalizeTenantCountryCode,
   normalizeTenantCitySlug,
+  normalizeTenantJurisdictionType,
+  normalizeTenantPostalCode,
   deriveTenantDispatcherKey,
   deriveTenantPathPrefix,
   deriveTenantPathPrefixFromDispatcherKey,
   deriveTenantWorkerName,
   deriveTenantUrl,
   parseTenantRoutePathname,
+  type DerivedTenantRoute,
+  type TenantRouteInput,
+  type TenantRouteOptions,
 } from "./tenant-routing.js";
+export {
+  ARGENTINA_TENANT_ROUTING_CONFIG,
+  TENANT_JURISDICTION_TYPES,
+  TENANT_ROUTING_COUNTRY_CONFIGS,
+  getTenantRoutingCountryConfig,
+  type TenantCountryRoutingConfig,
+  type TenantJurisdictionRoutingConfig,
+  type TenantJurisdictionType,
+  type TenantRouteSeed,
+  type TenantRouteSegmentStrategy,
+} from "./tenant-routing-configs/index.js";
 export {
   MockTenantProvisioner,
   CloudflareTenantProvisioner,

@@ -101,6 +101,15 @@ describe("sandbox callback bridge", () => {
     throw new Error(`Timed out waiting for a JSON file in ${directory}.`);
   }
 
+  async function waitForCondition(predicate: () => Promise<boolean> | boolean, timeoutMs = 2_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (await predicate()) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error("Timed out waiting for condition.");
+  }
+
   afterEach(async () => {
     while (cleanupFns.length > 0) {
       const cleanup = cleanupFns.pop();
@@ -538,9 +547,7 @@ describe("sandbox callback bridge", () => {
       },
     });
 
-    for (let attempt = 0; attempt < 50 && seenRequestIds.length === 0; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await waitForCondition(() => seenRequestIds.length === 1);
 
     expect(seenRequestIds).toHaveLength(1);
     await worker.stop({ drainTimeoutMs: 10 });
@@ -551,7 +558,10 @@ describe("sandbox callback bridge", () => {
       error: "Bridge worker stopped before request could be handled.",
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await waitForCondition(async () => {
+      const entries = await readdir(directories.responsesDir);
+      return entries.length === 0;
+    });
 
     await expect(readdir(directories.responsesDir)).resolves.toEqual([]);
     await expect(

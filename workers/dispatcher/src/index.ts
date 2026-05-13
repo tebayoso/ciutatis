@@ -25,7 +25,19 @@ function proxyRequest(targetOrigin: string, request: Request, pathname: string) 
 
 async function lookupTenant(db: D1Database, pathPrefix: string): Promise<TenantRecord | null> {
   const result = await db
-    .prepare("SELECT * FROM tenants WHERE path_prefix = ? AND deleted_at IS NULL LIMIT 1")
+    .prepare(`
+      SELECT
+        id,
+        city_slug AS slug,
+        name,
+        hostname AS domain,
+        path_prefix AS pathPrefix,
+        notes AS settings
+      FROM tenant_instances
+      WHERE path_prefix = ?
+        AND status = 'active'
+      LIMIT 1
+    `)
     .bind(pathPrefix)
     .first<TenantRecord>();
   
@@ -124,7 +136,19 @@ export default {
     
     if (cached?.tenantId) {
       tenant = await env.DB
-        .prepare("SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL LIMIT 1")
+        .prepare(`
+          SELECT
+            id,
+            city_slug AS slug,
+            name,
+            hostname AS domain,
+            path_prefix AS pathPrefix,
+            notes AS settings
+          FROM tenant_instances
+          WHERE id = ?
+            AND status = 'active'
+          LIMIT 1
+        `)
         .bind(cached.tenantId)
         .first<TenantRecord>();
     }

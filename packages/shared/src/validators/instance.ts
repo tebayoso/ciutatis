@@ -15,8 +15,8 @@ export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSetti
 
 export const tenantProvisioningSettingsSchema = z.object({
   baseDomain: z.string().trim().min(1).default("ciutatis.com"),
-  pathTemplate: z.string().trim().min(1).default("/{countryCode}/{citySlug}-{shortCode}"),
-  workerNameTemplate: z.string().trim().min(1).default("ciutatis-{countryCode}-{citySlug}-{shortCode}"),
+  pathTemplate: z.string().trim().min(1).default("/{countryCode}/{jurisdictionType}/{routeSegment}"),
+  workerNameTemplate: z.string().trim().min(1).default("ciutatis-{countryCode}-{jurisdictionType}-{routeSegment}"),
   defaultRoutingMode: z.enum(TENANT_DEFAULT_ROUTING_MODES).default("path"),
 }).strict();
 

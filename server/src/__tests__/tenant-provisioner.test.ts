@@ -28,10 +28,10 @@ describe("MockTenantProvisioner", () => {
     const resources = await provisioner.provisionTenant(settings, {
       id: "tenant-1",
       name: "Tandil",
-      workerName: "ciutatis-ar-tandil-abc",
+      workerName: "ciutatis-ar-municipio-7000-tandil",
       dispatchScriptName: null,
-      pathPrefix: "/ar/tandil-abc",
-      dispatcherKey: "ar/tandil-abc",
+      pathPrefix: "/ar/municipio/7000-tandil",
+      dispatcherKey: "ar/municipio/7000-tandil",
     });
 
     expect(validation.ok).toBe(true);

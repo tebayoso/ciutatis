@@ -140,7 +140,7 @@ const CONTENT: Record<Locale, LandingContent> = {
         eyebrow: "03 · Deployment",
         title: "One company shell, many city runtimes.",
         body:
-          "Ciutatis is evolving toward a dedicated public landing, an internal company shell, and provisioned tenant instances such as ciutatis.com/ar/tandil-abc—so onboarding a new city becomes a repeatable operational act.",
+          "Ciutatis is evolving toward a dedicated public landing, an internal company shell, and provisioned tenant instances such as ciutatis.com/ar/municipio/7000-tandil, so onboarding a new city becomes a repeatable operational act.",
       },
     ],
     operatingModel: {
@@ -258,7 +258,7 @@ const CONTENT: Record<Locale, LandingContent> = {
         eyebrow: "03 · Despliegue",
         title: "Un panel institucional, múltiples runtimes por ciudad.",
         body:
-          "Ciutatis está evolucionando hacia una landing pública, un panel institucional interno y runtimes inquilinos aprovisionados como ciutatis.com/ar/tandil-abc, para que incorporar una nueva ciudad sea un acto operativo repetible.",
+          "Ciutatis está evolucionando hacia una landing pública, un panel institucional interno y runtimes inquilinos aprovisionados como ciutatis.com/ar/municipio/7000-tandil, para que incorporar una nueva ciudad sea un acto operativo repetible.",
       },
     ],
     operatingModel: {
@@ -497,7 +497,7 @@ export function Landing() {
 
                 <div className="rounded-none border border-stone-300 bg-white/75 p-4">
                   <p className="text-[11px] uppercase tracking-[0.24em] text-stone-500">Tenant path example</p>
-                  <p className="mt-2 font-mono text-sm text-stone-800">ciutatis.com/ar/tandil-abc</p>
+                  <p className="mt-2 break-all font-mono text-sm text-stone-800">ciutatis.com/ar/municipio/7000-tandil</p>
                   <p className="mt-3 text-sm leading-7 text-stone-600">
                     Ciutatis is being shaped to separate the public layer, the company shell, and each city runtime into clear operating boundaries.
                   </p>

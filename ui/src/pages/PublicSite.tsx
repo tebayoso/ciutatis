@@ -1524,13 +1524,12 @@ function PublicHeader({
               </nav>
 
               <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none sm:gap-3">
-                <div className="hidden lg:block">
-                  <GlobalSearchTrigger
-                    placeholder={locale === "en" ? "Search portal..." : "Buscar en portal..."}
-                    onClick={() => navigate(portalPathFor(locale))}
-                    showShortcut={false}
-                  />
-                </div>
+                <GlobalSearchTrigger
+                  placeholder={locale === "en" ? "Search portal..." : "Buscar en portal..."}
+                  onClick={() => navigate(portalPathFor(locale))}
+                  showShortcut={false}
+                  className="hidden sm:flex"
+                />
                 <a
                   className="hidden text-sm font-medium text-primary transition-colors hover:text-foreground focus-visible:rounded-[10px] lg:inline-flex"
                   href={portalPathFor(locale)}
@@ -1576,6 +1575,16 @@ function PublicHeader({
                 </Link>
               ))}
             </nav>
+
+            {/* Mobile search trigger */}
+            <div className="mt-3 sm:hidden">
+              <GlobalSearchTrigger
+                placeholder={locale === "en" ? "Search portal..." : "Buscar en portal..."}
+                onClick={() => navigate(portalPathFor(locale))}
+                showShortcut={false}
+                className="w-full justify-start"
+              />
+            </div>
 
             {isHome ? (
               <div className="mt-4 border-t border-border/70 pt-4">

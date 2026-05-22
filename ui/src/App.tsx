@@ -411,8 +411,8 @@ export function App() {
         <Route path="en" element={publicEntryElement} />
         <Route path="en/contact" element={publicEntryElement} />
         <Route path="en/platform" element={publicEntryElement} />
-        <Route path="en/govops" element={publicEntryElement} />
-        <Route path="en/scrutiny" element={publicEntryElement} />
+        <Route path="en/govops" element={<GovOpsPage />} />
+        <Route path="en/scrutiny" element={<ScrutinyPage />} />
         <Route path="en/about" element={publicEntryElement} />
         <Route path="en/partners" element={publicEntryElement} />
         <Route path="en/portal" element={<PublicPortalPage />} />

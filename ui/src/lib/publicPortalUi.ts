@@ -123,6 +123,7 @@ export const PORTAL_COPY = {
     submitReply: "Post follow-up",
     requestMissing: "This public request does not exist or is no longer available.",
     cityMissing: "This city portal is not configured on this instance.",
+    backToSite: "Back to site",
     backToPortal: "Back to portal",
     openCityPortal: "Open city portal",
     privacyNote:
@@ -171,6 +172,7 @@ export const PORTAL_COPY = {
     submitReply: "Publicar seguimiento",
     requestMissing: "Este pedido publico no existe o ya no esta disponible.",
     cityMissing: "Este portal de ciudad no esta configurado en esta instancia.",
+    backToSite: "Volver al sitio",
     backToPortal: "Volver al portal",
     openCityPortal: "Abrir portal de ciudad",
     privacyNote:

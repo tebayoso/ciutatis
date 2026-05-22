@@ -228,7 +228,11 @@ export function PublicPortalPage() {
                 {heroInstitutionName}
               </span>
               <Button variant="outline" asChild className="rounded-full border-slate-300 bg-white/85">
-                <Link to={portalPath(locale)}>{copy.backToPortal}</Link>
+                {routeInstitutionSlug ? (
+                  <Link to={portalPath(locale)}>{copy.backToPortal}</Link>
+                ) : (
+                  <Link to={locale === "es" ? "/es/escrutinio" : "/scrutiny"}>{copy.backToSite}</Link>
+                )}
               </Button>
             </div>
           </div>

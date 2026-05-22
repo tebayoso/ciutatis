@@ -145,7 +145,7 @@ export function PublicPortalRequestPage() {
             <div className="flex flex-wrap items-center gap-2">
               <RequestStatusPill locale={locale} status={detail.publicStatus} />
               <Button variant="outline" asChild className="rounded-full border-slate-300 bg-white/85">
-                <Link to={portalPath(locale)}>
+                <Link to={portalPath(locale, detail.institutionSlug)}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   {copy.backToPortal}
                 </Link>

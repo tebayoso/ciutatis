@@ -35,6 +35,7 @@ import { accessRoutes } from "./routes/access.js";
 import { adapterRoutes } from "./routes/adapters.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
+import { publicPortalRoutes } from "./routes/public-portal.js";
 import { applyUiBranding } from "./ui-branding.js";
 import { logger } from "./middleware/logger.js";
 import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
@@ -199,6 +200,7 @@ export async function createApp(
   const workerManager = opts.pluginWorkerManager ?? createPluginWorkerManager();
 
   // Mount API routes
+  app.use("/api/public", publicPortalRoutes(db));
   const api = Router();
   api.use(boardMutationGuard());
   api.use(

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 type Locale = "en" | "es";
-type PageKey = "home" | "platform" | "about" | "partners";
+type PageKey = "home" | "govops" | "scrutiny" | "platform" | "about" | "partners";
 type IconKey =
   | "government"
   | "routing"
@@ -84,6 +84,8 @@ type SiteContent = {
     languageLabel: string;
     github: string;
     signIn: string;
+    primaryLinks: PageKey[];
+    footerLinks: PageKey[];
     links: Record<PageKey, string>;
   };
   common: {
@@ -228,12 +230,16 @@ type SiteContent = {
 const PAGE_SLUGS: Record<Locale, Record<PageKey, string>> = {
   en: {
     home: "",
+    govops: "govops",
+    scrutiny: "scrutiny",
     platform: "platform",
     about: "about",
     partners: "partners",
   },
   es: {
     home: "",
+    govops: "govops",
+    scrutiny: "escrutinio",
     platform: "plataforma",
     about: "nosotros",
     partners: "casos",
@@ -272,10 +278,14 @@ const SITE: Record<Locale, SiteContent> = {
       languageLabel: "Language",
       github: "GitHub",
       signIn: "Enter the admin shell",
+      primaryLinks: ["home", "govops", "scrutiny", "about"],
+      footerLinks: ["platform", "partners"],
       links: {
         home: "Home",
+        govops: "GovOps",
+        scrutiny: "Scrutiny",
         platform: "Platform",
-        about: "Transparency",
+        about: "About",
         partners: "Citizen interface",
       },
     },
@@ -331,10 +341,20 @@ const SITE: Record<Locale, SiteContent> = {
             "Ciutatis helps governments route citizen requests, manage approvals, collect better information, and publish clearer follow-up with fewer errors and less operational drag.",
         },
       },
+      govops: {
+        title: "Ciutatis GovOps",
+        description: "The core operational layer for civil servants.",
+        hero: { eyebrow: "GovOps", title: "Internal control plane", body: "Manage civic workflows." },
+      },
+      scrutiny: {
+        title: "Ciutatis Scrutiny",
+        description: "The public accountability and visibility layer.",
+        hero: { eyebrow: "Scrutiny", title: "Public ledger", body: "Track performance and evidence." },
+      },
       platform: {
         title: "Platform — Ciutatis",
         description:
-          "How Ciutatis keeps intake, routing, approvals, evidence, and public-service execution inside one accountable flow.",
+          "Explore the civic control plane. Core modules for routing, collaboration, approvals, and real-time ledger visibility.",
         hero: {
           eyebrow: "Platform",
           title: "A government operating model built to reduce rework.",
@@ -770,10 +790,14 @@ const SITE: Record<Locale, SiteContent> = {
       languageLabel: "Idioma",
       github: "GitHub",
       signIn: "Entrar al shell administrativo",
+      primaryLinks: ["home", "govops", "scrutiny", "about"],
+      footerLinks: ["platform", "partners"],
       links: {
         home: "Inicio",
+        govops: "GovOps",
+        scrutiny: "Escrutinio Público",
         platform: "Plataforma",
-        about: "Transparencia",
+        about: "Nosotros",
         partners: "Interfaz ciudadana",
       },
     },
@@ -828,6 +852,16 @@ const SITE: Record<Locale, SiteContent> = {
           body:
             "Ciutatis ayuda a gobiernos a derivar pedidos ciudadanos, gestionar aprobaciones, reunir mejor informacion y publicar seguimiento mas claro con menos errores y menos friccion operativa.",
         },
+      },
+      govops: {
+        title: "Ciutatis GovOps",
+        description: "La capa operativa principal para servidores publicos.",
+        hero: { eyebrow: "GovOps", title: "Panel de control interno", body: "Gestiona los flujos de trabajo civicos." },
+      },
+      scrutiny: {
+        title: "Ciutatis Escrutinio",
+        description: "La capa de rendicion de cuentas y visibilidad publica.",
+        hero: { eyebrow: "Escrutinio Público", title: "Libro mayor publico", body: "Rastrea el desempeno y la evidencia." },
       },
       platform: {
         title: "Plataforma — Ciutatis",
@@ -1507,7 +1541,7 @@ function PublicHeader({
               </Link>
 
               <nav className="hidden items-center gap-1 rounded-[16px] border border-border bg-background/82 p-1 lg:flex">
-                {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
+                {site.nav.primaryLinks.map((page) => (
                   <Link
                     key={page}
                     to={pathFor(locale, page)}
@@ -1560,7 +1594,7 @@ function PublicHeader({
             </div>
 
             <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-              {(Object.keys(site.nav.links) as PageKey[]).map((page) => (
+              {site.nav.primaryLinks.map((page) => (
                 <Link
                   key={page}
                   to={pathFor(locale, page)}
@@ -2336,6 +2370,17 @@ export function PublicSite() {
 
         <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
           <ContentShell>
+            <div className="mb-4 flex justify-center gap-4">
+              {site.nav.footerLinks.map((page) => (
+                <Link
+                  key={page}
+                  to={pathFor(locale, page)}
+                  className="transition-colors hover:text-foreground"
+                >
+                  {site.nav.links[page]}
+                </Link>
+              ))}
+            </div>
             <span translate="no">Ciutatis</span>
             {" · "}
             {site.footer}

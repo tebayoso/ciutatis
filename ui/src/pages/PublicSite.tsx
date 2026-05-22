@@ -268,16 +268,16 @@ type HomeSectionLink = {
 const SITE: Record<Locale, SiteContent> = {
   en: {
     meta: {
-      defaultTitle: "Ciutatis — Faster, clearer government operations",
+      defaultTitle: "Ciutatis — The open source GovOps platform, fully powered by AI",
       defaultDescription:
-        "Ciutatis helps governments manage requests, approvals, forms, and public workflows faster, with fewer errors, better information, and real transparency for citizens.",
+        "Ciutatis is the open source GovOps platform fully powered by AI. Manage civic workflows, citizen requests, and public transparency with intelligent automation.",
     },
     nav: {
       mark: "Ciutatis",
-      submark: "Civic operating system for modern governments",
+      submark: "The open source GovOps platform, fully powered by AI",
       languageLabel: "Language",
       github: "GitHub",
-      signIn: "Enter the admin shell",
+      signIn: "Enter GovOps Console",
       primaryLinks: ["home", "govops", "scrutiny", "about"],
       footerLinks: ["platform", "partners"],
       links: {
@@ -291,7 +291,7 @@ const SITE: Record<Locale, SiteContent> = {
     },
     common: {
       skipToContent: "Skip to content",
-      openShell: "Enter the admin shell",
+      openShell: "Enter GovOps Console",
       readCode: "Read the code",
       reportIssue: "Report or ask",
       backHome: "Back home",
@@ -331,25 +331,25 @@ const SITE: Record<Locale, SiteContent> = {
     },
     pages: {
       home: {
-        title: "Ciutatis — Faster, clearer government operations",
+        title: "Ciutatis — The open source GovOps platform, fully powered by AI",
         description:
-          "Manage citizen requests, approvals, and operational follow-through in one civic operating system built for speed, accuracy, and transparency.",
+          "Manage citizen requests, approvals, and operational follow-through with an AI-powered GovOps platform built for speed, accuracy, and transparency.",
         hero: {
-          eyebrow: "Civic operating system",
-          title: "Governments move faster when requests, decisions, and evidence live in one place.",
+          eyebrow: "Open Source GovOps",
+          title: "The open source GovOps platform, fully powered by AI.",
           body:
-            "Ciutatis helps governments route citizen requests, manage approvals, collect better information, and publish clearer follow-up with fewer errors and less operational drag.",
+            "Transform civic operations with intelligent workflows. Ciutatis routes citizen requests, manages approvals, and publishes transparent follow-ups with AI-driven efficiency.",
         },
       },
       govops: {
         title: "Ciutatis GovOps",
-        description: "The core operational layer for civil servants.",
-        hero: { eyebrow: "GovOps", title: "Internal control plane", body: "Manage civic workflows." },
+        description: "The AI-powered core operational layer for civil servants.",
+        hero: { eyebrow: "GovOps", title: "AI-powered internal control plane", body: "Manage civic workflows." },
       },
       scrutiny: {
         title: "Ciutatis Scrutiny",
-        description: "The public accountability and visibility layer.",
-        hero: { eyebrow: "Scrutiny", title: "Public ledger", body: "Track performance and evidence." },
+        description: "The AI-assisted public accountability and visibility layer.",
+        hero: { eyebrow: "Scrutiny", title: "AI-assisted public ledger", body: "Track performance and evidence." },
       },
       platform: {
         title: "Platform — Ciutatis",
@@ -357,37 +357,37 @@ const SITE: Record<Locale, SiteContent> = {
           "Explore the civic control plane. Core modules for routing, collaboration, approvals, and real-time ledger visibility.",
         hero: {
           eyebrow: "Platform",
-          title: "A government operating model built to reduce rework.",
+          title: "An AI-powered GovOps model built to reduce rework.",
           body:
-            "Citizen intake, departmental routing, approvals, and service follow-through stay connected so the next step is obvious and the record stays intact.",
+            "AI-assisted intake, routing, approvals, and service follow-through stay connected so the next step is obvious and the record stays intact.",
         },
       },
       about: {
         title: "Transparency — Ciutatis",
         description:
-          "How Ciutatis turns operational clarity into public transparency without turning government into noise.",
+          "How Ciutatis turns AI-powered operational clarity into public transparency without turning government into noise.",
         hero: {
           eyebrow: "Transparency",
-          title: "Public trust grows when the system can explain itself.",
+          title: "Public trust grows when the AI-assisted system can explain itself.",
           body:
-            "Ciutatis keeps status, ownership, approvals, and evidence attached to the same request so governments can answer with facts instead of fragments.",
+            "Ciutatis uses AI to keep status, ownership, approvals, and evidence attached to the same request so governments can answer with facts instead of fragments.",
         },
       },
       partners: {
         title: "Citizen Interface — Ciutatis",
         description:
-          "How Ciutatis gives citizens a better way to report issues, ask clear questions, and follow the public process.",
+          "How Ciutatis gives citizens an AI-powered way to report issues, ask clear questions, and follow the public process.",
         hero: {
           eyebrow: "Citizen interface",
-          title: "Citizens should know where to report, where to ask, and what happens next.",
+          title: "AI makes it easy for citizens to know where to report, where to ask, and what happens next.",
           body:
-            "The public-facing side of Ciutatis makes government easier to approach and easier to follow without breaking the internal operating discipline teams need.",
+            "The AI-driven public-facing side of Ciutatis makes government easier to approach and easier to follow without breaking internal operating discipline.",
         },
       },
     },
     home: {
-      primaryCta: "See the operating model",
-      secondaryCta: "Report or ask",
+      primaryCta: "Explore GovOps",
+      secondaryCta: "View Public Scrutiny",
       chips: [
         "Faster municipal response",
         "Fewer routing errors",
@@ -395,8 +395,8 @@ const SITE: Record<Locale, SiteContent> = {
         "Transparent public follow-up",
       ],
       board: {
-        eyebrow: "Municipal board",
-        title: "See service operations before they turn into backlog.",
+        eyebrow: "AI-Powered Board",
+        title: "See service operations before they turn into backlog, predicted by AI.",
         governmentLabel: "Example government",
         governmentValue: "City of Astera",
         goalLabel: "Current service objective",
@@ -444,8 +444,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       problem: {
-        eyebrow: "Why it works",
-        title: "Government slows down when information breaks between desks.",
+        eyebrow: "Why AI-driven GovOps works",
+        title: "Government slows down when information breaks. AI keeps it flowing.",
         body:
           "Most public-service workflows still jump between inboxes, PDFs, spreadsheets, and hallway knowledge. Ciutatis keeps the case intact so teams move faster with fewer avoidable mistakes.",
         cards: [
@@ -467,8 +467,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       surfaces: {
-        eyebrow: "What you manage",
-        title: "One civic operating layer for requests, forms, and decisions.",
+        eyebrow: "Intelligent Workflows",
+        title: "One civic operating layer for AI-assisted requests, forms, and decisions.",
         body:
           "Ciutatis gives governments one surface for intake, routing, approvals, service status, and public follow-up so the right information is available at the right step.",
         cards: [
@@ -505,8 +505,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       flow: {
-        eyebrow: "Operational loop",
-        title: "One loop from citizen signal to municipal action.",
+        eyebrow: "AI Operational Loop",
+        title: "One intelligent loop from citizen signal to municipal action.",
         body:
           "Ciutatis keeps intake, routing, action, and follow-up in one frame so governments can move quickly without losing oversight.",
         steps: [
@@ -533,8 +533,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       audience: {
-        eyebrow: "Who it serves",
-        title: "For municipalities, agencies, and service teams that cannot run on guesswork.",
+        eyebrow: "Who benefits from GovOps",
+        title: "For municipalities and service teams ready to scale with AI.",
         body:
           "Ciutatis fits public teams that need cleaner handoffs, faster answers, fewer avoidable errors, and a public record that stays coherent under pressure.",
         cards: [
@@ -586,9 +586,9 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       close: {
-        title: "Public service gets better when the system asks the right questions early.",
+        title: "GovOps gets better when AI asks the right questions early.",
         body:
-          "Ciutatis helps governments move faster with fewer errors, better information, and a clearer public record from first report to final answer.",
+          "Ciutatis helps governments move faster with AI-powered workflows, fewer errors, better information, and a clearer public record.",
       },
     },
     platform: {
@@ -680,9 +680,9 @@ const SITE: Record<Locale, SiteContent> = {
     about: {
       story: {
         eyebrow: "Transparency by design",
-        title: "Public trust grows when the system can explain itself.",
+        title: "Public trust grows when the AI-assisted system can explain itself.",
         body:
-          "Transparency is not a PDF at the end of the month. It starts with clear intake, readable status, explicit ownership, and decisions that remain tied to evidence.",
+          "Transparency is not a PDF at the end of the month. It starts with clear intake, readable status, AI-assisted ownership, and decisions that remain tied to evidence.",
         cards: [
           {
             title: "Visible current state",
@@ -728,7 +728,7 @@ const SITE: Record<Locale, SiteContent> = {
     partners: {
       useCases: {
         eyebrow: "Citizen interaction",
-        title: "Citizens should know where to report, where to ask, and what happens next.",
+        title: "AI makes it easy for citizens to know where to report, where to ask, and what happens next.",
         body:
           "The public-facing side of Ciutatis reduces friction for residents while making the internal government response cleaner and easier to supervise.",
         cards: [
@@ -780,16 +780,16 @@ const SITE: Record<Locale, SiteContent> = {
   },
   es: {
     meta: {
-      defaultTitle: "Ciutatis — Operacion publica mas rapida y mas clara",
+      defaultTitle: "Ciutatis — La plataforma GovOps de código abierto, totalmente impulsada por IA",
       defaultDescription:
-        "Ciutatis ayuda a gobiernos a gestionar pedidos, aprobaciones, formularios y seguimiento operativo mas rapido, con menos errores, mejor informacion y transparencia real para la ciudadania.",
+        "Ciutatis es la plataforma GovOps de código abierto totalmente impulsada por IA. Gestiona flujos cívicos, pedidos ciudadanos y transparencia pública con automatización inteligente.",
     },
     nav: {
       mark: "Ciutatis",
-      submark: "Sistema operativo civico para gobiernos modernos",
+      submark: "La plataforma GovOps de codigo abierto, impulsada por IA",
       languageLabel: "Idioma",
       github: "GitHub",
-      signIn: "Entrar al shell administrativo",
+      signIn: "Entrar a la Consola GovOps",
       primaryLinks: ["home", "govops", "scrutiny", "about"],
       footerLinks: ["platform", "partners"],
       links: {
@@ -803,7 +803,7 @@ const SITE: Record<Locale, SiteContent> = {
     },
     common: {
       skipToContent: "Saltar al contenido",
-      openShell: "Entrar al shell administrativo",
+      openShell: "Entrar a la Consola GovOps",
       readCode: "Ver el codigo",
       reportIssue: "Reportar o consultar",
       backHome: "Volver al inicio",
@@ -843,25 +843,25 @@ const SITE: Record<Locale, SiteContent> = {
     },
     pages: {
       home: {
-        title: "Ciutatis — Operacion publica mas rapida y mas clara",
+        title: "Ciutatis — La plataforma GovOps de código abierto, impulsada por IA",
         description:
-          "Gestiona pedidos ciudadanos, aprobaciones y seguimiento operativo en un sistema civico pensado para velocidad, precision y transparencia.",
+          "Gestiona pedidos ciudadanos, aprobaciones y seguimiento operativo con una plataforma GovOps impulsada por IA, construida para velocidad, precisión y transparencia.",
         hero: {
-          eyebrow: "Sistema operativo civico",
-          title: "Los gobiernos avanzan mas rapido cuando pedidos, decisiones y evidencia viven en un mismo lugar.",
+          eyebrow: "GovOps de Codigo Abierto",
+          title: "La plataforma GovOps de código abierto, totalmente impulsada por IA.",
           body:
-            "Ciutatis ayuda a gobiernos a derivar pedidos ciudadanos, gestionar aprobaciones, reunir mejor informacion y publicar seguimiento mas claro con menos errores y menos friccion operativa.",
+            "Transforma las operaciones cívicas con flujos de trabajo inteligentes. Ciutatis deriva pedidos, gestiona aprobaciones y publica seguimientos transparentes con eficiencia impulsada por IA.",
         },
       },
       govops: {
         title: "Ciutatis GovOps",
-        description: "La capa operativa principal para servidores publicos.",
-        hero: { eyebrow: "GovOps", title: "Panel de control interno", body: "Gestiona los flujos de trabajo civicos." },
+        description: "La capa operativa principal impulsada por IA para servidores publicos.",
+        hero: { eyebrow: "GovOps", title: "Panel de control interno impulsado por IA", body: "Gestiona los flujos de trabajo civicos." },
       },
       scrutiny: {
         title: "Ciutatis Escrutinio",
-        description: "La capa de rendicion de cuentas y visibilidad publica.",
-        hero: { eyebrow: "Escrutinio Público", title: "Libro mayor publico", body: "Rastrea el desempeno y la evidencia." },
+        description: "La capa de rendicion de cuentas y visibilidad publica asistida por IA.",
+        hero: { eyebrow: "Escrutinio Público", title: "Libro mayor publico asistido por IA", body: "Rastrea el desempeno y la evidencia." },
       },
       platform: {
         title: "Plataforma — Ciutatis",
@@ -869,37 +869,37 @@ const SITE: Record<Locale, SiteContent> = {
           "Como Ciutatis mantiene intake, derivacion, aprobaciones, evidencia y ejecucion publica dentro de un mismo flujo responsable.",
         hero: {
           eyebrow: "Plataforma",
-          title: "Un modelo operativo de gobierno pensado para reducir retrabajo.",
+          title: "Un modelo GovOps impulsado por IA pensado para reducir retrabajo.",
           body:
-            "El intake ciudadano, la derivacion interna, las aprobaciones y el seguimiento del servicio quedan conectados para que el proximo paso sea evidente y el registro se mantenga completo.",
+            "El intake asistido por IA, la derivación interna, las aprobaciones y el seguimiento quedan conectados para que el próximo paso sea evidente y el registro se mantenga completo.",
         },
       },
       about: {
         title: "Transparencia — Ciutatis",
         description:
-          "Como Ciutatis convierte claridad operativa en transparencia publica sin transformar la gestion en ruido.",
+          "Como Ciutatis convierte la claridad operativa impulsada por IA en transparencia publica sin transformar la gestion en ruido.",
         hero: {
           eyebrow: "Transparencia",
-          title: "La confianza publica crece cuando el sistema puede explicarse solo.",
+          title: "La confianza publica crece cuando el sistema asistido por IA puede explicarse solo.",
           body:
-            "Ciutatis mantiene estado, responsables, aprobaciones y evidencia unidos al mismo pedido para que los gobiernos respondan con hechos y no con fragmentos.",
+            "Ciutatis usa IA para mantener estado, responsables, aprobaciones y evidencia unidos al mismo pedido para que los gobiernos respondan con hechos y no con fragmentos.",
         },
       },
       partners: {
         title: "Interfaz ciudadana — Ciutatis",
         description:
-          "Como Ciutatis da a la ciudadania una mejor forma de reportar problemas, hacer preguntas claras y seguir el proceso publico.",
+          "Como Ciutatis da a la ciudadania una forma impulsada por IA de reportar problemas, hacer preguntas claras y seguir el proceso publico.",
         hero: {
           eyebrow: "Interfaz ciudadana",
-          title: "La ciudadania deberia saber donde reportar, donde consultar y que pasa despues.",
+          title: "La IA facilita que la ciudadania sepa donde reportar, donde consultar y que pasa despues.",
           body:
-            "La capa publica de Ciutatis vuelve al gobierno mas facil de abordar y mas facil de seguir sin romper la disciplina operativa que los equipos necesitan por dentro.",
+            "La capa publica impulsada por IA de Ciutatis vuelve al gobierno mas facil de abordar y seguir sin romper la disciplina operativa interna.",
         },
       },
     },
     home: {
-      primaryCta: "Ver el modelo operativo",
-      secondaryCta: "Reportar o consultar",
+      primaryCta: "Explorar GovOps",
+      secondaryCta: "Ver Escrutinio Publico",
       chips: [
         "Respuesta municipal mas rapida",
         "Menos errores de derivacion",
@@ -907,8 +907,8 @@ const SITE: Record<Locale, SiteContent> = {
         "Seguimiento publico transparente",
       ],
       board: {
-        eyebrow: "Tablero municipal",
-        title: "Mira la operacion de servicio antes de que se vuelva atraso.",
+        eyebrow: "Tablero Impulsado por IA",
+        title: "Mira la operación de servicio antes de que se vuelva atraso, predicho por IA.",
         governmentLabel: "Gobierno de ejemplo",
         governmentValue: "Ciudad de Astera",
         goalLabel: "Objetivo actual de servicio",
@@ -956,8 +956,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       problem: {
-        eyebrow: "Por que funciona",
-        title: "El gobierno se frena cuando la informacion se rompe entre escritorios.",
+        eyebrow: "Por qué funciona GovOps con IA",
+        title: "El gobierno se frena cuando la información se rompe. La IA la mantiene fluyendo.",
         body:
           "Muchos flujos publicos todavia saltan entre inboxes, PDFs, planillas y memoria informal. Ciutatis mantiene el caso unido para que los equipos avancen mas rapido con menos errores evitables.",
         cards: [
@@ -979,8 +979,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       surfaces: {
-        eyebrow: "Que gestionas",
-        title: "Una capa civica unica para pedidos, formularios y decisiones.",
+        eyebrow: "Flujos Inteligentes",
+        title: "Una capa cívica para pedidos, formularios y decisiones asistidos por IA.",
         body:
           "Ciutatis da a los gobiernos una sola superficie para intake, derivacion, aprobaciones, estado del servicio y seguimiento publico, con la informacion correcta en la etapa correcta.",
         cards: [
@@ -1017,8 +1017,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       flow: {
-        eyebrow: "Loop operativo",
-        title: "Un solo loop desde la senal ciudadana hasta la accion municipal.",
+        eyebrow: "Loop Operativo con IA",
+        title: "Un solo loop inteligente desde la señal ciudadana hasta la acción municipal.",
         body:
           "Ciutatis mantiene intake, derivacion, accion y seguimiento dentro del mismo marco para que el gobierno avance rapido sin perder control.",
         steps: [
@@ -1045,8 +1045,8 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       audience: {
-        eyebrow: "Para quien es",
-        title: "Para municipios, agencias y equipos de servicio que no pueden operar a ciegas.",
+        eyebrow: "Quién se beneficia de GovOps",
+        title: "Para municipios y equipos de servicio listos para escalar con IA.",
         body:
           "Ciutatis encaja en equipos publicos que necesitan mejores traspasos, respuestas mas rapidas, menos errores evitables y un registro publico que se mantenga coherente bajo presion.",
         cards: [
@@ -1098,9 +1098,9 @@ const SITE: Record<Locale, SiteContent> = {
         ],
       },
       close: {
-        title: "El servicio publico mejora cuando el sistema hace las preguntas correctas temprano.",
+        title: "GovOps mejora cuando la IA hace las preguntas correctas temprano.",
         body:
-          "Ciutatis ayuda a gobiernos a avanzar mas rapido con menos errores, mejor informacion y un registro publico mas claro desde el primer reporte hasta la respuesta final.",
+          "Ciutatis ayuda a gobiernos a avanzar más rápido con flujos impulsados por IA, menos errores, mejor información y un registro público más claro.",
       },
     },
     platform: {
@@ -1192,9 +1192,9 @@ const SITE: Record<Locale, SiteContent> = {
     about: {
       story: {
         eyebrow: "Transparencia desde el diseno",
-        title: "La confianza publica crece cuando el sistema puede explicarse solo.",
+        title: "La confianza publica crece cuando el sistema asistido por IA puede explicarse solo.",
         body:
-          "La transparencia no es un PDF al final del mes. Empieza con intake claro, estado legible, responsabilidad explicita y decisiones unidas a evidencia.",
+          "La transparencia no es un PDF al final del mes. Empieza con intake claro, estado legible, responsabilidad asistida por IA y decisiones unidas a evidencia.",
         cards: [
           {
             title: "Estado presente visible",
@@ -1240,7 +1240,7 @@ const SITE: Record<Locale, SiteContent> = {
     partners: {
       useCases: {
         eyebrow: "Interaccion ciudadana",
-        title: "La ciudadania deberia saber donde reportar, donde consultar y que pasa despues.",
+        title: "La IA facilita que la ciudadania sepa donde reportar, donde consultar y que pasa despues.",
         body:
           "La cara publica de Ciutatis baja friccion para residentes y al mismo tiempo limpia la respuesta interna del gobierno.",
         cards: [

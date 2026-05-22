@@ -46,6 +46,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PublicSite } from "./pages/PublicSite";
 import { PublicPortalPage } from "./pages/PublicPortalPage";
 import { PublicPortalRequestPage } from "./pages/PublicPortalRequestPage";
+import { GovOpsPage } from "./pages/GovOpsPage";
+import { ScrutinyPage } from "./pages/ScrutinyPage";
 import { queryKeys } from "./lib/queryKeys";
 import { isAdminHostname, isPublicSitePath } from "./lib/public-site-paths";
 import { useCompany, useOptionalCompany } from "./context/CompanyContext";
@@ -425,6 +427,10 @@ export function App() {
         <Route path="es/portal" element={<PublicPortalPage />} />
         <Route path="es/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
         <Route path="es/portal/:institutionSlug" element={<PublicPortalPage />} />
+        <Route path="govops" element={<GovOpsPage />} />
+        <Route path="scrutiny" element={<ScrutinyPage />} />
+        <Route path="es/govops" element={<GovOpsPage />} />
+        <Route path="es/escrutinio" element={<ScrutinyPage />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="app" element={<ShellEntryRedirect />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />

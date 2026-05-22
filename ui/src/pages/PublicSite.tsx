@@ -1669,13 +1669,13 @@ function HomeHero({ locale, site }: { locale: Locale; site: SiteContent }) {
               <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-[1.14rem] sm:leading-8">{hero.body}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Button asChild size="lg" className="w-full rounded-full px-6 sm:w-auto">
-                  <Link to={pathFor(locale, "platform")}>
+                  <Link to={pathFor(locale, "govops")}>
                     {site.home.primaryCta}
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="w-full rounded-full border-border bg-background/88 px-6 sm:w-auto">
-                  <Link to={portalPathFor(locale)}>{site.home.secondaryCta}</Link>
+                  <Link to={pathFor(locale, "scrutiny")}>{site.home.secondaryCta}</Link>
                 </Button>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">

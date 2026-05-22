@@ -8,6 +8,8 @@ const PUBLIC_SITE_PATHS = new Set([
   "/en",
   "/en/contact",
   "/en/platform",
+  "/en/govops",
+  "/en/scrutiny",
   "/en/about",
   "/en/partners",
   "/en/portal",

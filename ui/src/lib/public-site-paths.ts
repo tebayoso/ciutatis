@@ -19,6 +19,10 @@ const PUBLIC_SITE_PATHS = new Set([
   "/es/plataforma",
   "/es/nosotros",
   "/es/alianzas",
+  "/govops",
+  "/scrutiny",
+  "/es/govops",
+  "/es/escrutinio",
   "/es/portal",
 ]);
 

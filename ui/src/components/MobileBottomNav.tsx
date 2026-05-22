@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
 import { useInboxBadge } from "../hooks/useInboxBadge";
 
 interface MobileBottomNavProps {
@@ -59,29 +59,29 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-transform duration-200 ease-out md:hidden pb-[env(safe-area-inset-bottom)]",
+        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-transform duration-150 ease-out md:hidden",
+        "pb-[env(safe-area-inset-bottom)] px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
         visible ? "translate-y-0" : "translate-y-full",
       )}
       aria-label="Mobile navigation"
     >
-      <div className="grid h-16 grid-cols-5 px-1">
+      <div className="grid h-16 grid-cols-5 px-2">
         {items.map((item) => {
           if (item.type === "action") {
             const Icon = item.icon;
-            const active = /\/issues\/new(?:\/|$)/.test(location.pathname);
             return (
               <button
                 key={item.label}
                 type="button"
                 onClick={item.onClick}
                 className={cn(
-                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-[10px] font-medium transition-colors",
-                  active
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-medium transition-all active:scale-95",
+                  "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className="h-[18px] w-[18px]" />
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary">
+                  <Icon className="h-[18px] w-[18px]" />
+                </div>
                 <span className="truncate">{item.label}</span>
               </button>
             );
@@ -94,7 +94,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-[10px] font-medium transition-colors",
+                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-medium transition-all active:scale-95",
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",

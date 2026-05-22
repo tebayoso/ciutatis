@@ -36,15 +36,42 @@ export function InstanceExperimentalSettings() {
   });
 
   if (experimentalQuery.isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading experimental settings...</div>;
+    return (
+      <div className="max-w-4xl space-y-6">
+        <div className="space-y-2">
+          <div className="h-5 w-48 bg-accent/75 rounded-md animate-pulse" />
+          <div className="h-4 w-96 bg-accent/75 rounded-md animate-pulse" />
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5 flex-1">
+              <div className="h-4 w-40 bg-accent/75 rounded-md animate-pulse" />
+              <div className="h-4 w-full bg-accent/75 rounded-md animate-pulse" />
+            </div>
+            <div className="h-6 w-11 bg-accent/75 rounded-md animate-pulse shrink-0" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (experimentalQuery.error) {
     return (
-      <div className="text-sm text-destructive">
-        {experimentalQuery.error instanceof Error
-          ? experimentalQuery.error.message
-          : "Failed to load experimental settings."}
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <p className="text-sm text-destructive mb-2">
+          {experimentalQuery.error instanceof Error
+            ? experimentalQuery.error.message
+            : "Failed to load experimental settings."}
+        </p>
+        <button
+          onClick={() => experimentalQuery.refetch()}
+          className="text-sm text-primary hover:underline"
+        >
+          Retry
+        </button>
       </div>
     );
   }

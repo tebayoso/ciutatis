@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useLocation } from "@/lib/router";
+import { Link, useLocation, useNavigate } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { ContactForm, type ContactFormCopy } from "@/components/ContactForm";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/context/ThemeContext";
+import { GlobalSearchTrigger } from "@/components/GlobalSearchTrigger";
 import {
   ArrowRight,
   BadgeCheck,
@@ -1485,6 +1486,7 @@ function PublicHeader({
 }) {
   const alternateLocale: Locale = locale === "en" ? "es" : "en";
   const isHome = currentPage === "home";
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/86 backdrop-blur-xl">
@@ -1522,6 +1524,13 @@ function PublicHeader({
               </nav>
 
               <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none sm:gap-3">
+                <div className="hidden lg:block">
+                  <GlobalSearchTrigger
+                    placeholder={locale === "en" ? "Search portal..." : "Buscar en portal..."}
+                    onClick={() => navigate(portalPathFor(locale))}
+                    showShortcut={false}
+                  />
+                </div>
                 <a
                   className="hidden text-sm font-medium text-primary transition-colors hover:text-foreground focus-visible:rounded-[10px] lg:inline-flex"
                   href={portalPathFor(locale)}

@@ -11,6 +11,7 @@ import { BreadcrumbProvider } from "./context/BreadcrumbContext";
 import { PanelProvider } from "./context/PanelContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { DialogProvider } from "./context/DialogContext";
+import { CommandPaletteProvider } from "./context/CommandPaletteContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,7 +49,9 @@ function ShellProviders({ children }: { children: React.ReactNode }) {
               <SidebarProvider>
                 <PanelProvider>
                   <PluginLauncherProvider>
-                    <DialogProvider>{children}</DialogProvider>
+                    <DialogProvider>
+                      <CommandPaletteProvider>{children}</CommandPaletteProvider>
+                    </DialogProvider>
                   </PluginLauncherProvider>
                 </PanelProvider>
               </SidebarProvider>

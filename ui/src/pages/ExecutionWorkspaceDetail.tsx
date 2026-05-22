@@ -32,9 +32,53 @@ export function ExecutionWorkspaceDetail() {
     enabled: Boolean(workspaceId),
   });
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading...</p>;
-  if (error) return <p className="text-sm text-destructive">{error instanceof Error ? error.message : "Failed to load workspace"}</p>;
-  if (!workspace) return null;
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl space-y-4">
+        <div className="space-y-1">
+          <div className="h-3 w-32 bg-accent/75 rounded-md animate-pulse" />
+          <div className="h-8 w-64 bg-accent/75 rounded-md animate-pulse" />
+          <div className="h-4 w-48 bg-accent/75 rounded-md animate-pulse" />
+        </div>
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="h-4 w-28 bg-accent/75 rounded-md animate-pulse shrink-0" />
+              <div className="h-4 w-full bg-accent/75 rounded-md animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <p className="text-sm text-destructive mb-2">
+          {error instanceof Error ? error.message : "Failed to load workspace"}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (!workspace) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <span className="text-2xl">🔍</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-4">

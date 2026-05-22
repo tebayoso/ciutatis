@@ -149,6 +149,35 @@ export function Layout() {
     setMobileNavVisible(true);
   }, [isMobile]);
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (!isMobile || !sidebarOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, [isMobile, sidebarOpen]);
+
+  // Escape key closes mobile sidebar
+  useEffect(() => {
+    if (!isMobile || !sidebarOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isMobile, sidebarOpen, setSidebarOpen]);
+
   // Swipe gesture to open/close sidebar on mobile
   useEffect(() => {
     if (!isMobile) return;
@@ -406,7 +435,7 @@ export function Layout() {
               tabIndex={-1}
               className={cn(
                 "flex-1 p-4 md:p-6",
-                isMobile ? "overflow-visible pb-[calc(5rem+env(safe-area-inset-bottom))]" : "overflow-auto",
+                isMobile ? "overflow-visible pb-[calc(4.5rem+env(safe-area-inset-bottom))]" : "overflow-auto",
               )}
             >
               {hasUnknownCompanyPrefix ? (

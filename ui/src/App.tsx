@@ -42,6 +42,7 @@ import { AuthPage } from "./pages/Auth";
 import { CouncilClaimPage } from "./pages/CouncilClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PublicSite } from "./pages/PublicSite";
 import { PublicPortalPage } from "./pages/PublicPortalPage";
 import { PublicPortalRequestPage } from "./pages/PublicPortalRequestPage";
@@ -395,7 +396,7 @@ export function App() {
   const publicEntryElement = isAdminHost ? <ShellEntryRedirect /> : <PublicSite />;
 
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
         <Route path="/" element={publicEntryElement} />
         <Route path="contact" element={publicEntryElement} />
@@ -490,6 +491,6 @@ export function App() {
         </Route>
       </Routes>
       {companyContext && !isPublicRoute ? <OnboardingWizard /> : null}
-    </>
+    </ErrorBoundary>
   );
 }

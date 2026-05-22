@@ -144,7 +144,7 @@ export function OrgChart() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
 
-  const { data: orgTree, isLoading } = useQuery({
+  const { data: orgTree, isLoading, error } = useQuery({
     queryKey: queryKeys.org(selectedCompanyId!),
     queryFn: () => agentsApi.org(selectedCompanyId!),
     enabled: !!selectedCompanyId,
@@ -326,6 +326,25 @@ export function OrgChart() {
 
   if (isLoading) {
     return <PageSkeleton variant="org-chart" />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <Network className="h-10 w-10 text-muted-foreground/50" />
+        </div>
+        <p className="text-sm text-destructive mb-2">
+          {error instanceof Error ? error.message : "Failed to load org chart."}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (orgTree && orgTree.length === 0) {

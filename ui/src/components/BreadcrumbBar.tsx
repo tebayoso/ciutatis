@@ -1,8 +1,9 @@
-import { Link } from "@/lib/router";
-import { Menu } from "lucide-react";
+import { Link, useNavigate } from "@/lib/router";
+import { Menu, ArrowLeft } from "lucide-react";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";
+import { useCommandPalette } from "../context/CommandPaletteContext";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -15,6 +16,7 @@ import {
 import { Fragment, useMemo } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
+import { GlobalSearchTrigger } from "./GlobalSearchTrigger";
 
 type GlobalToolbarContext = { companyId: string | null; companyPrefix: string | null };
 
@@ -34,6 +36,8 @@ export function BreadcrumbBar() {
   const { breadcrumbs } = useBreadcrumbs();
   const { toggleSidebar, isMobile } = useSidebar();
   const { selectedCompanyId, selectedCompany } = useCompany();
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const navigate = useNavigate();
 
   const globalToolbarSlotContext = useMemo(
     () => ({
@@ -45,9 +49,43 @@ export function BreadcrumbBar() {
 
   const globalToolbarSlots = <GlobalToolbarPlugins context={globalToolbarSlotContext} />;
 
+  const searchTrigger = selectedCompanyId ? (
+    <div className="flex items-center mx-2 sm:mx-4 flex-1 justify-center max-w-md">
+      <GlobalSearchTrigger
+        onClick={() => setCommandPaletteOpen(true)}
+        className="w-full max-w-xs"
+      />
+    </div>
+  ) : null;
+
+  // Mobile back button for deep pages
+  const backButton = isMobile && breadcrumbs.length > 1 && (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className="mr-1 shrink-0"
+      onClick={() => navigate(-1)}
+      aria-label="Go back"
+    >
+      <ArrowLeft className="h-5 w-5" />
+    </Button>
+  );
+
   if (breadcrumbs.length === 0) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end">
+      <div className="border-b border-border px-3 sm:px-4 md:px-6 h-12 shrink-0 flex items-center">
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="mr-1 shrink-0"
+            onClick={toggleSidebar}
+            aria-label="Open sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+        {searchTrigger}
         {globalToolbarSlots}
       </div>
     );
@@ -57,7 +95,7 @@ export function BreadcrumbBar() {
     <Button
       variant="ghost"
       size="icon-sm"
-      className="mr-2 shrink-0"
+      className="mr-1 shrink-0"
       onClick={toggleSidebar}
       aria-label="Open sidebar"
     >
@@ -65,16 +103,17 @@ export function BreadcrumbBar() {
     </Button>
   );
 
-  // Single breadcrumb = page title (uppercase)
+  // Single breadcrumb = page title
   if (breadcrumbs.length === 1) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+      <div className="border-b border-border px-3 sm:px-4 md:px-6 h-12 shrink-0 flex items-center">
         {menuButton}
         <div className="min-w-0 overflow-hidden flex-1">
-          <h1 className="text-sm font-semibold uppercase tracking-wider truncate">
+          <h1 className="text-sm font-semibold tracking-wide truncate" title={breadcrumbs[0].label}>
             {breadcrumbs[0].label}
           </h1>
         </div>
+        {searchTrigger}
         {globalToolbarSlots}
       </div>
     );
@@ -82,8 +121,9 @@ export function BreadcrumbBar() {
 
   // Multiple breadcrumbs = breadcrumb trail
   return (
-    <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+    <div className="border-b border-border px-3 sm:px-4 md:px-6 h-12 shrink-0 flex items-center">
       {menuButton}
+      {backButton}
       <div className="min-w-0 overflow-hidden flex-1">
         <Breadcrumb className="min-w-0 overflow-hidden">
           <BreadcrumbList className="flex-nowrap">
@@ -94,7 +134,7 @@ export function BreadcrumbBar() {
                   {i > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem className={isLast ? "min-w-0" : "shrink-0"}>
                     {isLast || !crumb.href ? (
-                      <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                      <BreadcrumbPage className="truncate" title={crumb.label}>{crumb.label}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink asChild>
                         <Link to={crumb.href}>{crumb.label}</Link>
@@ -107,6 +147,7 @@ export function BreadcrumbBar() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+      {searchTrigger}
       {globalToolbarSlots}
     </div>
   );

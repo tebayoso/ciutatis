@@ -172,9 +172,53 @@ export function IssueDetail() {
     },
   });
 
-  if (issueQuery.isLoading) return <div>Loading issue...</div>;
-  if (issueQuery.error) return <div>{(issueQuery.error as Error).message}</div>;
-  if (!issue) return null;
+  if (issueQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="h-3 w-64 bg-accent/75 rounded-md animate-pulse" />
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 bg-accent/75 rounded-md animate-pulse" />
+            <div className="h-6 w-6 bg-accent/75 rounded-md animate-pulse" />
+            <div className="h-7 w-48 bg-accent/75 rounded-md animate-pulse" />
+          </div>
+          <div className="h-4 w-40 bg-accent/75 rounded-md animate-pulse" />
+        </div>
+        <div className="space-y-3">
+          <div className="h-10 w-full bg-accent/75 rounded-md animate-pulse" />
+          <div className="h-32 w-full bg-accent/75 rounded-md animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+  if (issueQuery.error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <p className="text-sm text-destructive mb-2">
+          {(issueQuery.error as Error).message}
+        </p>
+        <button
+          onClick={() => issueQuery.refetch()}
+          className="text-sm text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (!issue) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 p-4 mb-4 rounded-md">
+          <span className="text-2xl">🔍</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Issue not found.</p>
+      </div>
+    );
+  }
 
   const issueWorkMode = (issue.workMode as string | undefined) ?? "standard";
   const isPlanning = issueWorkMode === "planning";

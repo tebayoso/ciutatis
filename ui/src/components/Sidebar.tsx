@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@/lib/router";
 import { SidebarSection } from "./SidebarSection";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarProjects } from "./SidebarProjects";
@@ -67,9 +68,9 @@ export function Sidebar() {
           size="icon-sm"
           className="text-muted-foreground shrink-0"
         >
-          <a href="/search" aria-label="Search" title="Search">
+          <Link to="/search" aria-label="Search" title="Search">
             <Search className="h-4 w-4" />
-          </a>
+          </Link>
         </Button>
       </div>
 

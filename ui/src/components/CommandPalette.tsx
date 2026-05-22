@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCompany } from "../context/CompanyContext";
 import { useDialogActions } from "../context/DialogContext";
 import { useSidebar } from "../context/SidebarContext";
+import { useCommandPalette } from "../context/CommandPaletteContext";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
 import { projectsApi } from "../api/projects";
@@ -41,7 +42,7 @@ export function buildFullSearchPath(query: string) {
 }
 
 export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useCommandPalette();
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
   const { selectedCompanyId } = useCompany();

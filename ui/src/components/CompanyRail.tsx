@@ -97,7 +97,7 @@ function SortableCompanyItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="overflow-visible">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="overflow-visible w-full">
       <Tooltip delayDuration={300}>
         <TooltipTrigger asChild>
           <a
@@ -106,19 +106,19 @@ function SortableCompanyItem({
               e.preventDefault();
               onSelect();
             }}
-            className="relative flex items-center justify-center group overflow-visible"
+            className="relative flex items-center justify-center group overflow-visible w-full py-1"
           >
             {/* Selection indicator pill */}
             <div
               className={cn(
-                "absolute left-[-14px] w-1 rounded-r-full bg-foreground transition-[height] duration-150",
+                "absolute left-0 w-1 rounded-r-full bg-foreground transition-[height,opacity] duration-150",
                 isSelected
-                  ? "h-5"
-                  : "h-0 group-hover:h-2"
+                  ? "h-5 opacity-100"
+                  : "h-0 opacity-0 group-hover:h-2 group-hover:opacity-100"
               )}
             />
             <div
-              className={cn("relative overflow-visible transition-transform duration-150", isDragging && "scale-105")}
+              className={cn("relative overflow-visible transition-transform duration-150 ml-0.5", isDragging && "scale-105")}
             >
               <CompanyPatternIcon
                 companyName={company.name}

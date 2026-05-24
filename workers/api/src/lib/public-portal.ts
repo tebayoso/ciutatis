@@ -7,16 +7,20 @@ import {
   issues,
   publicRequestUpdates,
   publicRequests,
+  tenantInstances,
 } from "@ciutatis/db-cloudflare";
 import type {
   PublicRequestCommentInput,
   PublicRequestCreateInput,
+  PublicSearchResult,
 } from "@paperclipai/shared";
 import {
   buildInstitutionPortalSlug,
   buildPublicSummary,
   createPublicRequestId,
+  deriveTenantUrl,
   derivePublicRequestStatus,
+  getTenantRoutingCountryConfig,
   redactPublicText,
 } from "@paperclipai/shared";
 import { conflict, forbidden, notFound } from "./errors.js";
@@ -71,6 +75,25 @@ function toInstitutionSummary(row: {
   };
 }
 
+function toPublicPlaceSummary(row: typeof tenantInstances.$inferSelect) {
+  const countryConfig = getTenantRoutingCountryConfig(row.countryCode);
+  const jurisdiction = countryConfig?.jurisdictions[row.jurisdictionType as keyof typeof countryConfig.jurisdictions];
+  return {
+    id: row.id,
+    name: row.name,
+    municipalityName: row.municipalityName,
+    countryCode: row.countryCode,
+    countryName: countryConfig?.countryName ?? null,
+    jurisdictionType: row.jurisdictionType,
+    jurisdictionLabel: jurisdiction?.label ?? row.jurisdictionType,
+    postalCode: row.postalCode,
+    citySlug: row.citySlug,
+    parentSubdivisionName: row.parentSubdivisionName,
+    pathPrefix: row.pathPrefix,
+    url: deriveTenantUrl(row.routingMode, row.pathPrefix, row.hostname),
+  };
+}
+
 function toReplyMode(submissionMode: string) {
   if (submissionMode === "account") return "account";
   if (submissionMode === "guest") return "guest";
@@ -78,7 +101,20 @@ function toReplyMode(submissionMode: string) {
 }
 
 export function publicPortalService(db: any) {
-  async function listInstitutions() {
+  async function listInstitutions(filters?: { q?: string }) {
+    const baseCondition = or(eq(companies.status, "active"), eq(companies.status, "paused"));
+    const query = filters?.q?.trim();
+    const whereCondition = query
+      ? and(
+          baseCondition,
+          or(
+            like(companies.name, `%${query}%`),
+            like(companies.description, `%${query}%`),
+            like(companies.issuePrefix, `%${query}%`),
+          ),
+        )
+      : baseCondition;
+
     const rows = await db
       .select({
         id: companies.id,
@@ -90,9 +126,39 @@ export function publicPortalService(db: any) {
       })
       .from(companies)
       .leftJoin(companyLogos, eq(companyLogos.companyId, companies.id))
-      .where(or(eq(companies.status, "active"), eq(companies.status, "paused")));
+      .where(whereCondition);
 
     return rows.map(toInstitutionSummary).sort((left: any, right: any) => left.name.localeCompare(right.name));
+  }
+
+  async function listPlaces(filters?: { q?: string }) {
+    const query = filters?.q?.trim();
+    const whereCondition = query
+      ? and(
+          eq(tenantInstances.status, "active"),
+          or(
+            like(tenantInstances.name, `%${query}%`),
+            like(tenantInstances.municipalityName, `%${query}%`),
+            like(tenantInstances.countryCode, `%${query}%`),
+            like(tenantInstances.citySlug, `%${query}%`),
+            like(tenantInstances.parentSubdivisionName, `%${query}%`),
+            like(tenantInstances.postalCode, `%${query}%`),
+            like(tenantInstances.jurisdictionType, `%${query}%`),
+          ),
+        )
+      : eq(tenantInstances.status, "active");
+
+    const rows = await db.select().from(tenantInstances).where(whereCondition);
+
+    return rows.map(toPublicPlaceSummary).sort((left: any, right: any) => left.name.localeCompare(right.name));
+  }
+
+  async function searchPublic(filters?: { q?: string }): Promise<PublicSearchResult[]> {
+    const [institutions, places] = await Promise.all([listInstitutions(filters), listPlaces(filters)]);
+    return [
+      ...places.map((place: any) => ({ ...place, kind: "place" as const })),
+      ...institutions.map((institution: any) => ({ ...institution, kind: "institution" as const })),
+    ];
   }
 
   async function getInstitutionBySlug(slug: string) {
@@ -464,6 +530,8 @@ export function publicPortalService(db: any) {
 
   return {
     listInstitutions,
+    listPlaces,
+    searchPublic,
     getInstitutionBySlug,
     createPublicRequest,
     listPublicRequests,

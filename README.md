@@ -187,19 +187,20 @@ Ciutatis handles the hard orchestration details correctly.
 
 ## Public site status
 
-The production public site is bilingual and currently ships from the main `ui` application.
+The production public site is bilingual and ships from the standalone `landing/` Next.js application. The `ui/` workspace is the admin/Paperclip shell and is not the public production source.
 
-- English routes: `/en`, `/en/platform`, `/en/about`, `/en/partners`
-- Spanish routes: `/es`, `/es/plataforma`, `/es/nosotros`, `/es/alianzas`
+- English routes: `/en`, `/govops`, `/scrutiny`, `/portal`
+- Spanish routes: `/es`, `/es/govops`, `/es/escrutinio`, `/es/portal`
 - `ciutatis.com/` redirects to `/en`
+- Existing deep public portal links under `/portal/*`, `/en/portal/*`, and `/es/portal/*` are preserved by the edge dispatcher.
 
-The standalone `landing/` workspace still exists for dedicated landing-page work, but the live `ciutatis.com` public experience is currently served from `ui`.
+`workers/dispatcher` fronts `ciutatis.com`: tenant public routes such as `/ar/municipio/7000-tandil` stay on the tenant surface, while public marketing and portal routes proxy to the current `landing/` Pages deployment.
 
 Recent public-site fixes included:
 
-- stabilizing full-height public page scrolling and layout behavior
-- improving English and Spanish copy, hierarchy, colors, and section structure
-- isolating public routes from authenticated shell providers so public pages do not initialize company session and live-update traffic
+- moving the public site off the admin shell and into `landing/`
+- proxying Next static assets through the dispatcher so `/_next/static/*` resolves on `ciutatis.com`
+- preserving public portal paths without changing the admin/Paperclip layer
 
 <br/>
 
@@ -256,7 +257,7 @@ pnpm dev              # Full dev (API + UI, watch mode)
 pnpm dev:once         # Full dev without file watching
 pnpm dev:server       # Server only
 pnpm dev:admin        # Standalone admin shell UI on localhost:4173
-pnpm dev:landing      # Standalone landing workspace on localhost:3000 (not the current production source for ciutatis.com)
+pnpm dev:landing      # Public Next.js site workspace on localhost:3000
 pnpm build            # Build all
 pnpm typecheck        # Type checking
 pnpm test:run         # Run tests

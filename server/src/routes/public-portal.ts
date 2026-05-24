@@ -14,8 +14,13 @@ export function publicPortalRoutes(db: Db) {
   const portal = publicPortalService(db);
   const heartbeat = heartbeatService(db);
 
-  router.get("/institutions", async (_req, res) => {
-    const institutions = await portal.listInstitutions();
+  router.get("/search", async (req, res) => {
+    const results = await portal.searchPublic({ q: typeof req.query.q === "string" ? req.query.q : undefined });
+    res.json(results);
+  });
+
+  router.get("/institutions", async (req, res) => {
+    const institutions = await portal.listInstitutions({ q: typeof req.query.q === "string" ? req.query.q : undefined });
     res.json(institutions);
   });
 

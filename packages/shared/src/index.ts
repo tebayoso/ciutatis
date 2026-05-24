@@ -379,6 +379,8 @@ export type {
   PublicContactSubmission,
   PublicContactLocale,
   PublicInstitutionSummary,
+  PublicPlaceSummary,
+  PublicSearchResult,
   PublicRequestSummary,
   PublicRequestUpdate,
   PublicRequestDetail,

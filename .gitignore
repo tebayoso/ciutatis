@@ -6,6 +6,8 @@ dist/
 *.tsbuildinfo
 drizzle/meta/
 .vite/
+landing/.next/
+landing/out/
 coverage/
 .DS_Store
 data/
@@ -68,3 +70,4 @@ doc/SEED-CREDENTIALS.md
 !.aidesigner/.gitkeep
 .env
 !.env.example
+.omo/

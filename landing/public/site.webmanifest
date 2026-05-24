@@ -1,0 +1,30 @@
+{
+  "id": "/",
+  "name": "Ciutatis",
+  "short_name": "Ciutatis",
+  "description": "Open-source civic operating system for governed institutional execution.",
+  "start_url": "/en",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#fcfbf7",
+  "background_color": "#fcfbf7",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -5,6 +5,8 @@ export type { Objective } from "./objective.js";
 export type { PublicContactSubmission, PublicContactLocale } from "./public-contact.js";
 export type {
   PublicInstitutionSummary,
+  PublicPlaceSummary,
+  PublicSearchResult,
   PublicRequestSummary,
   PublicRequestUpdate,
   PublicRequestDetail,

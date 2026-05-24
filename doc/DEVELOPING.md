@@ -46,13 +46,13 @@ pnpm dev:landing
 
 Current public-site note:
 
-- the live bilingual public site on `ciutatis.com` is currently served from the main `ui` app
-- `pnpm dev:landing` runs the standalone landing workspace, but it is not the current production source for `ciutatis.com`
+- the live bilingual public site on `ciutatis.com` is served from the `landing/` Next.js app via the edge dispatcher
+- `pnpm dev:landing` runs the standalone landing workspace and is the current production source for `ciutatis.com`
 
 Default ports:
 
 - standalone admin UI (Vite): `http://localhost:4173`
-- landing app (Vite): `http://localhost:3000`
+- landing app (Next.js): `http://localhost:3000`
 
 The admin UI no longer defaults to `5173`.
 

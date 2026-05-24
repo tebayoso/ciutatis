@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, desc, eq, like, or } from "drizzle-orm";
+import { and, desc, eq, ilike, like, or } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import {
   agents,
@@ -9,14 +9,17 @@ import {
   issues,
   publicRequestUpdates,
   publicRequests,
+  tenantInstances,
 } from "@paperclipai/db";
 import type {
   PublicInstitutionSummary,
+  PublicPlaceSummary,
   PublicRequestCategory,
   PublicRequestCommentInput,
   PublicRequestCreateInput,
   PublicRequestCreateResult,
   PublicRequestDetail,
+  PublicSearchResult,
   PublicRequestStatus,
   PublicRequestSummary,
   PublicSubmissionMode,
@@ -26,9 +29,11 @@ import {
   buildPublicSummary,
   createPublicRequestId,
   derivePublicRequestStatus,
+  deriveTenantUrl,
+  getTenantRoutingCountryConfig,
   redactPublicText,
 } from "@paperclipai/shared";
-import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
+import { conflict, forbidden, notFound } from "../errors.js";
 import { issueService as requestService } from "./requestService.js";
 
 function hashRecoveryToken(token: string) {
@@ -84,6 +89,25 @@ function toInstitutionSummary(row: {
   };
 }
 
+function toPublicPlaceSummary(row: typeof tenantInstances.$inferSelect): PublicPlaceSummary {
+  const countryConfig = getTenantRoutingCountryConfig(row.countryCode);
+  const jurisdiction = countryConfig?.jurisdictions[row.jurisdictionType as keyof typeof countryConfig.jurisdictions];
+  return {
+    id: row.id,
+    name: row.name,
+    municipalityName: row.municipalityName,
+    countryCode: row.countryCode,
+    countryName: countryConfig?.countryName ?? null,
+    jurisdictionType: row.jurisdictionType,
+    jurisdictionLabel: jurisdiction?.label ?? row.jurisdictionType,
+    postalCode: row.postalCode,
+    citySlug: row.citySlug,
+    parentSubdivisionName: row.parentSubdivisionName,
+    pathPrefix: row.pathPrefix,
+    url: deriveTenantUrl(row.routingMode, row.pathPrefix, row.hostname),
+  };
+}
+
 function toReplyMode(submissionMode: string): PublicRequestDetail["replyMode"] {
   if (submissionMode === "account") return "account";
   if (submissionMode === "guest") return "guest";
@@ -93,7 +117,20 @@ function toReplyMode(submissionMode: string): PublicRequestDetail["replyMode"] {
 export function publicPortalService(db: Db) {
   const requestsSvc = requestService(db);
 
-  async function listInstitutions(): Promise<PublicInstitutionSummary[]> {
+  async function listInstitutions(filters?: { q?: string }): Promise<PublicInstitutionSummary[]> {
+    const baseCondition = or(eq(companies.status, "active"), eq(companies.status, "paused"));
+    const query = filters?.q?.trim();
+    const whereCondition = query
+      ? and(
+          baseCondition,
+          or(
+            ilike(companies.name, `%${query}%`),
+            ilike(companies.description, `%${query}%`),
+            ilike(companies.issuePrefix, `%${query}%`),
+          ),
+        )
+      : baseCondition;
+
     const rows = await db
       .select({
         id: companies.id,
@@ -105,9 +142,39 @@ export function publicPortalService(db: Db) {
       })
       .from(companies)
       .leftJoin(companyLogos, eq(companyLogos.companyId, companies.id))
-      .where(or(eq(companies.status, "active"), eq(companies.status, "paused")));
+      .where(whereCondition);
 
     return rows.map(toInstitutionSummary).sort((left, right) => left.name.localeCompare(right.name));
+  }
+
+  async function listPlaces(filters?: { q?: string }): Promise<PublicPlaceSummary[]> {
+    const query = filters?.q?.trim();
+    const whereCondition = query
+      ? and(
+          eq(tenantInstances.status, "active"),
+          or(
+            ilike(tenantInstances.name, `%${query}%`),
+            ilike(tenantInstances.municipalityName, `%${query}%`),
+            ilike(tenantInstances.countryCode, `%${query}%`),
+            ilike(tenantInstances.citySlug, `%${query}%`),
+            ilike(tenantInstances.parentSubdivisionName, `%${query}%`),
+            ilike(tenantInstances.postalCode, `%${query}%`),
+            ilike(tenantInstances.jurisdictionType, `%${query}%`),
+          ),
+        )
+      : eq(tenantInstances.status, "active");
+
+    const rows = await db.select().from(tenantInstances).where(whereCondition);
+
+    return rows.map(toPublicPlaceSummary).sort((left, right) => left.name.localeCompare(right.name));
+  }
+
+  async function searchPublic(filters?: { q?: string }): Promise<PublicSearchResult[]> {
+    const [institutions, places] = await Promise.all([listInstitutions(filters), listPlaces(filters)]);
+    return [
+      ...places.map((place) => ({ ...place, kind: "place" as const })),
+      ...institutions.map((institution) => ({ ...institution, kind: "institution" as const })),
+    ];
   }
 
   async function getInstitutionBySlug(slug: string) {
@@ -509,6 +576,8 @@ export function publicPortalService(db: Db) {
 
   return {
     listInstitutions,
+    listPlaces,
+    searchPublic,
     getInstitutionBySlug,
     createPublicRequest,
     listPublicRequests,

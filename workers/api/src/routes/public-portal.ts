@@ -12,9 +12,14 @@ import { publicPortalService } from "../lib/public-portal.js";
 export function publicPortalRoutes() {
   const app = new Hono<AppEnv>();
 
+  app.get("/search", async (c) => {
+    const portal = publicPortalService(c.get("db"));
+    return c.json(await portal.searchPublic({ q: c.req.query("q") ?? undefined }));
+  });
+
   app.get("/institutions", async (c) => {
     const portal = publicPortalService(c.get("db"));
-    return c.json(await portal.listInstitutions());
+    return c.json(await portal.listInstitutions({ q: c.req.query("q") ?? undefined }));
   });
 
   app.get("/institutions/:institutionSlug", async (c) => {

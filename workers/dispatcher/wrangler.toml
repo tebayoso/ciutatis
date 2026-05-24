@@ -13,7 +13,7 @@ pattern = "www.ciutatis.com/*"
 zone_name = "ciutatis.com"
 
 [vars]
-LANDING_ORIGIN = "https://ciutatis.com"
+LANDING_ORIGIN = "https://ciutatis-ui.pages.dev"
 
 [[kv_namespaces]]
 binding = "ROUTING_CACHE"

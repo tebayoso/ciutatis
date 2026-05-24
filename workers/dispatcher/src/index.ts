@@ -103,6 +103,37 @@ function proxyRequest(targetOrigin: string, request: Request, pathname: string) 
   return new Request(upstreamUrl.toString(), request);
 }
 
+function isLandingAssetPath(pathname: string) {
+  return (
+    pathname.startsWith("/_next/") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/site.webmanifest" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml"
+  );
+}
+
+function isLandingPublicPath(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname === "/govops" ||
+    pathname === "/scrutiny" ||
+    pathname === "/portal" ||
+    pathname.startsWith("/portal/") ||
+    pathname === "/en" ||
+    pathname.startsWith("/en/") ||
+    pathname === "/es" ||
+    pathname.startsWith("/es/")
+  );
+}
+
+function landingUpstreamPath(pathname: string) {
+  if (pathname.startsWith("/portal/")) return "/portal";
+  if (pathname.startsWith("/en/portal/")) return "/en/portal";
+  if (pathname.startsWith("/es/portal/")) return "/es/portal";
+  return pathname;
+}
+
 function scopeForPathPrefix(pathPrefix: string): CivicScopeKey | null {
   return TANDIL_PATH_TO_SCOPE.get(pathPrefix) ?? null;
 }
@@ -1507,6 +1538,10 @@ export default {
 
     if (url.pathname === "/__dispatcher/health") {
       return Response.json({ ok: true, mode: "tenant-public-site" });
+    }
+
+    if (isLandingAssetPath(url.pathname) || isLandingPublicPath(url.pathname)) {
+      return fetch(proxyRequest(env.LANDING_ORIGIN, request, landingUpstreamPath(url.pathname)));
     }
 
     const tenantRoute = parseTenantRoutePathname(url.pathname);

@@ -1,5 +1,5 @@
-# Cloudflare Pages - Ciutatis Public Landing
-name = "ciutatis-landing"
+# Cloudflare Pages - Ciutatis public site (Next.js)
+name = "ciutatis-ui"
 compatibility_date = "2025-01-01"
 
 account_id = "b9f5ebc6c05975fab56f056782461b77"
@@ -9,7 +9,7 @@ command = "npm run build"
 directory = "dist"
 
 [env.production]
-name = "ciutatis-landing"
+name = "ciutatis-ui"
 
 [env.staging]
-name = "ciutatis-landing-staging"
+name = "ciutatis-ui-staging"

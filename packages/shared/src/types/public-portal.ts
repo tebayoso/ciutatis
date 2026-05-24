@@ -16,6 +16,25 @@ export interface PublicInstitutionSummary {
   issuePrefix: string;
 }
 
+export interface PublicPlaceSummary {
+  id: string;
+  name: string;
+  municipalityName: string;
+  countryCode: string;
+  countryName: string | null;
+  jurisdictionType: string;
+  jurisdictionLabel: string;
+  postalCode: string | null;
+  citySlug: string;
+  parentSubdivisionName: string | null;
+  pathPrefix: string;
+  url: string;
+}
+
+export type PublicSearchResult =
+  | (PublicInstitutionSummary & { kind: "institution" })
+  | (PublicPlaceSummary & { kind: "place" });
+
 export interface PublicRequestSummary {
   publicId: string;
   issueId: string;

@@ -33,6 +33,16 @@ export function publicPortalRoutes(db: Db) {
     res.json(institution);
   });
 
+  router.get("/places/:pathPrefix", async (req, res) => {
+    const pathPrefix = decodeURIComponent(req.params.pathPrefix);
+    const place = await portal.getPlaceByPathPrefix(pathPrefix);
+    if (!place) {
+      res.status(404).json({ error: "Place not found" });
+      return;
+    }
+    res.json(place);
+  });
+
   router.get("/requests", async (req, res) => {
     const requests = await portal.listPublicRequests({
       institutionSlug:

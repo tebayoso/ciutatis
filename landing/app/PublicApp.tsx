@@ -13,10 +13,11 @@ import {
   Scale,
   Search,
 } from "lucide-react";
+import RegionPage from "./region/RegionPage";
 
 type Locale = "en" | "es";
-type PublicRoute = "home" | "govops" | "scrutiny" | "portal";
-type RouteState = { locale: Locale; route: PublicRoute };
+type PublicRoute = "home" | "govops" | "scrutiny" | "portal" | "region";
+type RouteState = { locale: Locale; route: PublicRoute; regionPath?: string };
 
 const adminShellUrl = process.env.NEXT_PUBLIC_ADMIN_SHELL_URL ?? "https://admin.ciutatis.com";
 
@@ -218,7 +219,13 @@ interface PlaceResult {
 
 type SearchResult = InstitutionResult | PlaceResult;
 
-function resolvePublicRoute(pathname: string): { locale: Locale; route: PublicRoute } {
+function resolvePublicRoute(pathname: string): RouteState {
+  const regionMatch = /^\/[a-z]{2}\/[a-z-]+\/[a-z0-9-]+$/.exec(pathname);
+  if (regionMatch) {
+    const locale = pathname.startsWith("/es") ? "es" : "en";
+    return { locale, route: "region", regionPath: pathname };
+  }
+
   if (pathname.startsWith("/es")) {
     if (pathname === "/es/escrutinio") return { locale: "es", route: "scrutiny" };
     if (pathname === "/es/govops") return { locale: "es", route: "govops" };
@@ -246,7 +253,7 @@ function routePath(locale: Locale, route: PublicRoute) {
 }
 
 export default function PublicApp({ initialRouteState }: { initialRouteState: RouteState }) {
-  const [{ locale, route }, setRouteState] = useState<RouteState>(initialRouteState);
+  const [{ locale, route, regionPath }, setRouteState] = useState<RouteState>(initialRouteState);
 
   useEffect(() => {
     setRouteState(resolvePublicRoute(window.location.pathname));
@@ -266,6 +273,7 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "govops" ? <GovOpsPage locale={locale} /> : null}
         {route === "scrutiny" ? <ScrutinyPage locale={locale} /> : null}
         {route === "portal" ? <PortalPage locale={locale} /> : null}
+        {route === "region" && regionPath ? <RegionPage locale={locale} pathPrefix={regionPath} /> : null}
       </main>
       <footer className="w-full border-t border-[var(--border)] py-8 text-center">
         <p className="text-xs uppercase tracking-widest text-[var(--muted)] font-medium">{t.footer}</p>

@@ -31,6 +31,16 @@ export function publicPortalRoutes() {
     return c.json(institution);
   });
 
+  app.get("/places/:pathPrefix", async (c) => {
+    const portal = publicPortalService(c.get("db"));
+    const pathPrefix = decodeURIComponent(c.req.param("pathPrefix"));
+    const place = await portal.getPlaceByPathPrefix(pathPrefix);
+    if (!place) {
+      return c.json({ error: "Place not found" }, 404);
+    }
+    return c.json(place);
+  });
+
   app.get("/requests", async (c) => {
     const portal = publicPortalService(c.get("db"));
     return c.json(

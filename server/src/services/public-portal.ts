@@ -182,6 +182,15 @@ export function publicPortalService(db: Db) {
     return institutions.find((institution) => institution.slug === slug) ?? null;
   }
 
+  async function getPlaceByPathPrefix(pathPrefix: string): Promise<PublicPlaceSummary | null> {
+    const rows = await db
+      .select()
+      .from(tenantInstances)
+      .where(eq(tenantInstances.pathPrefix, pathPrefix))
+      .limit(1);
+    return rows[0] ? toPublicPlaceSummary(rows[0]) : null;
+  }
+
   async function pickAssigneeAgent(companyId: string) {
     const rows = await db
       .select({
@@ -579,6 +588,7 @@ export function publicPortalService(db: Db) {
     listPlaces,
     searchPublic,
     getInstitutionBySlug,
+    getPlaceByPathPrefix,
     createPublicRequest,
     listPublicRequests,
     getPublicRequest,

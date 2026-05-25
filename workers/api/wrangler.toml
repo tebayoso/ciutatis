@@ -11,6 +11,10 @@ account_id = "b9f5ebc6c05975fab56f056782461b77"
 pattern = "admin.ciutatis.com/api/*"
 zone_name = "ciutatis.com"
 
+[[routes]]
+pattern = "ciutatis.com/api/public/*"
+zone_name = "ciutatis.com"
+
 # Plain-text environment variables (safe to commit)
 [vars]
 # "local_trusted" (no login) or "authenticated" (login required)

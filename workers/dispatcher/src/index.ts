@@ -1549,6 +1549,24 @@ export default {
       return fetch(proxyRequest(env.LANDING_ORIGIN, request, url.pathname));
     }
 
+    if (!tenantRoute.remainderPath.startsWith("/__tenant/")) {
+      const upstream = await fetch(proxyRequest(env.LANDING_ORIGIN, request, url.pathname));
+      if (upstream.ok) return upstream;
+      const fallbackUrl = new URL("/index.html", env.LANDING_ORIGIN);
+      const fallback = await fetch(fallbackUrl.toString(), { method: "GET" });
+      if (fallback.ok) {
+        const body = await fallback.text();
+        return new Response(body, {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=60, stale-while-revalidate=300",
+          },
+        });
+      }
+      return upstream;
+    }
+
     const { tenant, selectedScope } = await resolveTenant(env, tenantRoute);
     if (!tenant) {
       return new Response("Tenant not found", { status: 404 });

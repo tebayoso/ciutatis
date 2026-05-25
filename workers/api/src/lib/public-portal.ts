@@ -166,6 +166,15 @@ export function publicPortalService(db: any) {
     return institutions.find((institution: any) => institution.slug === slug) ?? null;
   }
 
+  async function getPlaceByPathPrefix(pathPrefix: string) {
+    const rows = await db
+      .select()
+      .from(tenantInstances)
+      .where(eq(tenantInstances.pathPrefix, pathPrefix))
+      .limit(1);
+    return rows[0] ? toPublicPlaceSummary(rows[0]) : null;
+  }
+
   async function pickAssigneeAgent(companyId: string) {
     const rows = await db.select().from(agents).where(eq(agents.companyId, companyId));
     const eligible = rows.filter((agent: any) => agent.status !== "terminated" && agent.status !== "pending_approval");
@@ -533,6 +542,7 @@ export function publicPortalService(db: any) {
     listPlaces,
     searchPublic,
     getInstitutionBySlug,
+    getPlaceByPathPrefix,
     createPublicRequest,
     listPublicRequests,
     getPublicRequest,

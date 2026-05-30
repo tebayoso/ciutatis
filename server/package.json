@@ -28,15 +28,12 @@
   },
   "files": [
     "dist",
-    "ui-dist",
     "skills"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "dev:watch": "cross-env PAPERCLIP_MIGRATION_PROMPT=never PAPERCLIP_MIGRATION_AUTO_APPLY=true tsx watch src/index.ts",
     "build": "tsc",
-    "prepack": "pnpm run prepare:ui-dist",
-    "postpack": "rm -rf ui-dist",
     "clean": "rm -rf dist",
     "start": "node dist/index.js",
     "typecheck": "pnpm --filter @paperclipai/plugin-sdk ensure-build-deps && tsc --noEmit"

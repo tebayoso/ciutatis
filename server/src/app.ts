@@ -8,7 +8,7 @@ import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
-import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
+import { privateHostnameGuard } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
 import { companyRoutes } from "./routes/companies.js";
 import { agentRoutes } from "./routes/agents.js";
@@ -54,33 +54,8 @@ import { pluginRegistryService } from "./services/plugin-registry.js";
 import { createHostClientHandlers } from "@paperclipai/plugin-sdk";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 
-type UiMode = "none" | "static" | "vite-dev";
+type UiMode = "none" | "static";
 const FEEDBACK_EXPORT_FLUSH_INTERVAL_MS = 5_000;
-const VITE_DEV_ASSET_PREFIXES = [
-  "/@fs/",
-  "/@id/",
-  "/@react-refresh",
-  "/@vite/",
-  "/assets/",
-  "/node_modules/",
-  "/src/",
-];
-const VITE_DEV_STATIC_PATHS = new Set([
-  "/apple-touch-icon.png",
-  "/favicon-16x16.png",
-  "/favicon-32x32.png",
-  "/favicon.ico",
-  "/favicon.svg",
-  "/site.webmanifest",
-  "/sw.js",
-]);
-
-export function resolveViteHmrPort(serverPort: number): number {
-  if (serverPort <= 55_535) {
-    return serverPort + 10_000;
-  }
-  return Math.max(1_024, serverPort - 10_000);
-}
 
 export function isStaticUiAssetPath(pathname: string): boolean {
   return pathname === "/assets" || pathname.startsWith("/assets/");
@@ -94,13 +69,6 @@ export function resolveStaticUiCacheControl(filePath: string, indexHtmlPath: str
     return "public, max-age=31536000, immutable";
   }
   return "public, max-age=3600";
-}
-
-export function shouldServeViteDevHtml(req: ExpressRequest): boolean {
-  const pathname = req.path;
-  if (VITE_DEV_STATIC_PATHS.has(pathname)) return false;
-  if (VITE_DEV_ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return false;
-  return req.accepts(["html"]) === "html";
 }
 
 export function shouldEnablePrivateHostnameGuard(opts: {
@@ -118,6 +86,9 @@ export async function createApp(
   opts: {
     uiMode: UiMode;
     serverPort: number;
+    /** Enable the plugin dev-watcher (hot-reload). Was coupled to the former
+     * Vite UI dev middleware; now an independent flag. */
+    pluginDevWatch?: boolean;
     storageService: StorageService;
     feedbackExportService?: {
       flushPendingFeedbackTraces(input?: {
@@ -156,10 +127,6 @@ export async function createApp(
   const privateHostnameGateEnabled = shouldEnablePrivateHostnameGuard({
     deploymentMode: opts.deploymentMode,
     deploymentExposure: opts.deploymentExposure,
-  });
-  const privateHostnameAllowSet = resolvePrivateHostnameAllowSet({
-    allowedHostnames: opts.allowedHostnames,
-    bindHost: opts.bindHost,
   });
   app.use(
     privateHostnameGuard({
@@ -319,10 +286,11 @@ export async function createApp(
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   if (opts.uiMode === "static") {
-    // Try published location first (server/ui-dist/), then monorepo dev location (../../apps/ui/dist)
+    // Optional static UI fallback (server/ui-dist). The primary UI is now the
+    // unified Next app (apps/landing); this serves a prebuilt static bundle only
+    // if one is dropped here, otherwise the server runs API-only.
     const candidates = [
       path.resolve(__dirname, "../ui-dist"),
-      path.resolve(__dirname, "../../apps/ui/dist"),
     ];
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
@@ -373,44 +341,6 @@ export async function createApp(
     }
   }
 
-  if (opts.uiMode === "vite-dev") {
-    const uiRoot = path.resolve(__dirname, "../../apps/ui");
-    const indexHtmlPath = path.join(uiRoot, "index.html");
-    const publicUiRoot = path.resolve(uiRoot, "public");
-    const hmrPort = resolveViteHmrPort(opts.serverPort);
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      root: uiRoot,
-      appType: "custom",
-      server: {
-        middlewareMode: true,
-        hmr: {
-          host: opts.bindHost,
-          port: hmrPort,
-          clientPort: hmrPort,
-        },
-        allowedHosts: privateHostnameGateEnabled ? Array.from(privateHostnameAllowSet) : undefined,
-      },
-    });
-    if (fs.existsSync(publicUiRoot)) {
-      app.use(express.static(publicUiRoot, { index: false }));
-    }
-    app.get(/.*/, async (req, res, next) => {
-      if (!shouldServeViteDevHtml(req)) {
-        next();
-        return;
-      }
-      try {
-        const indexHtml = applyUiBranding(fs.readFileSync(indexHtmlPath, "utf-8"));
-        const html = await vite.transformIndexHtml(req.originalUrl, indexHtml);
-        res.status(200).set({ "Content-Type": "text/html" }).end(html);
-      } catch (err) {
-        next(err);
-      }
-    });
-    app.use(vite.middlewares);
-  }
-
   app.use(errorHandler);
 
   jobCoordinator.start();
@@ -431,7 +361,7 @@ export async function createApp(
   void toolDispatcher.initialize().catch((err) => {
     logger.error({ err }, "Failed to initialize plugin tool dispatcher");
   });
-  const devWatcher = opts.uiMode === "vite-dev"
+  const devWatcher = opts.pluginDevWatch
     ? createPluginDevWatcher(
       lifecycle,
       async (pluginId) => (await pluginRegistry.getById(pluginId))?.packagePath ?? null,

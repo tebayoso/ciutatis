@@ -492,7 +492,8 @@ export async function startServer(): Promise<StartedServer> {
   if (resolvedEmbeddedPostgresPort !== null && resolvedEmbeddedPostgresPort !== config.embeddedPostgresPort) {
     config.embeddedPostgresPort = resolvedEmbeddedPostgresPort;
   }
-  const uiMode = config.uiDevMiddleware ? "vite-dev" : config.serveUi ? "static" : "none";
+  const uiMode = config.serveUi ? "static" : "none";
+  const pluginDevWatch = config.uiDevMiddleware;
   const storageService = createStorageServiceFromConfig(config);
   const backupSettingsSvc = instanceSettingsService(db);
   let databaseBackupInFlight = false;
@@ -562,6 +563,7 @@ export async function startServer(): Promise<StartedServer> {
   const pluginWorkerManager = createPluginWorkerManager();
   const app = await createApp(db as any, {
     uiMode,
+    pluginDevWatch,
     serverPort: listenPort,
     storageService,
     databaseBackupService: {

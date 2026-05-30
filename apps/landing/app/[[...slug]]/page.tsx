@@ -17,6 +17,7 @@ const staticSlugs = [
   ["es", "escrutinio"],
   ["es", "portal"],
   ["ar", "municipio", "7000-tandil"],
+  ["us", "municipio", "new-york"],
 ];
 
 export function generateStaticParams() {

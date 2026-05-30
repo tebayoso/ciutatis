@@ -85,7 +85,7 @@
     "publishFromCi": true
   },
   {
-    "dir": "ui",
+    "dir": "apps/ui",
     "name": "@paperclipai/ui",
     "publishFromCi": true
   }

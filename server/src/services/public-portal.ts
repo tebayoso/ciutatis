@@ -30,11 +30,106 @@ import {
   createPublicRequestId,
   derivePublicRequestStatus,
   deriveTenantUrl,
+  deriveTenantRoute,
   getTenantRoutingCountryConfig,
   redactPublicText,
 } from "@paperclipai/shared";
 import { conflict, forbidden, notFound } from "../errors.js";
 import { issueService as requestService } from "./requestService.js";
+
+export interface NominatimResult {
+  place_id: number;
+  osm_type: string;
+  osm_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  type: string;
+  class: string;
+  address?: Record<string, string>;
+  extratags?: Record<string, string>;
+  geojson?: unknown;
+}
+
+export async function searchNominatim(query: string, countryCode?: string): Promise<NominatimResult[]> {
+  const params = new URLSearchParams({
+    format: "json",
+    q: query,
+    addressdetails: "1",
+    extratags: "1",
+    limit: "10",
+  });
+  if (countryCode) params.set("countrycodes", countryCode.toLowerCase());
+
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    headers: { "User-Agent": "Ciutatis/1.0 (https://ciutatis.com)" },
+  });
+
+  if (!response.ok) return [];
+  const data = await response.json();
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .filter((item: any) => item.class === "boundary" && item.type === "administrative")
+    .map((item: any) => ({
+      place_id: item.place_id,
+      osm_type: item.osm_type,
+      osm_id: item.osm_id,
+      display_name: item.display_name,
+      lat: item.lat,
+      lon: item.lon,
+      type: item.type,
+      class: item.class,
+      address: item.address,
+      extratags: item.extratags,
+      geojson: item.geojson,
+    }));
+}
+
+export async function lookupNominatim(osmType: string, osmId: string): Promise<NominatimResult | null> {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=${osmType[0].toUpperCase()}${osmId}&addressdetails=1&extratags=1&polygon_geojson=1`,
+    { headers: { "User-Agent": "Ciutatis/1.0 (https://ciutatis.com)" } },
+  );
+  if (!response.ok) return null;
+  const data = await response.json();
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const item = data[0];
+  return {
+    place_id: item.place_id,
+    osm_type: item.osm_type,
+    osm_id: item.osm_id,
+    display_name: item.display_name,
+    lat: item.lat,
+    lon: item.lon,
+    type: item.type,
+    class: item.class,
+    address: item.address,
+    extratags: item.extratags,
+    geojson: item.geojson,
+  };
+}
+
+function inferJurisdictionTypeFromNominatim(nominatimType: string, countryCode: string): string {
+  const countryConfig = getTenantRoutingCountryConfig(countryCode);
+  const typeMap: Record<string, string> = {
+    country: "nacion",
+    state: "provincia",
+    county: "partido",
+    city: "municipio",
+    town: "municipio",
+    municipality: "municipio",
+    village: "municipio",
+    borough: "departamento",
+    suburb: "barrio",
+    neighbourhood: "barrio",
+  };
+  const mapped = typeMap[nominatimType.toLowerCase()];
+  if (mapped && countryConfig?.jurisdictions[mapped as keyof typeof countryConfig.jurisdictions]) {
+    return mapped;
+  }
+  return countryConfig?.defaultJurisdictionType ?? "municipio";
+}
 
 function hashRecoveryToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -583,16 +678,64 @@ export function publicPortalService(db: Db) {
     return updated;
   }
 
+  async function createPlaceFromNominatim(nominatimData: NominatimResult) {
+    const countryCode = (nominatimData.address?.country_code ?? "us").toLowerCase();
+    const jurisdictionType = inferJurisdictionTypeFromNominatim(nominatimData.type, countryCode);
+    const name = nominatimData.display_name.split(",")[0]?.trim() ?? "Unknown";
+    const citySlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const postalCode = nominatimData.address?.postcode ?? null;
+    const shortCode = postalCode || citySlug;
+    const parentSubdivisionName = nominatimData.address?.state
+      || nominatimData.address?.county
+      || null;
+    const parentSubdivisionCode = parentSubdivisionName
+      ? parentSubdivisionName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+      : null;
+
+    const route = deriveTenantRoute({
+      countryCode,
+      jurisdictionType,
+      citySlug,
+      shortCode,
+      postalCode,
+      parentSubdivisionCode,
+      parentSubdivisionName,
+    });
+
+    const [inserted] = await db.insert(tenantInstances).values({
+      name,
+      municipalityName: name,
+      countryCode,
+      jurisdictionType,
+      postalCode,
+      citySlug,
+      shortCode: route.shortCode,
+      parentSubdivisionCode,
+      parentSubdivisionName,
+      routingMode: "path",
+      status: "draft",
+      pathPrefix: route.pathPrefix,
+      dispatcherKey: route.dispatcherKey,
+      workerName: route.workerName,
+      bootstrapStatus: "pending",
+    }).returning();
+
+    return toPublicPlaceSummary(inserted);
+  }
+
   return {
     listInstitutions,
     listPlaces,
     searchPublic,
     getInstitutionBySlug,
     getPlaceByPathPrefix,
+    createPlaceFromNominatim,
     createPublicRequest,
     listPublicRequests,
     getPublicRequest,
     addPublicComment,
     syncIssueStatus,
+    searchNominatim,
+    lookupNominatim,
   };
 }

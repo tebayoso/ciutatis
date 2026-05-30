@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const manifestPath = join(repoRoot, "scripts", "release-package-manifest.json");
-const roots = ["packages", "server", "ui", "cli"];
+const roots = ["packages", "server", "apps", "cli"];
 
 function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));

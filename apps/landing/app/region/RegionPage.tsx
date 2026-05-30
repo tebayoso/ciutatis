@@ -41,11 +41,13 @@ type PlaceDetail = {
 
 type NominatimResult = {
   place_id: number;
+  osm_type: string;
+  osm_id: number;
   display_name: string;
   lat: string;
   lon: string;
   type: string;
-  category: string;
+  class: string;
   address?: {
     city?: string;
     town?: string;
@@ -144,6 +146,7 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [creatingPlace, setCreatingPlace] = useState<string | null>(null);
 
   // Fetch place from Ciutatis API
   useEffect(() => {
@@ -192,7 +195,30 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
     }
   }
 
-  // Debounced search for other cities
+  async function createPlaceFromNominatim(nominatimResult: NominatimResult) {
+    const key = `${nominatimResult.osm_type}-${nominatimResult.osm_id}`;
+    setCreatingPlace(key);
+    try {
+      const response = await fetch("/api/public/places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nominatimResult),
+      });
+      if (response.ok) {
+        const place = await response.json();
+        window.location.href = place.url;
+      } else {
+        const error = await response.json().catch(() => ({ error: "Failed to create place" }));
+        alert(error.error || "Failed to create place");
+      }
+    } catch {
+      alert("Failed to create place");
+    } finally {
+      setCreatingPlace(null);
+    }
+  }
+
+  // Debounced search for admin boundaries using Nominatim API
   useEffect(() => {
     const timeout = setTimeout(async () => {
       if (!searchQuery.trim()) {
@@ -203,10 +229,7 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
       try {
         const [ciutatisResponse, nominatimResponse] = await Promise.all([
           fetch(`/api/public/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
-          fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.trim())}&addressdetails=1&limit=5`,
-            { headers: { "Accept-Language": locale === "es" ? "es" : "en" } }
-          ).catch(() => null),
+          fetch(`/api/public/nominatim/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
         ]);
 
         const results: SearchResult[] = [];
@@ -223,9 +246,8 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
         if (nominatimResponse?.ok) {
           const nominatimData = await nominatimResponse.json();
           for (const item of nominatimData) {
-            // Only add if not already in Ciutatis results
             const alreadyExists = results.some(
-              (r) => r.kind === "place" && r.place.name.toLowerCase() === (item.address?.city || item.address?.town || "").toLowerCase()
+              (r) => r.kind === "place" && r.place.name.toLowerCase() === item.display_name.split(",")[0]?.trim().toLowerCase()
             );
             if (!alreadyExists) {
               results.push({ kind: "nominatim", result: item });
@@ -413,8 +435,22 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
         )}
         {searchResults.length > 0 && (
           <div className="mt-4 grid gap-3">
-            {searchResults.map((result, index) => (
-              <SearchResultCard key={`${result.kind}-${index}`} result={result} locale={locale} />
+            {groupSearchResultsByLevel(searchResults).map((group, groupIndex) => (
+              <div key={groupIndex} className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted)]">
+                  <Layers className="h-3.5 w-3.5" />
+                  {group.level}
+                </div>
+                {group.results.map((result, index) => (
+                  <SearchResultCard
+                    key={`${result.kind}-${index}`}
+                    result={result}
+                    locale={locale}
+                    onCreate={result.kind === "nominatim" ? () => createPlaceFromNominatim(result.result) : undefined}
+                    isCreating={result.kind === "nominatim" ? creatingPlace === `${result.result.osm_type}-${result.result.osm_id}` : false}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}
@@ -647,7 +683,17 @@ function HierarchySteps({
   );
 }
 
-function SearchResultCard({ result, locale }: { result: SearchResult; locale: Locale }) {
+function SearchResultCard({
+  result,
+  locale,
+  onCreate,
+  isCreating,
+}: {
+  result: SearchResult;
+  locale: Locale;
+  onCreate?: () => void;
+  isCreating?: boolean;
+}) {
   const t = copy[locale];
 
   if (result.kind === "place") {
@@ -681,10 +727,7 @@ function SearchResultCard({ result, locale }: { result: SearchResult; locale: Lo
   const country = result.result.address?.country ?? "";
 
   return (
-    <a
-      href={`https://admin.ciutatis.com/auth?claim=${encodeURIComponent(shortName)},${encodeURIComponent(country)}`}
-      className="flex items-center justify-between rounded-xl border border-dashed border-[var(--border)] bg-[var(--panel)] p-4 transition hover:-translate-y-0.5 hover:shadow-sm"
-    >
+    <div className="flex items-center justify-between rounded-xl border border-dashed border-[var(--border)] bg-[var(--panel)] p-4 transition hover:-translate-y-0.5 hover:shadow-sm">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-strong)] bg-white/80">
           <Globe2 className="h-5 w-5 text-[var(--muted)]" />
@@ -697,8 +740,36 @@ function SearchResultCard({ result, locale }: { result: SearchResult; locale: Lo
           <p className="text-sm text-[var(--muted-strong)]">{displayName}</p>
         </div>
       </div>
-      <span className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">{t.claim}</span>
-    </a>
+      <div className="flex items-center gap-2">
+        {onCreate && (
+          <button
+            onClick={onCreate}
+            disabled={isCreating}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--accent-dark)] disabled:opacity-50"
+          >
+            {isCreating ? (
+              <>
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <MapPin className="h-3.5 w-3.5" />
+                {t.claim}
+              </>
+            )}
+          </button>
+        )}
+        {!onCreate && (
+          <a
+            href={`https://admin.ciutatis.com/auth?claim=${encodeURIComponent(shortName)},${encodeURIComponent(country)}`}
+            className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]"
+          >
+            {t.claim}
+          </a>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -712,4 +783,42 @@ function inferNameFromPath(pathPrefix: string): { name: string; country: string 
   const name = slugMatch?.[1]?.replace(/-/g, " ") ?? routeSegment;
   const countryMap: Record<string, string> = { ar: "Argentina", us: "United States", mx: "Mexico", br: "Brazil", es: "Spain" };
   return { name: name.charAt(0).toUpperCase() + name.slice(1), country: countryMap[countryCode.toLowerCase()] ?? countryCode.toUpperCase() };
+}
+
+function getAdminLevelLabel(type: string): string {
+  const levelMap: Record<string, string> = {
+    country: "Country",
+    state: "State / Province",
+    county: "County",
+    city: "City",
+    town: "Town",
+    municipality: "Municipality",
+    village: "Village",
+    borough: "Borough",
+    suburb: "Suburb",
+    neighbourhood: "Neighbourhood",
+  };
+  return levelMap[type.toLowerCase()] ?? type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function groupSearchResultsByLevel(results: SearchResult[]): { level: string; results: SearchResult[] }[] {
+  const groups: Record<string, SearchResult[]> = {};
+  for (const result of results) {
+    const level = result.kind === "place"
+      ? result.place.jurisdictionType
+      : getAdminLevelLabel(result.result.type);
+    if (!groups[level]) groups[level] = [];
+    groups[level].push(result);
+  }
+  const order = ["Country", "State / Province", "County", "City", "Town", "Municipality", "Village", "Borough", "Suburb", "Neighbourhood"];
+  return Object.entries(groups)
+    .sort(([a], [b]) => {
+      const aIndex = order.indexOf(a);
+      const bIndex = order.indexOf(b);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.localeCompare(b);
+    })
+    .map(([level, results]) => ({ level, results }));
 }

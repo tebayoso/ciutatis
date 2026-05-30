@@ -5,7 +5,7 @@ set -euo pipefail
 # This keeps @paperclipai/server publish artifacts self-contained for static UI serving.
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-UI_DIST="$REPO_ROOT/ui/dist"
+UI_DIST="$REPO_ROOT/apps/ui/dist"
 SERVER_UI_DIST="$REPO_ROOT/server/ui-dist"
 
 echo "  -> Building @paperclipai/ui..."
@@ -18,4 +18,4 @@ fi
 
 rm -rf "$SERVER_UI_DIST"
 cp -r "$UI_DIST" "$SERVER_UI_DIST"
-echo "  -> Copied ui/dist to server/ui-dist"
+echo "  -> Copied apps/ui/dist to server/ui-dist"

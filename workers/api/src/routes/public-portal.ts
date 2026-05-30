@@ -7,7 +7,7 @@ import type { AppEnv } from "../lib/types.js";
 import { getActorInfo } from "../lib/authz.js";
 import { logActivity } from "../lib/activity.js";
 import { enqueueHostedHeartbeatRun } from "../lib/hosted-heartbeats.js";
-import { publicPortalService } from "../lib/public-portal.js";
+import { publicPortalService, searchNominatim, lookupNominatim } from "../lib/public-portal.js";
 
 export function publicPortalRoutes() {
   const app = new Hono<AppEnv>();
@@ -39,6 +39,40 @@ export function publicPortalRoutes() {
       return c.json({ error: "Place not found" }, 404);
     }
     return c.json(place);
+  });
+
+  app.get("/nominatim/search", async (c) => {
+    const q = c.req.query("q");
+    if (!q?.trim()) {
+      return c.json({ error: "Query required" }, 400);
+    }
+    const country = c.req.query("country") ?? undefined;
+    const results = await searchNominatim(q.trim(), country);
+    return c.json(results);
+  });
+
+  app.get("/nominatim/lookup", async (c) => {
+    const osmType = c.req.query("osm_type");
+    const osmId = c.req.query("osm_id");
+    if (!osmType || !osmId) {
+      return c.json({ error: "osm_type and osm_id required" }, 400);
+    }
+    const result = await lookupNominatim(osmType, osmId);
+    if (!result) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    return c.json(result);
+  });
+
+  app.post("/places", async (c) => {
+    const portal = publicPortalService(c.get("db"));
+    const body = await c.req.json();
+    try {
+      const place = await portal.createPlaceFromNominatim(body);
+      return c.json(place, 201);
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : "Failed to create place" }, 400);
+    }
   });
 
   app.get("/requests", async (c) => {

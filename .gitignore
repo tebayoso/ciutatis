@@ -6,8 +6,8 @@ dist/
 *.tsbuildinfo
 drizzle/meta/
 .vite/
-landing/.next/
-landing/out/
+apps/landing/.next/
+apps/landing/out/
 coverage/
 .DS_Store
 data/
@@ -71,3 +71,4 @@ doc/SEED-CREDENTIALS.md
 .env
 !.env.example
 .omo/
+server/ui-dist/

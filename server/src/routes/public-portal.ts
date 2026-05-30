@@ -43,6 +43,41 @@ export function publicPortalRoutes(db: Db) {
     res.json(place);
   });
 
+  router.get("/nominatim/search", async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q : "";
+    const country = typeof req.query.country === "string" ? req.query.country : undefined;
+    if (!q.trim()) {
+      res.status(400).json({ error: "Query required" });
+      return;
+    }
+    const results = await portal.searchNominatim(q.trim(), country);
+    res.json(results);
+  });
+
+  router.get("/nominatim/lookup", async (req, res) => {
+    const osmType = typeof req.query.osm_type === "string" ? req.query.osm_type : "";
+    const osmId = typeof req.query.osm_id === "string" ? req.query.osm_id : "";
+    if (!osmType || !osmId) {
+      res.status(400).json({ error: "osm_type and osm_id required" });
+      return;
+    }
+    const result = await portal.lookupNominatim(osmType, osmId);
+    if (!result) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json(result);
+  });
+
+  router.post("/places", async (req, res) => {
+    try {
+      const place = await portal.createPlaceFromNominatim(req.body);
+      res.status(201).json(place);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create place" });
+    }
+  });
+
   router.get("/requests", async (req, res) => {
     const requests = await portal.listPublicRequests({
       institutionSlug:

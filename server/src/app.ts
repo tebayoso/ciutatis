@@ -319,10 +319,10 @@ export async function createApp(
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   if (opts.uiMode === "static") {
-    // Try published location first (server/ui-dist/), then monorepo dev location (../../ui/dist)
+    // Try published location first (server/ui-dist/), then monorepo dev location (../../apps/ui/dist)
     const candidates = [
       path.resolve(__dirname, "../ui-dist"),
-      path.resolve(__dirname, "../../ui/dist"),
+      path.resolve(__dirname, "../../apps/ui/dist"),
     ];
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
@@ -374,7 +374,7 @@ export async function createApp(
   }
 
   if (opts.uiMode === "vite-dev") {
-    const uiRoot = path.resolve(__dirname, "../../ui");
+    const uiRoot = path.resolve(__dirname, "../../apps/ui");
     const indexHtmlPath = path.join(uiRoot, "index.html");
     const publicUiRoot = path.resolve(uiRoot, "public");
     const hmrPort = resolveViteHmrPort(opts.serverPort);

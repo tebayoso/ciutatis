@@ -7,6 +7,10 @@ account_id = "b9f5ebc6c05975fab56f056782461b77"
 
 main = ".open-next/worker.js"
 
+# Keep the workers.dev URL enabled: the dispatcher (ciutatis.com) proxies to it via
+# LANDING_ORIGIN. Adding a zone route otherwise disables workers.dev by default.
+workers_dev = true
+
 # Zone route so the unified worker serves the admin shell at admin.ciutatis.com.
 # More-specific routes win, so admin.ciutatis.com/api/* (ciutatis-admin-api) is
 # unaffected and keeps serving the paperclip API + cookie auth.

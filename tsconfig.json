@@ -12,7 +12,6 @@
     { "path": "./packages/adapters/opencode-local" },
     { "path": "./packages/adapters/pi-local" },
     { "path": "./server" },
-    { "path": "./apps/ui" },
     { "path": "./cli" }
   ]
 }

@@ -17,7 +17,6 @@ const nonServerSuites = [
   { label: "@paperclipai/adapter-gemini-local", args: ["--project", "@paperclipai/adapter-gemini-local"] },
   { label: "@paperclipai/adapter-opencode-local", args: ["--project", "@paperclipai/adapter-opencode-local"] },
   { label: "@paperclipai/adapter-pi-local", args: ["--project", "@paperclipai/adapter-pi-local"] },
-  { label: "@paperclipai/ui", args: [], cwd: path.join(repoRoot, "apps", "ui") },
   { label: "paperclipai", args: [], cwd: path.join(repoRoot, "cli") },
 ];
 const routeTestPattern = /[^/]*(?:route|routes|authz)[^/]*\.test\.ts$/;

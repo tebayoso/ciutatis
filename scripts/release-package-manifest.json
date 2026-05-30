@@ -83,10 +83,5 @@
     "dir": "packages/plugins/sandbox-providers/e2b",
     "name": "@paperclipai/plugin-e2b",
     "publishFromCi": true
-  },
-  {
-    "dir": "apps/ui",
-    "name": "@paperclipai/ui",
-    "publishFromCi": true
   }
 ]

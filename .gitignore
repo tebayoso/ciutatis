@@ -8,6 +8,9 @@ drizzle/meta/
 .vite/
 apps/landing/.next/
 apps/landing/out/
+apps/landing/.open-next/
+apps/landing/cloudflare-env.d.ts
+.wrangler/
 coverage/
 .DS_Store
 data/

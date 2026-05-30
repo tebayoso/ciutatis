@@ -1,12 +1,20 @@
-# Cloudflare Pages - Ciutatis public site (Next.js)
+# Cloudflare Worker — Ciutatis unified Next.js app (public site + admin).
+# Built by @opennextjs/cloudflare (`pnpm --filter @ciutatis/landing deploy`).
 name = "ciutatis-ui"
-compatibility_date = "2025-01-01"
-
+compatibility_date = "2025-03-25"
+compatibility_flags = ["nodejs_compat"]
 account_id = "b9f5ebc6c05975fab56f056782461b77"
 
-[build]
-command = "npm run build"
-directory = "dist"
+main = ".open-next/worker.js"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[vars]
+# Base URL of the Ciutatis API server, used by middleware/SSR for session checks.
+# Override per-environment below or via Worker secrets/vars in the dashboard.
+API_INTERNAL_BASE = "https://admin.ciutatis.com"
 
 [env.production]
 name = "ciutatis-ui"

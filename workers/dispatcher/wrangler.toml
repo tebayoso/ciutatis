@@ -13,7 +13,8 @@ pattern = "www.ciutatis.com/*"
 zone_name = "ciutatis.com"
 
 [vars]
-LANDING_ORIGIN = "https://923c020e.ciutatis-ui.pages.dev"
+# Unified Next.js app (public site + admin) deployed as the ciutatis-web Worker.
+LANDING_ORIGIN = "https://ciutatis-web.jorge-b9f.workers.dev"
 
 [[kv_namespaces]]
 binding = "ROUTING_CACHE"

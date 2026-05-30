@@ -3,8 +3,8 @@ import { eq, and } from "drizzle-orm";
 import { authUsers, authAccounts, authSessions } from "@ciutatis/db-cloudflare";
 import type { AppContext, AppEnv } from "../lib/types.js";
 import { hashPassword, verifyPassword, generateRandomString } from "better-auth/crypto";
-import { serializeAuthCookie } from "../auth/cookies.js";
-import { setSessionInKV } from "../session/kv.js";
+import { parseAuthCookie, serializeAuthCookie } from "../auth/cookies.js";
+import { setSessionInKV, deleteSessionFromKV } from "../session/kv.js";
 
 const SESSION_TTL_SECONDS = 86_400;
 
@@ -186,6 +186,24 @@ export function authRoutes() {
     } catch {
       return c.json({ error: "Failed to create account" }, 500);
     }
+  });
+
+  app.post("/sign-out", async (c) => {
+    const db = c.get("db");
+    const token = parseAuthCookie(c);
+    if (token) {
+      const session = await db
+        .select()
+        .from(authSessions)
+        .where(eq(authSessions.token, token))
+        .then((rows: any[]) => rows[0] ?? null);
+      if (session) {
+        await deleteSessionFromKV(session.id);
+        await db.delete(authSessions).where(eq(authSessions.id, session.id));
+      }
+    }
+    c.header("set-cookie", serializeAuthCookie(c, "", { maxAge: 0 }));
+    return c.json({ success: true });
   });
 
   return app;

@@ -310,7 +310,7 @@ function Header({ locale, route, alternatePath }: { locale: Locale; route: Publi
         <a className="hidden text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)] sm:block" href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
           {t.nav.github}
         </a>
-        <a className="hero-button min-w-0 flex-1 sm:flex-none" href={`${adminShellUrl}/auth`}>
+        <a className="hero-button min-w-0 flex-1 sm:flex-none" href={`${adminShellUrl}/admin/auth`}>
           {t.nav.admin}
           <ArrowRight className="h-4 w-4" />
         </a>

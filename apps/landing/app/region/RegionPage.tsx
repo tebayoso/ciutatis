@@ -537,7 +537,7 @@ function UnclaimedBanner({ locale, name, pathPrefix }: { locale: Locale; name: s
             <p className="mt-1 text-sm text-[var(--muted-strong)]">{t.beFirst}</p>
           </div>
         </div>
-        <a href={`https://admin.ciutatis.com/auth?claim=${encodeURIComponent(pathPrefix)}`} className="hero-button-solid shrink-0">
+        <a href={`https://admin.ciutatis.com/admin/auth?claim=${encodeURIComponent(pathPrefix)}`} className="hero-button-solid shrink-0">
           {t.claim}
           <ArrowRight className="h-4 w-4" />
         </a>
@@ -762,7 +762,7 @@ function SearchResultCard({
         )}
         {!onCreate && (
           <a
-            href={`https://admin.ciutatis.com/auth?claim=${encodeURIComponent(shortName)},${encodeURIComponent(country)}`}
+            href={`https://admin.ciutatis.com/admin/auth?claim=${encodeURIComponent(shortName)},${encodeURIComponent(country)}`}
             className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]"
           >
             {t.claim}

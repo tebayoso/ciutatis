@@ -71,7 +71,7 @@ export function serializeAuthCookie(c: Context, token: string, options: CookieOp
   if (secure) segments.push("Secure");
   segments.push(`SameSite=${sameSite}`);
   segments.push(`Path=${path}`);
-  segments.push(`MaxAge=${Math.max(0, Math.floor(maxAge))}`);
+  segments.push(`Max-Age=${Math.max(0, Math.floor(maxAge))}`);
 
   return segments.join("; ");
 }

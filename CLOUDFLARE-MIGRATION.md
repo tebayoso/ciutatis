@@ -66,13 +66,16 @@ app.get('/api/companies', handler);
 - Minimal code changes needed
 - Use `@aws-sdk/client-s3` with R2 endpoint
 
-### 4. UI Deployment (`workers/ui/`)
+### 4. UI Deployment
 
-**Pages Project**: `ciutatis-ui`
+**Deprecated**: the standalone Cloudflare Pages admin (project `ciutatis-admin-ui`,
+staging `ciutatis-admin-ui-staging`, formerly under `workers/ui/`) has been removed.
 
-- Static build from existing Vite app
-- API calls point to `api.ciutatis.com`
-- Environment-specific configuration
+The admin UI is now served by the unified `ciutatis-web` OpenNext worker
+(`apps/landing`) at `admin.ciutatis.com/admin`. The paperclip API stays on the
+same host at `admin.ciutatis.com/api/*`, served by the `ciutatis-admin-api`
+worker (`workers/api`); cookie auth is host-only so same-origin
+`credentials: "include"` fetches carry the session.
 
 ## File Structure
 

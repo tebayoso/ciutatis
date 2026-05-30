@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // Preserve that behavior so `next build` bundles it; type/lint debt is tracked
   // separately as routes migrate to native SSR.
   typescript: { ignoreBuildErrors: true },
+  async redirects() {
+    return [
+      { source: "/", has: [{ type: "host", value: "admin.ciutatis.com" }], destination: "/admin", permanent: false },
+      { source: "/:path((?!admin|api|_next)[^.]*)", has: [{ type: "host", value: "admin.ciutatis.com" }], destination: "/admin/:path", permanent: false },
+    ];
+  },
   // The admin SPA consumes workspace packages from source (exports -> src),
   // which use NodeNext ".js" import specifiers that actually resolve to ".ts".
   // esbuild/Vite rewrote these automatically; webpack needs extensionAlias.

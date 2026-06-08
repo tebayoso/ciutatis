@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Superparser GovOps Console</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="rail" aria-label="Superparser system status">
+        <div>
+          <p class="eyebrow">Superparser</p>
+          <h1>GovOps extraction console</h1>
+        </div>
+        <section class="status-stack">
+          <div class="metric">
+            <span class="metric-value" id="metric-documents">3</span>
+            <span class="metric-label">Documents indexed</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value" id="metric-extractions">42</span>
+            <span class="metric-label">Grounded facts</span>
+          </div>
+          <div class="metric">
+            <span class="metric-value">768</span>
+            <span class="metric-label">Embedding dims</span>
+          </div>
+        </section>
+        <section class="rail-panel">
+          <h2>Cloud Run target</h2>
+          <p>ADK + FastAPI service with Gemini gateway, LangExtract extraction, Postgres JSONB, and pgvector search.</p>
+        </section>
+        <section class="rail-panel">
+          <h2>Ciutatis role</h2>
+          <p>Board-governed HTTP adapter invocation, issue artifacts, activity trail, and budget controls.</p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Challenge demo</p>
+            <h2>Government documents become searchable operational knowledge</h2>
+          </div>
+          <label class="api-field">
+            <span>Service URL</span>
+            <input id="api-base" type="url" value="http://localhost:8080" aria-label="Superparser service URL">
+          </label>
+        </header>
+
+        <section class="grid intake-grid">
+          <form class="panel" id="upload-form">
+            <div class="panel-header">
+              <div>
+                <h3>Upload intake</h3>
+                <p>PDF, CSV, XLSX, or text source</p>
+              </div>
+              <span class="badge">Local file</span>
+            </div>
+            <input id="upload-file" type="file" aria-label="Upload document">
+            <button type="submit">Start extraction</button>
+            <p class="hint" id="upload-status">Waiting for a source document.</p>
+          </form>
+
+          <form class="panel" id="drive-form">
+            <div class="panel-header">
+              <div>
+                <h3>Drive source</h3>
+                <p>Docs and Sheets metadata capture</p>
+              </div>
+              <span class="badge">Google Workspace</span>
+            </div>
+            <input id="drive-id" type="text" placeholder="Drive file ID or URL" aria-label="Drive source id">
+            <textarea id="drive-note" rows="4" aria-label="Drive demo content">City Council approved Ordinance 42 for $125,000 on 2026-06-01.</textarea>
+            <button type="submit">Ingest Drive source</button>
+          </form>
+        </section>
+
+        <section class="grid operations-grid">
+          <section class="panel queue-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Pipeline queue</h3>
+                <p>Normalized, extracted, embedded, persisted</p>
+              </div>
+              <span class="live-dot" aria-label="Live"></span>
+            </div>
+            <div id="job-list" class="job-list"></div>
+          </section>
+
+          <section class="panel detail-panel" id="document-detail">
+            <div class="panel-header">
+              <div>
+                <h3>Document review</h3>
+                <p>Grounded facts and source spans</p>
+              </div>
+              <span class="badge" id="classification-badge">budget</span>
+            </div>
+            <div class="document-body">
+              <pre id="flat-text">Select or ingest a document to inspect flattened text and extraction provenance.</pre>
+              <div id="extraction-list" class="extraction-list"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="grid lower-grid">
+          <form class="panel search-panel" id="search-form">
+            <div class="panel-header">
+              <div>
+                <h3>Semantic search</h3>
+                <p>Postgres pgvector nearest-neighbor query</p>
+              </div>
+              <span class="badge">JSONB + vector</span>
+            </div>
+            <div class="search-row">
+              <input id="search-query" type="search" value="road repair budget" aria-label="Semantic search query">
+              <button type="submit">Search</button>
+            </div>
+            <div id="search-results" class="result-list"></div>
+          </form>
+
+          <section class="panel architecture-panel">
+            <div class="panel-header">
+              <div>
+                <h3>Demo architecture</h3>
+                <p>Track 1 autonomous agent story</p>
+              </div>
+              <span class="badge">Cloud Run</span>
+            </div>
+            <ol class="flow-list">
+              <li><span>1</span>Ciutatis assigns a governed parsing issue to superparser.</li>
+              <li><span>2</span>FastAPI service normalizes the source and invokes LangExtract/Gemini.</li>
+              <li><span>3</span>Postgres stores flat text, JSONB metadata, grounded facts, and embeddings.</li>
+              <li><span>4</span>Portal reviews provenance; Ciutatis receives issue comments and documents.</li>
+            </ol>
+          </section>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

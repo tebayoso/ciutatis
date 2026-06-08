@@ -1,0 +1,29 @@
+{
+  "name": "superparser",
+  "role": "GovOps Document Extraction Agent",
+  "title": "Document Intelligence Operator",
+  "capabilities": "Ingests government PDFs, spreadsheets, Google Docs, and Google Sheets; extracts grounded facts with source spans; classifies documents; stores flat text, metadata, JSONB extraction payloads, and embeddings; reports findings back to Ciutatis issues.",
+  "adapterType": "http",
+  "contextMode": "fat",
+  "adapterConfig": {
+    "url": "https://SUPERPARSER_CLOUD_RUN_URL/v1/ciutatis/heartbeat",
+    "method": "POST",
+    "headers": {
+      "Authorization": "Bearer ${SUPERPARSER_SHARED_SECRET}",
+      "Content-Type": "application/json"
+    },
+    "timeoutMs": 15000,
+    "payloadTemplate": {
+      "companyId": "{{agent.companyId}}",
+      "agentId": "{{agent.id}}",
+      "runId": "{{run.id}}",
+      "issueId": "{{context.issueId}}",
+      "instructions": "{{context.instructions}}",
+      "source": {
+        "type": "inline_text",
+        "filename": "ciutatis-source.txt",
+        "content": "{{context.instructions}}"
+      }
+    }
+  }
+}

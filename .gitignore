@@ -13,6 +13,9 @@ apps/landing/cloudflare-env.d.ts
 .wrangler/
 coverage/
 .DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
 data/
 .paperclip/
 .pnpm-store/

@@ -1,0 +1,28 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: superparser-service
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+        - image: us-central1-docker.pkg.dev/PROJECT_ID/superparser/superparser-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SUPERPARSER_CORS_ORIGINS
+              value: "https://SUPERPARSER_PORTAL_HOST"
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: GOOGLE_API_KEY
+                  key: latest
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: SUPERPARSER_DATABASE_URL
+                  key: latest

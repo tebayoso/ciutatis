@@ -1,0 +1,360 @@
+:root {
+  color-scheme: dark;
+  --background: #09110f;
+  --foreground: #edf7f2;
+  --muted: #8da198;
+  --panel: #101c18;
+  --panel-strong: #14231e;
+  --border: #244239;
+  --accent: #69d49f;
+  --accent-strong: #d0f56d;
+  --warning: #e8b95f;
+  --danger: #ef7777;
+  --cyan: #70d7df;
+  --shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(105, 212, 159, 0.08), transparent 32%),
+    linear-gradient(180deg, #0d1714 0%, var(--background) 100%);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(105, 212, 159, 0.55);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #74e0aa, #49ad7c);
+  color: #06100c;
+  font-weight: 700;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #08110e;
+  color: var(--foreground);
+  padding: 0.65rem 0.75rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  min-height: 100vh;
+}
+
+.rail {
+  border-right: 1px solid var(--border);
+  background: rgba(7, 18, 14, 0.88);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 0.35rem;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+  line-height: 1.05;
+  margin-bottom: 0;
+}
+
+h2 {
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+  margin-bottom: 0;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.status-stack {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.metric,
+.rail-panel,
+.panel {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(20, 35, 30, 0.96), rgba(12, 24, 20, 0.96));
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.metric {
+  padding: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.metric-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.rail-panel,
+.panel {
+  padding: 1rem;
+}
+
+.workspace {
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.topbar,
+.panel-header,
+.search-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.api-field {
+  min-width: min(360px, 40vw);
+  color: var(--muted);
+  font-size: 0.75rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.intake-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.operations-grid {
+  grid-template-columns: minmax(280px, 0.8fr) minmax(360px, 1.4fr);
+}
+
+.lower-grid {
+  grid-template-columns: minmax(360px, 1fr) minmax(300px, 0.8fr);
+}
+
+.panel {
+  min-width: 0;
+}
+
+.panel-header {
+  margin-bottom: 0.85rem;
+}
+
+.badge {
+  border: 1px solid rgba(105, 212, 159, 0.38);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(105, 212, 159, 0.08);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hint {
+  min-height: 1.2rem;
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+}
+
+.live-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px rgba(105, 212, 159, 0.12);
+  margin-top: 0.25rem;
+}
+
+.job-list,
+.extraction-list,
+.result-list,
+.flow-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.job,
+.extraction,
+.result,
+.flow-list li {
+  border: 1px solid rgba(36, 66, 57, 0.85);
+  background: rgba(7, 18, 14, 0.55);
+  border-radius: 6px;
+  padding: 0.7rem;
+}
+
+.job {
+  display: grid;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.job strong,
+.result strong {
+  font-size: 0.86rem;
+}
+
+.job small,
+.result small,
+.extraction small {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.document-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+  gap: 0.85rem;
+}
+
+pre {
+  margin: 0;
+  min-height: 280px;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid rgba(36, 66, 57, 0.85);
+  border-radius: 6px;
+  background: #06100d;
+  color: #d8eee4;
+  padding: 0.85rem;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.extraction {
+  border-left: 3px solid var(--accent);
+}
+
+.extraction[data-type="money"] {
+  border-left-color: var(--accent-strong);
+}
+
+.extraction[data-type="date"] {
+  border-left-color: var(--cyan);
+}
+
+.search-row input {
+  flex: 1;
+}
+
+.result-list {
+  margin-top: 0.8rem;
+}
+
+.flow-list {
+  padding-left: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.flow-list li {
+  display: grid;
+  grid-template-columns: 1.7rem 1fr;
+  align-items: start;
+}
+
+.flow-list span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(105, 212, 159, 0.14);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 980px) {
+  .shell,
+  .intake-grid,
+  .operations-grid,
+  .lower-grid,
+  .document-body {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    position: static;
+    height: auto;
+  }
+
+  .topbar {
+    flex-direction: column;
+  }
+
+  .api-field {
+    min-width: 100%;
+  }
+}

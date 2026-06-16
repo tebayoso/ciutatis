@@ -49,8 +49,8 @@ class PostgresSuperparserRepository:
             cur.execute(
                 """
                 insert into superparser.documents
-                  (id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at)
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
+                  (id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at, content_hash)
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
                 """,
                 (
                     document.id,
@@ -63,6 +63,7 @@ class PostgresSuperparserRepository:
                     document.flat_text,
                     json.dumps(document.metadata),
                     document.created_at,
+                    document.content_hash,
                 ),
             )
         return document
@@ -70,7 +71,7 @@ class PostgresSuperparserRepository:
     def list_documents(self, company_id: str) -> list[StoredDocument]:
         rows = self._all(
             """
-            select id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at
+            select id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at, content_hash
             from superparser.documents where company_id = %s order by created_at desc
             """,
             (company_id,),
@@ -80,12 +81,27 @@ class PostgresSuperparserRepository:
     def get_document(self, document_id: str) -> StoredDocument:
         row = self._one(
             """
-            select id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at
+            select id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at, content_hash
             from superparser.documents where id = %s
             """,
             (document_id,),
         )
         return _document_from_row(row)
+
+    def find_document_by_hash(self, company_id: str, content_hash: str) -> StoredDocument | None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                select id, company_id, job_id, title, source_type, source_ref, content_type, flat_text, metadata_json, created_at, content_hash
+                from superparser.documents
+                where company_id = %s and content_hash = %s
+                order by created_at asc
+                limit 1
+                """,
+                (company_id, content_hash),
+            )
+            row = cur.fetchone()
+        return _document_from_row(row) if row is not None else None
 
     def save_chunks(self, chunks: list[DocumentChunk]) -> list[DocumentChunk]:
         if not chunks:
@@ -252,6 +268,7 @@ def _document_from_row(row) -> StoredDocument:
         flat_text=row[7],
         metadata=row[8] or {},
         created_at=row[9],
+        content_hash=row[10] if len(row) > 10 else None,
     )
 
 

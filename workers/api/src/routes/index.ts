@@ -20,3 +20,4 @@ export { accessRoutes } from "./access.js";
 export { contactRoutes } from "./contact.js";
 export { authRoutes } from "./auth.js";
 export { publicPortalRoutes } from "./public-portal.js";
+export { collaborateRoutes } from "./collaborate.js";

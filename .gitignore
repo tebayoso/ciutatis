@@ -78,3 +78,4 @@ doc/SEED-CREDENTIALS.md
 !.env.example
 .omo/
 server/ui-dist/
+.venv/

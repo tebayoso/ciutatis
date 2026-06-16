@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowRight,
   BarChart3,
   Building2,
   CheckCircle2,
   FileSignature,
+  FileText,
   Gauge,
   GitBranch,
   Globe2,
@@ -17,6 +19,7 @@ import {
   ScrollText,
   Search,
   ShieldCheck,
+  UploadCloud,
   Users,
 } from "lucide-react";
 import RegionPage from "./region/RegionPage";
@@ -38,6 +41,7 @@ const copy = {
       govops: "GovOps",
       scrutiny: "Public Scrutiny",
       portal: "Public Portal",
+      collaborate: "Collaborate",
       features: "Features",
       "how-it-works": "How it works",
       "for-governments": "For governments",
@@ -57,15 +61,21 @@ const copy = {
       ctaSecondary: "How it works",
     },
     distinction: {
-      eyebrow: "Two public surfaces, one platform",
-      title: "Explore the data, or work with your government.",
+      eyebrow: "Three public surfaces, one platform",
+      title: "Explore the data, work with your government, or contribute documents.",
       subtitle:
-        "Ciutatis keeps two public surfaces deliberately separate: a read-only data explorer for accountability, and a portal where citizens act.",
+        "Ciutatis keeps its public surfaces deliberately separate: a read-only data explorer for accountability, a portal where citizens act, and an open intake for contributing public documents.",
       explore: {
         tag: "Public Scrutiny",
         title: "Explore public data",
         body: "A read-only data explorer. Search institutions and places, inspect public requests, and follow institutional activity — no account needed.",
         cta: "Explore public data",
+      },
+      contribute: {
+        tag: "Collaborate",
+        title: "Contribute documents",
+        body: "Drop a public government document. We recognise ones we already have and parse new ones into searchable, grounded data.",
+        cta: "Contribute a document",
       },
       act: {
         tag: "Public Portal",
@@ -152,6 +162,42 @@ const copy = {
       ],
       cta: "Find your institution",
     },
+    collaborate: {
+      eyebrow: "Collaborate",
+      title: "Help build the public record.",
+      subtitle:
+        "Drop a public government document — a budget, ordinance, contract, or report. We check whether it's already part of the public record, and parse new ones into searchable, grounded data.",
+      steps: [
+        { title: "Drop a document", body: "Upload a PDF, spreadsheet, or text file. Public documents only — nothing private or personal." },
+        { title: "We check for duplicates", body: "An exact copy we already have is recognised instantly, so the same document isn't processed twice." },
+        { title: "New documents get parsed", body: "We extract agencies, money, dates, and ordinances with source references, and flag anything similar to what we already hold." },
+      ],
+      dropTitle: "Drop your document here",
+      dropBody: "or click to choose a file",
+      dropHint: "PDF, CSV, XLSX, or text · up to 10 MB",
+      choose: "Choose file",
+      uploading: "Checking and processing…",
+      bucketNote: "Contributions go to a shared public pool for review. Please only upload documents that are already public.",
+      result: {
+        duplicateTitle: "We already have this document",
+        duplicateBody: "An identical copy is already part of the public record — no need to process it again. Here's what we have on file:",
+        newTitle: "Thanks — we've added this document",
+        newBody: "We parsed and processed your document. Here's what we extracted:",
+        classificationLabel: "Classified as",
+        extractionsLabel: "What we found",
+        noExtractions: "No structured facts were extracted from this document.",
+        possibleDuplicatesLabel: "Possibly related documents we already have",
+        another: "Contribute another",
+      },
+      errors: {
+        generic: "Something went wrong processing that file. Please try again.",
+        unconfigured: "Document parsing isn't available just yet. Please check back soon.",
+        rateLimited: "Too many uploads from this connection. Please try again in a few minutes.",
+        tooLarge: "That file is too large. The maximum is 10 MB.",
+        type: "Unsupported file type. Upload a PDF, spreadsheet, or text document.",
+        empty: "That file looks empty. Pick another and try again.",
+      },
+    },
     features: {
       eyebrow: "Features",
       title: "Everything Ciutatis does, in one platform.",
@@ -222,7 +268,7 @@ const copy = {
       eyebrow: "For citizens",
       title: "Explore what your government does — and work with it.",
       subtitle:
-        "Two public surfaces for citizens and watchdogs: explore public data, and act on it through the portal.",
+        "Three public surfaces for citizens and watchdogs: explore public data, contribute documents, and act through the portal.",
       paths: [
         {
           tag: "Explore",
@@ -230,6 +276,13 @@ const copy = {
           body: "A read-only data explorer. Search public institutions and places and open their public surface — no account needed.",
           cta: "Explore public data",
           to: "scrutiny" as const,
+        },
+        {
+          tag: "Contribute",
+          title: "Collaborate",
+          body: "Drop a public government document. We recognise ones we already have and parse new ones into searchable, grounded data.",
+          cta: "Contribute a document",
+          to: "collaborate" as const,
         },
         {
           tag: "Act",
@@ -255,6 +308,7 @@ const copy = {
       govops: "GovOps",
       scrutiny: "Escrutinio Público",
       portal: "Portal Público",
+      collaborate: "Colaborá",
       features: "Funcionalidades",
       "how-it-works": "Cómo funciona",
       "for-governments": "Para gobiernos",
@@ -274,15 +328,21 @@ const copy = {
       ctaSecondary: "Cómo funciona",
     },
     distinction: {
-      eyebrow: "Dos superficies públicas, una plataforma",
-      title: "Explorá los datos, o trabajá con tu gobierno.",
+      eyebrow: "Tres superficies públicas, una plataforma",
+      title: "Explorá los datos, trabajá con tu gobierno o aportá documentos.",
       subtitle:
-        "Ciutatis mantiene dos superficies públicas deliberadamente separadas: un explorador de datos de solo lectura para la rendición de cuentas, y un portal donde la ciudadanía actúa.",
+        "Ciutatis mantiene sus superficies públicas deliberadamente separadas: un explorador de datos de solo lectura para la rendición de cuentas, un portal donde la ciudadanía actúa, y una entrada abierta para aportar documentos públicos.",
       explore: {
         tag: "Escrutinio Público",
         title: "Explorá datos públicos",
         body: "Un explorador de datos de solo lectura. Buscá instituciones y lugares, inspeccioná pedidos públicos y seguí la actividad institucional — sin cuenta.",
         cta: "Explorar datos públicos",
+      },
+      contribute: {
+        tag: "Colaborá",
+        title: "Aportá documentos",
+        body: "Subí un documento público del gobierno. Reconocemos los que ya tenemos y analizamos los nuevos en datos buscables y verificables.",
+        cta: "Aportar un documento",
       },
       act: {
         tag: "Portal Público",
@@ -369,6 +429,42 @@ const copy = {
       ],
       cta: "Encontrá tu institución",
     },
+    collaborate: {
+      eyebrow: "Colaborá",
+      title: "Ayudá a construir el registro público.",
+      subtitle:
+        "Subí un documento público del gobierno — un presupuesto, ordenanza, contrato o informe. Verificamos si ya forma parte del registro público y analizamos los nuevos en datos buscables y verificables.",
+      steps: [
+        { title: "Subí un documento", body: "Cargá un PDF, planilla o archivo de texto. Solo documentos públicos — nada privado ni personal." },
+        { title: "Verificamos duplicados", body: "Si ya tenemos una copia idéntica, se reconoce al instante y no se procesa dos veces." },
+        { title: "Los nuevos se analizan", body: "Extraemos organismos, montos, fechas y ordenanzas con referencias a la fuente, y marcamos lo que se parece a lo que ya tenemos." },
+      ],
+      dropTitle: "Soltá tu documento acá",
+      dropBody: "o hacé clic para elegir un archivo",
+      dropHint: "PDF, CSV, XLSX o texto · hasta 10 MB",
+      choose: "Elegir archivo",
+      uploading: "Verificando y procesando…",
+      bucketNote: "Las contribuciones van a un fondo público compartido para revisión. Subí solo documentos que ya sean públicos.",
+      result: {
+        duplicateTitle: "Ya tenemos este documento",
+        duplicateBody: "Ya existe una copia idéntica en el registro público — no hace falta procesarlo de nuevo. Esto es lo que tenemos:",
+        newTitle: "¡Gracias! Agregamos este documento",
+        newBody: "Analizamos y procesamos tu documento. Esto es lo que extrajimos:",
+        classificationLabel: "Clasificado como",
+        extractionsLabel: "Qué encontramos",
+        noExtractions: "No se extrajeron datos estructurados de este documento.",
+        possibleDuplicatesLabel: "Documentos posiblemente relacionados que ya tenemos",
+        another: "Aportar otro",
+      },
+      errors: {
+        generic: "Algo salió mal al procesar el archivo. Probá de nuevo.",
+        unconfigured: "El análisis de documentos todavía no está disponible. Volvé pronto.",
+        rateLimited: "Demasiadas subidas desde esta conexión. Probá de nuevo en unos minutos.",
+        tooLarge: "El archivo es demasiado grande. El máximo es 10 MB.",
+        type: "Tipo de archivo no admitido. Subí un PDF, planilla o documento de texto.",
+        empty: "El archivo parece vacío. Elegí otro e intentá de nuevo.",
+      },
+    },
     features: {
       eyebrow: "Funcionalidades",
       title: "Todo lo que hace Ciutatis, en una plataforma.",
@@ -439,7 +535,7 @@ const copy = {
       eyebrow: "Para ciudadanos",
       title: "Explorá lo que hace tu gobierno — y trabajá con él.",
       subtitle:
-        "Dos superficies públicas para ciudadanía y observadores: explorar datos públicos, y actuar sobre ellos a través del portal.",
+        "Tres superficies públicas para ciudadanía y observadores: explorar datos públicos, aportar documentos, y actuar a través del portal.",
       paths: [
         {
           tag: "Explorar",
@@ -447,6 +543,13 @@ const copy = {
           body: "Un explorador de datos de solo lectura. Buscá instituciones y lugares públicos y abrí su superficie pública — sin cuenta.",
           cta: "Explorar datos públicos",
           to: "scrutiny" as const,
+        },
+        {
+          tag: "Aportar",
+          title: "Colaborá",
+          body: "Subí un documento público del gobierno. Reconocemos los que ya tenemos y analizamos los nuevos en datos buscables y verificables.",
+          cta: "Aportar un documento",
+          to: "collaborate" as const,
         },
         {
           tag: "Actuar",
@@ -517,6 +620,7 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "govops" ? <GovOpsPage locale={locale} /> : null}
         {route === "scrutiny" ? <ScrutinyPage locale={locale} /> : null}
         {route === "portal" ? <PortalPage locale={locale} /> : null}
+        {route === "collaborate" ? <CollaboratePage locale={locale} /> : null}
         {route === "features" ? <FeaturesPage locale={locale} /> : null}
         {route === "how-it-works" ? <HowItWorksPage locale={locale} /> : null}
         {route === "for-governments" ? <ForGovernmentsPage locale={locale} /> : null}
@@ -615,7 +719,7 @@ function PublicSurfaces({ locale }: { locale: Locale }) {
   return (
     <section className="space-y-10">
       <SectionIntro eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         <article className="service-card group flex flex-col">
           <p className="mb-4 inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
             <BarChart3 className="h-4 w-4" /> {t.explore.tag}
@@ -624,6 +728,17 @@ function PublicSurfaces({ locale }: { locale: Locale }) {
           <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted-strong)]">{t.explore.body}</p>
           <a className="hero-button mt-6 w-fit" href={routePath(locale, "scrutiny")}>
             {t.explore.cta}
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </article>
+        <article className="service-card group flex flex-col">
+          <p className="mb-4 inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
+            <UploadCloud className="h-4 w-4" /> {t.contribute.tag}
+          </p>
+          <h3 className="text-2xl font-medium text-[var(--ink)] font-serif">{t.contribute.title}</h3>
+          <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted-strong)]">{t.contribute.body}</p>
+          <a className="hero-button mt-6 w-fit" href={routePath(locale, "collaborate")}>
+            {t.contribute.cta}
             <ArrowRight className="h-4 w-4" />
           </a>
         </article>
@@ -726,6 +841,242 @@ function PortalPage({ locale }: { locale: Locale }) {
   );
 }
 
+type CollaborateExtraction = { type: string; text: string; attributes?: Record<string, unknown> };
+type CollaborateDocument = {
+  id: string;
+  title: string;
+  classification?: { label: string; confidence: number } | null;
+  extractions?: CollaborateExtraction[];
+};
+type CollaboratePossibleDuplicate = { documentId: string; title: string; score: number };
+type CollaborateResult = {
+  status: "duplicate" | "ingested" | "failed";
+  contentHash?: string;
+  document?: CollaborateDocument | null;
+  possibleDuplicates?: CollaboratePossibleDuplicate[];
+  error?: string;
+};
+
+const COLLABORATE_MAX_BYTES = 10 * 1024 * 1024;
+
+function CollaboratePage({ locale }: { locale: Locale }) {
+  const t = copy[locale].collaborate;
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<CollaborateResult | null>(null);
+
+  async function upload(file: File) {
+    setError(null);
+    setResult(null);
+    if (file.size === 0) {
+      setError(t.errors.empty);
+      return;
+    }
+    if (file.size > COLLABORATE_MAX_BYTES) {
+      setError(t.errors.tooLarge);
+      return;
+    }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const response = await fetch("/api/public/collaborate", { method: "POST", body: form });
+      const payload = (await response.json().catch(() => null)) as (CollaborateResult & { error?: string }) | null;
+      if (!response.ok) {
+        if (response.status === 503) setError(t.errors.unconfigured);
+        else if (response.status === 429) setError(t.errors.rateLimited);
+        else if (response.status === 413) setError(t.errors.tooLarge);
+        else if (response.status === 415) setError(t.errors.type);
+        else setError(payload?.error ?? t.errors.generic);
+        return;
+      }
+      if (!payload || payload.status === "failed") {
+        setError(payload?.error ?? t.errors.generic);
+        return;
+      }
+      setResult(payload);
+    } catch {
+      setError(t.errors.generic);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <section className="space-y-12">
+      <Hero
+        eyebrow={t.eyebrow}
+        title={t.title}
+        subtitle={t.subtitle}
+        icon={<UploadCloud className="h-3.5 w-3.5 text-[var(--accent)]" />}
+      />
+
+      <div className="grid gap-8 lg:grid-cols-3">
+        {t.steps.map((step, index) => (
+          <article key={step.title} className="service-card">
+            <p className="mb-6 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted)]">{`0${index + 1}`}</p>
+            {index === 0 ? <UploadCloud className="mb-4 h-6 w-6 text-[var(--ink)] opacity-80" /> : null}
+            {index === 1 ? <Scale className="mb-4 h-6 w-6 text-[var(--ink)] opacity-80" /> : null}
+            {index === 2 ? <FileText className="mb-4 h-6 w-6 text-[var(--ink)] opacity-80" /> : null}
+            <h3 className="text-xl font-medium text-[var(--ink)] font-serif">{step.title}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--muted-strong)]">{step.body}</p>
+          </article>
+        ))}
+      </div>
+
+      {result ? (
+        <CollaborateResultView locale={locale} result={result} onReset={() => setResult(null)} />
+      ) : (
+        <div className="mx-auto w-full max-w-2xl">
+          <label
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (!uploading) setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              const file = event.dataTransfer.files?.[0];
+              if (file && !uploading) void upload(file);
+            }}
+            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors ${
+              dragging
+                ? "border-[var(--accent)] bg-[var(--accent)]/5"
+                : "border-[var(--border-strong)] bg-white/40 hover:border-[var(--accent)]"
+            } ${uploading ? "pointer-events-none opacity-70" : ""}`}
+          >
+            <input
+              type="file"
+              className="sr-only"
+              accept=".pdf,.csv,.xlsx,.xls,.txt,.md,.json,application/pdf,text/csv,text/plain"
+              disabled={uploading}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void upload(file);
+                event.target.value = "";
+              }}
+            />
+            <UploadCloud className="h-10 w-10 text-[var(--accent)]" />
+            {uploading ? (
+              <p className="text-sm font-medium text-[var(--muted-strong)]">{t.uploading}</p>
+            ) : (
+              <>
+                <p className="text-base font-medium text-[var(--ink)] font-serif">{t.dropTitle}</p>
+                <p className="text-sm text-[var(--muted-strong)]">{t.dropBody}</p>
+                <span className="hero-button-solid mt-2">{t.choose}</span>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-[var(--muted)]">{t.dropHint}</p>
+              </>
+            )}
+          </label>
+
+          {error ? (
+            <div className="mt-5 flex items-start gap-3 rounded-xl border border-[var(--border-strong)] bg-white/60 px-4 py-3 text-sm text-[var(--ink)]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <p className="mt-6 text-center text-xs leading-relaxed text-[var(--muted-strong)]">{t.bucketNote}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CollaborateResultView({
+  locale,
+  result,
+  onReset,
+}: {
+  locale: Locale;
+  result: CollaborateResult;
+  onReset: () => void;
+}) {
+  const t = copy[locale].collaborate.result;
+  const isDuplicate = result.status === "duplicate";
+  const document = result.document ?? null;
+  const extractions = (document?.extractions ?? []).slice(0, 12);
+  const duplicates = result.possibleDuplicates ?? [];
+
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-6">
+      <div className="rounded-2xl border border-[var(--border-strong)] bg-white/60 p-6">
+        <div className="mb-3 flex items-center gap-2">
+          {isDuplicate ? (
+            <Scale className="h-5 w-5 text-[var(--accent)]" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
+          )}
+          <h3 className="text-lg font-medium text-[var(--ink)] font-serif">
+            {isDuplicate ? t.duplicateTitle : t.newTitle}
+          </h3>
+        </div>
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
+          {isDuplicate ? t.duplicateBody : t.newBody}
+        </p>
+
+        {document ? (
+          <div className="mt-5 space-y-4 border-t border-[var(--border)] pt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <FileText className="h-4 w-4 text-[var(--muted-strong)]" />
+              <span className="text-sm font-medium text-[var(--ink)]">{document.title}</span>
+              {document.classification ? (
+                <span className="rounded-full border border-[var(--border-strong)] bg-white/70 px-3 py-0.5 text-xs text-[var(--muted-strong)]">
+                  {t.classificationLabel}: {document.classification.label}
+                </span>
+              ) : null}
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{t.extractionsLabel}</p>
+              {extractions.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {extractions.map((item, index) => (
+                    <li
+                      key={`${item.type}-${index}`}
+                      className="rounded-lg border border-[var(--border)] bg-white/50 px-3 py-1 text-xs text-[var(--ink)]"
+                    >
+                      <span className="text-[var(--muted-strong)]">{item.type}:</span> {item.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[var(--muted-strong)]">{t.noExtractions}</p>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {duplicates.length ? (
+        <div className="rounded-2xl border border-[var(--border)] bg-white/40 p-6">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">{t.possibleDuplicatesLabel}</p>
+          <ul className="space-y-2">
+            {duplicates.map((item) => (
+              <li key={item.documentId} className="flex items-center justify-between gap-3 text-sm text-[var(--ink)]">
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[var(--muted-strong)]" />
+                  {item.title}
+                </span>
+                <span className="text-xs text-[var(--muted)]">{Math.round(item.score * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="flex justify-center">
+        <button type="button" className="ghost-button" onClick={onReset}>
+          {t.another}
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FeaturesPage({ locale }: { locale: Locale }) {
   const t = copy[locale].features;
   return (
@@ -806,11 +1157,11 @@ function ForCitizensPage({ locale }: { locale: Locale }) {
   return (
     <section className="space-y-12">
       <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<Users className="h-3.5 w-3.5 text-[var(--accent)]" />} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         {t.paths.map((path) => (
           <article key={path.to} className="service-card flex flex-col">
             <p className="mb-4 inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-              {path.to === "scrutiny" ? <BarChart3 className="h-4 w-4" /> : <Landmark className="h-4 w-4" />} {path.tag}
+              {path.to === "scrutiny" ? <BarChart3 className="h-4 w-4" /> : path.to === "collaborate" ? <UploadCloud className="h-4 w-4" /> : <Landmark className="h-4 w-4" />} {path.tag}
             </p>
             <h3 className="text-2xl font-medium text-[var(--ink)] font-serif">{path.title}</h3>
             <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted-strong)]">{path.body}</p>

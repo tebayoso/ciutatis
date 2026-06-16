@@ -8,6 +8,7 @@ export type PublicRoute =
   | "govops"
   | "scrutiny"
   | "portal"
+  | "collaborate"
   | "features"
   | "how-it-works"
   | "for-governments"
@@ -23,6 +24,7 @@ export const ROUTE_PATHS: Record<Exclude<PublicRoute, "region">, { en: string; e
   govops: { en: "/govops", es: "/es/govops" },
   scrutiny: { en: "/scrutiny", es: "/es/escrutinio" },
   portal: { en: "/portal", es: "/es/portal" },
+  collaborate: { en: "/collaborate", es: "/es/colaborar" },
   features: { en: "/features", es: "/es/funcionalidades" },
   "how-it-works": { en: "/how-it-works", es: "/es/como-funciona" },
   "for-governments": { en: "/for-governments", es: "/es/para-gobiernos" },
@@ -36,6 +38,7 @@ export const NAV_ROUTES: Array<Exclude<PublicRoute, "region" | "home">> = [
   "govops",
   "scrutiny",
   "portal",
+  "collaborate",
   "features",
 ];
 

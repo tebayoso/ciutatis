@@ -57,6 +57,18 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
         "El punto de entrada ciudadano: encontrá tu institución, enviá y seguí pedidos públicos, y reclamá o trabajá con tu gobierno en línea.",
     },
   },
+  collaborate: {
+    en: {
+      title: "Collaborate — contribute public documents",
+      description:
+        "Drop a public government document and Ciutatis checks whether we already have it, then parses and processes new ones — extracting agencies, money, dates, and ordinances into searchable, grounded data.",
+    },
+    es: {
+      title: "Colaborá — aportá documentos públicos",
+      description:
+        "Subí un documento público del gobierno y Ciutatis verifica si ya lo tenemos; los nuevos se analizan y procesan — extrayendo organismos, montos, fechas y ordenanzas en datos buscables y verificables.",
+    },
+  },
   features: {
     en: {
       title: "Features — what Ciutatis does",

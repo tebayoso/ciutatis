@@ -21,6 +21,9 @@ export interface Env {
   CLOUDFLARE_API_TOKEN?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
+  // Superparser document-parsing service (Collaborate feature)
+  SUPERPARSER_URL?: string;
+  SUPERPARSER_SHARED_SECRET?: string;
   // Deployment configuration
   DEPLOYMENT_MODE?: string;
   DEPLOYMENT_EXPOSURE?: string;

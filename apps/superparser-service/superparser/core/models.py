@@ -66,6 +66,7 @@ class StoredDocument:
     content_type: str
     flat_text: str
     metadata: dict[str, Any]
+    content_hash: str | None = None
     created_at: datetime = field(default_factory=utcnow)
 
 

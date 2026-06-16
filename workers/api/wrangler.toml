@@ -23,12 +23,18 @@ DEPLOYMENT_MODE = "authenticated"
 AUTH_DISABLE_SIGNUP = "true"
 # Account ID used by hosted Workers AI adapter probes
 CLOUDFLARE_ACCOUNT_ID = "b9f5ebc6c05975fab56f056782461b77"
+# Superparser document-parsing service for the public Collaborate feature.
+# Leave empty until Superparser is deployed — /api/public/collaborate returns
+# 503 ("not available yet") while unset. Set to the Cloud Run URL to enable.
+SUPERPARSER_URL = ""
 
 # Secrets — values must be set via: wrangler secret put <NAME>
-# BETTER_AUTH_SECRET   — session signing secret (required for authenticated mode)
-# CLOUDFLARE_API_TOKEN — management API token used for tenant provisioning
-# R2_ACCESS_KEY_ID     — R2 bucket access key
-# R2_SECRET_ACCESS_KEY — R2 bucket secret key
+# BETTER_AUTH_SECRET        — session signing secret (required for authenticated mode)
+# CLOUDFLARE_API_TOKEN      — management API token used for tenant provisioning
+# R2_ACCESS_KEY_ID          — R2 bucket access key
+# R2_SECRET_ACCESS_KEY      — R2 bucket secret key
+# SUPERPARSER_SHARED_SECRET — bearer token sent to Superparser /v1/collaborate
+#                             (must match Superparser's SUPERPARSER_SHARED_SECRET)
 
 # D1 Database binding
 [[d1_databases]]

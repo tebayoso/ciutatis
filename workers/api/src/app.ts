@@ -32,6 +32,7 @@ import {
   contactRoutes,
   authRoutes,
   publicPortalRoutes,
+  collaborateRoutes,
 } from "./routes/index.js";
 
 export function createApp() {
@@ -73,6 +74,7 @@ export function createApp() {
 
   app.route("/api", contactRoutes());
   app.route("/api/public", publicPortalRoutes());
+  app.route("/api/public/collaborate", collaborateRoutes());
 
   const api = new Hono<AppEnv>();
   api.use("*", boardMutationGuard);

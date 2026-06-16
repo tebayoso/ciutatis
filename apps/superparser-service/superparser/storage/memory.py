@@ -43,6 +43,16 @@ class InMemorySuperparserRepository:
     def get_document(self, document_id: str) -> StoredDocument:
         return self.documents[document_id]
 
+    def find_document_by_hash(self, company_id: str, content_hash: str) -> StoredDocument | None:
+        matches = [
+            document
+            for document in self.documents.values()
+            if document.company_id == company_id and document.content_hash == content_hash
+        ]
+        if not matches:
+            return None
+        return min(matches, key=lambda document: document.created_at)
+
     def save_chunks(self, chunks: list[DocumentChunk]) -> list[DocumentChunk]:
         for chunk in chunks:
             self.chunks[chunk.id] = chunk

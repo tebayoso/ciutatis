@@ -31,6 +31,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    def require_shared_secret(request: Request) -> None:
+        # When a shared secret is configured, the document-ingestion endpoints are
+        # reachable only via the trusted Ciutatis proxy (which enforces size/type
+        # limits and the dedup cost-gate), not the public Cloud Run URL directly.
+        if not settings.shared_secret:
+            return
+        provided = (request.headers.get("authorization") or "").removeprefix("Bearer ").strip()
+        if provided != settings.shared_secret:
+            raise HTTPException(status_code=401, detail="Invalid or missing shared secret.")
+
     @app.get("/health")
     def health() -> dict[str, Any]:
         return {"ok": True, "service": "superparser", "storage": "postgres" if settings.database_url else "memory"}
@@ -41,6 +51,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         company_id: str = Form(default="demo-company"),
         file: UploadFile | None = File(default=None),
     ) -> dict[str, Any]:
+        require_shared_secret(request)
         if file is not None:
             data = await file.read()
             job = pipeline.ingest_upload(
@@ -91,6 +102,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             source_metadata=source.get("metadata") or {},
         )
         return pipeline.get_job_payload(job.id)
+
+    @app.post("/v1/collaborate")
+    async def collaborate(
+        request: Request,
+        company_id: str = Form(default="public-contributions"),
+        file: UploadFile | None = File(default=None),
+    ) -> dict[str, Any]:
+        require_shared_secret(request)
+        if file is not None:
+            data = await file.read()
+            if not data:
+                raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+            return pipeline.collaborate(
+                company_id=company_id,
+                filename=file.filename or "upload.bin",
+                content_type=file.content_type or "application/octet-stream",
+                data=data,
+            )
+
+        payload = await request.json()
+        source = payload.get("source") or {}
+        if source.get("base64"):
+            data = base64.b64decode(source["base64"])
+        else:
+            data = str(source.get("content") or payload.get("content") or "").encode("utf-8")
+        if not data:
+            raise HTTPException(status_code=422, detail="Provide multipart file, source.base64, or source.content.")
+        return pipeline.collaborate(
+            company_id=str(payload.get("companyId") or company_id),
+            filename=str(source.get("filename") or payload.get("filename") or "inline.txt"),
+            content_type=str(source.get("contentType") or payload.get("contentType") or "text/plain"),
+            data=data,
+        )
 
     @app.get("/v1/ingestions/{job_id}")
     def get_ingestion(job_id: str) -> dict[str, Any]:

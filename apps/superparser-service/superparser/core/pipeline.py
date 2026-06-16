@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict
 from typing import Protocol
 
@@ -27,6 +28,7 @@ class SuperparserRepository(Protocol):
     def save_document(self, document: StoredDocument) -> StoredDocument: ...
     def list_documents(self, company_id: str) -> list[StoredDocument]: ...
     def get_document(self, document_id: str) -> StoredDocument: ...
+    def find_document_by_hash(self, company_id: str, content_hash: str) -> StoredDocument | None: ...
     def save_chunks(self, chunks: list[DocumentChunk]) -> list[DocumentChunk]: ...
     def list_chunks(self, document_id: str) -> list[DocumentChunk]: ...
     def save_extractions(self, extractions: list[StoredExtraction]) -> list[StoredExtraction]: ...
@@ -83,6 +85,7 @@ class IngestionPipeline:
                 content_type=source.content_type,
                 flat_text=source.text,
                 metadata=metadata,
+                content_hash=content_hash(data),
             ))
 
             chunks = chunk_text(source.text)
@@ -172,6 +175,105 @@ class IngestionPipeline:
                 for item in self.repository.list_classifications(document_id)
             ],
         }
+
+    def collaborate(
+        self,
+        company_id: str,
+        filename: str,
+        content_type: str,
+        data: bytes,
+        source_ref: str | None = None,
+        source_metadata: dict | None = None,
+        similar_limit: int = 5,
+    ) -> dict:
+        """Citizen-contributed document flow: recognise exact re-uploads before
+        spending any extraction cost, otherwise ingest and surface possible
+        duplicates as a best-effort advisory."""
+        digest = content_hash(data)
+
+        existing = self.repository.find_document_by_hash(company_id, digest)
+        if existing is not None:
+            return {
+                "status": "duplicate",
+                "contentHash": digest,
+                "document": self._document_summary(existing),
+            }
+
+        job = self.ingest_upload(
+            company_id=company_id,
+            filename=filename,
+            content_type=content_type,
+            data=data,
+            source_ref=source_ref,
+            source_metadata=source_metadata,
+        )
+        if job.status != "succeeded":
+            return {"status": "failed", "contentHash": digest, "jobId": job.id, "error": job.error}
+
+        document = self.repository.find_document_by_hash(company_id, digest)
+        return {
+            "status": "ingested",
+            "contentHash": digest,
+            "jobId": job.id,
+            "document": self._document_summary(document) if document else None,
+            "possibleDuplicates": self.find_similar_documents(company_id, document, similar_limit)
+            if document
+            else [],
+        }
+
+    def find_similar_documents(
+        self,
+        company_id: str,
+        document: StoredDocument,
+        limit: int = 5,
+    ) -> list[dict]:
+        """Best-effort 'we may already have a similar document' advisory via
+        semantic search. Not a guarantee — a re-export of the same source won't
+        be byte-identical, so it can only ever be a hint."""
+        text = (document.flat_text or document.title or "").strip()
+        if not text:
+            return []
+        embedding = self.gemini_gateway.embed_texts([text[:1000]])[0]
+        results = self.repository.search_chunks(
+            company_id=company_id,
+            query_embedding=embedding,
+            limit=limit * 4,
+            query=text[:1000],
+        )
+        seen: dict[str, dict] = {}
+        for result in results:
+            if result.document_id == document.id or result.document_id in seen:
+                continue
+            seen[result.document_id] = {
+                "documentId": result.document_id,
+                "title": result.document_title,
+                "score": round(float(result.score), 4),
+            }
+            if len(seen) >= limit:
+                break
+        return list(seen.values())
+
+    def _document_summary(self, document: StoredDocument) -> dict:
+        classifications = self.repository.list_classifications(document.id)
+        extractions = self.repository.list_extractions(document.id)
+        top = max(classifications, key=lambda item: item.confidence, default=None)
+        return {
+            "id": document.id,
+            "title": document.title,
+            "sourceType": document.source_type,
+            "contentType": document.content_type,
+            "contentHash": document.content_hash,
+            "createdAt": document.created_at.isoformat(),
+            "classification": {"label": top.label, "confidence": top.confidence} if top else None,
+            "extractions": [
+                {"type": item.type, "text": item.text, "attributes": item.attributes}
+                for item in extractions
+            ],
+        }
+
+
+def content_hash(data: bytes) -> str:
+    return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
 def _find_chunk_for_span(chunks: list[DocumentChunk], span: dict[str, int]) -> str | None:

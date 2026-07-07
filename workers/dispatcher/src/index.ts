@@ -103,37 +103,6 @@ function proxyRequest(targetOrigin: string, request: Request, pathname: string) 
   return new Request(upstreamUrl.toString(), request);
 }
 
-function isLandingAssetPath(pathname: string) {
-  return (
-    pathname.startsWith("/_next/") ||
-    pathname === "/favicon.ico" ||
-    pathname === "/site.webmanifest" ||
-    pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml"
-  );
-}
-
-function isLandingPublicPath(pathname: string) {
-  return (
-    pathname === "/" ||
-    pathname === "/govops" ||
-    pathname === "/scrutiny" ||
-    pathname === "/portal" ||
-    pathname.startsWith("/portal/") ||
-    pathname === "/en" ||
-    pathname.startsWith("/en/") ||
-    pathname === "/es" ||
-    pathname.startsWith("/es/")
-  );
-}
-
-function landingUpstreamPath(pathname: string) {
-  if (pathname.startsWith("/portal/")) return "/portal";
-  if (pathname.startsWith("/en/portal/")) return "/en/portal";
-  if (pathname.startsWith("/es/portal/")) return "/es/portal";
-  return pathname;
-}
-
 function scopeForPathPrefix(pathPrefix: string): CivicScopeKey | null {
   return TANDIL_PATH_TO_SCOPE.get(pathPrefix) ?? null;
 }
@@ -1540,38 +1509,19 @@ export default {
       return Response.json({ ok: true, mode: "tenant-public-site" });
     }
 
-    if (isLandingAssetPath(url.pathname) || isLandingPublicPath(url.pathname)) {
-      return fetch(proxyRequest(env.LANDING_ORIGIN, request, landingUpstreamPath(url.pathname)));
-    }
-
+    // Only tenant `__tenant` API paths are handled here; everything else is
+    // proxied verbatim to the unified Next worker, whose route registry
+    // (apps/landing/lib/routes.ts) is the single source of truth for public
+    // pages. No per-page whitelist is maintained in this worker.
     const tenantRoute = parseTenantRoutePathname(url.pathname);
-    if (!tenantRoute) {
-      return fetch(proxyRequest(env.LANDING_ORIGIN, request, url.pathname));
-    }
-
-    if (!tenantRoute.remainderPath.startsWith("/__tenant/")) {
-      const upstream = await fetch(proxyRequest(env.LANDING_ORIGIN, request, url.pathname));
-      if (upstream.ok) return upstream;
-      const fallbackUrl = new URL("/index.html", env.LANDING_ORIGIN);
-      const fallback = await fetch(fallbackUrl.toString(), { method: "GET" });
-      if (fallback.ok) {
-        const body = await fallback.text();
-        return new Response(body, {
-          status: 200,
-          headers: {
-            "content-type": "text/html; charset=utf-8",
-            "cache-control": "public, max-age=60, stale-while-revalidate=300",
-          },
-        });
+    if (tenantRoute && tenantRoute.remainderPath.startsWith("/__tenant/")) {
+      const { tenant, selectedScope } = await resolveTenant(env, tenantRoute);
+      if (!tenant) {
+        return new Response("Tenant not found", { status: 404 });
       }
-      return upstream;
+      return handleTenantRequest(request, env, tenant, tenantRoute, selectedScope);
     }
 
-    const { tenant, selectedScope } = await resolveTenant(env, tenantRoute);
-    if (!tenant) {
-      return new Response("Tenant not found", { status: 404 });
-    }
-
-    return handleTenantRequest(request, env, tenant, tenantRoute, selectedScope);
+    return fetch(proxyRequest(env.LANDING_ORIGIN, request, url.pathname));
   },
 };

@@ -1,6 +1,6 @@
-// Shared, server-safe route table + resolver for the public site. Imported by
-// both the client PublicApp and the server page.tsx/sitemap so locale/path
-// resolution can't drift between them.
+// Single source of truth for the public site's routes. Imported by the client
+// PublicApp, the server page.tsx, site-meta, and the sitemap so locale/path
+// resolution, nav, and indexability can't drift between them.
 
 export type Locale = "en" | "es";
 export type PublicRoute =
@@ -18,34 +18,58 @@ export type PublicRoute =
 
 export type RouteState = { locale: Locale; route: PublicRoute; regionPath?: string };
 
-// Canonical localized paths. English canonical paths omit the /en prefix
-// (with /en/* kept as aliases), Spanish paths carry /es.
-export const ROUTE_PATHS: Record<Exclude<PublicRoute, "region">, { en: string; es: string }> = {
-  home: { en: "/en", es: "/es" },
-  govops: { en: "/govops", es: "/es/govops" },
-  scrutiny: { en: "/scrutiny", es: "/es/escrutinio" },
-  portal: { en: "/portal", es: "/es/portal" },
-  collaborate: { en: "/collaborate", es: "/es/colaborar" },
-  features: { en: "/features", es: "/es/funcionalidades" },
-  "how-it-works": { en: "/how-it-works", es: "/es/como-funciona" },
-  "for-governments": { en: "/for-governments", es: "/es/para-gobiernos" },
-  "for-citizens": { en: "/for-citizens", es: "/es/para-ciudadanos" },
-  account: { en: "/account", es: "/es/cuenta" },
+type RouteDef = {
+  // Canonical localized paths. English canonical paths omit the /en prefix
+  // (with /en/* kept as aliases), Spanish paths carry /es.
+  en: string;
+  es: string;
+  // Shown in the top navigation (order in this table is nav order).
+  nav: boolean;
+  // Marketing/content page: in the sitemap and indexable. App/utility pages
+  // (e.g. account) are excluded from the sitemap and get robots noindex.
+  indexable: boolean;
 };
 
-export const CONTENT_ROUTES = Object.keys(ROUTE_PATHS) as Array<Exclude<PublicRoute, "region">>;
+const ROUTES: Record<Exclude<PublicRoute, "region">, RouteDef> = {
+  home: { en: "/en", es: "/es", nav: false, indexable: true },
+  govops: { en: "/govops", es: "/es/govops", nav: true, indexable: true },
+  scrutiny: { en: "/scrutiny", es: "/es/escrutinio", nav: true, indexable: true },
+  portal: { en: "/portal", es: "/es/portal", nav: true, indexable: true },
+  collaborate: { en: "/collaborate", es: "/es/colaborar", nav: true, indexable: true },
+  features: { en: "/features", es: "/es/funcionalidades", nav: true, indexable: true },
+  "how-it-works": { en: "/how-it-works", es: "/es/como-funciona", nav: false, indexable: true },
+  "for-governments": { en: "/for-governments", es: "/es/para-gobiernos", nav: false, indexable: true },
+  "for-citizens": { en: "/for-citizens", es: "/es/para-ciudadanos", nav: false, indexable: true },
+  account: { en: "/account", es: "/es/cuenta", nav: false, indexable: false },
+};
 
-// Pages exposed in the top navigation (order matters).
-export const NAV_ROUTES: Array<Exclude<PublicRoute, "region" | "home">> = [
-  "govops",
-  "scrutiny",
-  "portal",
-  "collaborate",
-  "features",
-];
+export const CONTENT_ROUTES = Object.keys(ROUTES) as Array<Exclude<PublicRoute, "region">>;
+
+// Derived views of the registry (kept as named exports for existing callers).
+export const ROUTE_PATHS: Record<Exclude<PublicRoute, "region">, { en: string; es: string }> = ROUTES;
+
+export const NAV_ROUTES = CONTENT_ROUTES.filter(
+  (route): route is Exclude<PublicRoute, "region" | "home"> => ROUTES[route].nav,
+);
+
+export function isIndexableRoute(route: Exclude<PublicRoute, "region">): boolean {
+  return ROUTES[route].indexable;
+}
 
 export function routePath(locale: Locale, route: Exclude<PublicRoute, "region">): string {
-  return ROUTE_PATHS[route][locale];
+  return ROUTES[route][locale];
+}
+
+// Every localized path plus /en/* aliases — used by page.tsx to prerender all
+// content pages without hand-listing slugs.
+export function allLocalizedPaths(): string[] {
+  const paths = new Set<string>(["/"]);
+  for (const route of CONTENT_ROUTES) {
+    paths.add(ROUTES[route].en);
+    paths.add(ROUTES[route].es);
+    if (route !== "home") paths.add(`/en${ROUTES[route].en}`);
+  }
+  return [...paths];
 }
 
 function normalize(pathname: string): string {
@@ -61,10 +85,10 @@ export function isRegionPath(pathname: string): boolean {
 const EXACT_LOOKUP: Record<string, { locale: Locale; route: Exclude<PublicRoute, "region"> }> = (() => {
   const map: Record<string, { locale: Locale; route: Exclude<PublicRoute, "region"> }> = {};
   for (const route of CONTENT_ROUTES) {
-    map[ROUTE_PATHS[route].en] = { locale: "en", route };
-    map[ROUTE_PATHS[route].es] = { locale: "es", route };
+    map[ROUTES[route].en] = { locale: "en", route };
+    map[ROUTES[route].es] = { locale: "es", route };
     // /en/* alias for English canonical paths (e.g. /en/govops -> govops).
-    if (route !== "home") map[`/en${ROUTE_PATHS[route].en}`] = { locale: "en", route };
+    if (route !== "home") map[`/en${ROUTES[route].en}`] = { locale: "en", route };
   }
   map["/"] = { locale: "en", route: "home" };
   return map;

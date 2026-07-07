@@ -22,53 +22,14 @@ import {
   Tag,
 } from "lucide-react";
 
-type Locale = "en" | "es";
-
-type PlaceDetail = {
-  id: string;
-  name: string;
-  municipalityName: string;
-  countryCode: string;
-  countryName: string | null;
-  jurisdictionType: string;
-  jurisdictionLabel: string;
-  postalCode: string | null;
-  citySlug: string;
-  parentSubdivisionName: string | null;
-  pathPrefix: string;
-  url: string;
-};
-
-type NominatimResult = {
-  place_id: number;
-  osm_type: string;
-  osm_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  type: string;
-  class: string;
-  address?: {
-    city?: string;
-    town?: string;
-    municipality?: string;
-    county?: string;
-    state?: string;
-    country?: string;
-    country_code?: string;
-    postcode?: string;
-  };
-  extratags?: {
-    population?: string;
-    area?: string;
-    wikidata?: string;
-    wikipedia?: string;
-  };
-};
-
-type SearchResult =
-  | { kind: "place"; place: PlaceDetail }
-  | { kind: "nominatim"; result: NominatimResult };
+import type { Locale } from "../../lib/routes";
+import {
+  fetchNominatimEnrichment,
+  searchRegionPlaces,
+  type NominatimResult,
+  type PlaceResult,
+  type RegionSearchResult,
+} from "../../lib/public-search";
 
 const copy = {
   en: {
@@ -139,12 +100,12 @@ const copy = {
 
 export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pathPrefix: string }) {
   const t = copy[locale];
-  const [place, setPlace] = useState<PlaceDetail | null>(null);
+  const [place, setPlace] = useState<PlaceResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [nominatimData, setNominatimData] = useState<NominatimResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<RegionSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [creatingPlace, setCreatingPlace] = useState<string | null>(null);
 
@@ -180,19 +141,8 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
   }, [pathPrefix]);
 
   async function searchNominatim(name: string, country: string) {
-    try {
-      const q = `${name}, ${country}`;
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&extratags=1&limit=1`,
-        { headers: { "Accept-Language": locale === "es" ? "es" : "en" } }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.length > 0) setNominatimData(data[0]);
-      }
-    } catch {
-      // Nominatim is optional
-    }
+    const enrichment = await fetchNominatimEnrichment(name, country, locale);
+    if (enrichment) setNominatimData(enrichment);
   }
 
   async function createPlaceFromNominatim(nominatimResult: NominatimResult) {
@@ -227,35 +177,7 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
       }
       setSearchLoading(true);
       try {
-        const [ciutatisResponse, nominatimResponse] = await Promise.all([
-          fetch(`/api/public/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
-          fetch(`/api/public/nominatim/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
-        ]);
-
-        const results: SearchResult[] = [];
-
-        if (ciutatisResponse?.ok) {
-          const ciutatisData = await ciutatisResponse.json();
-          for (const item of ciutatisData) {
-            if (item.kind === "place") {
-              results.push({ kind: "place", place: item });
-            }
-          }
-        }
-
-        if (nominatimResponse?.ok) {
-          const nominatimData = await nominatimResponse.json();
-          for (const item of nominatimData) {
-            const alreadyExists = results.some(
-              (r) => r.kind === "place" && r.place.name.toLowerCase() === item.display_name.split(",")[0]?.trim().toLowerCase()
-            );
-            if (!alreadyExists) {
-              results.push({ kind: "nominatim", result: item });
-            }
-          }
-        }
-
-        setSearchResults(results);
+        setSearchResults(await searchRegionPlaces(searchQuery));
       } catch {
         setSearchResults([]);
       } finally {
@@ -490,7 +412,7 @@ function Breadcrumb({
 }: {
   locale: Locale;
   pathPrefix: string;
-  place: PlaceDetail | null;
+  place: PlaceResult | null;
   nominatim: NominatimResult | null;
 }) {
   const parts = pathPrefix.split("/").filter(Boolean);
@@ -552,7 +474,7 @@ function MapPanel({
   locale,
 }: {
   nominatim: NominatimResult | null;
-  place: PlaceDetail | null;
+  place: PlaceResult | null;
   locale: Locale;
 }) {
   const t = copy[locale];
@@ -639,7 +561,7 @@ function HierarchySteps({
   nominatim,
   locale,
 }: {
-  place: PlaceDetail | null;
+  place: PlaceResult | null;
   nominatim: NominatimResult | null;
   locale: Locale;
 }) {
@@ -689,7 +611,7 @@ function SearchResultCard({
   onCreate,
   isCreating,
 }: {
-  result: SearchResult;
+  result: RegionSearchResult;
   locale: Locale;
   onCreate?: () => void;
   isCreating?: boolean;
@@ -801,8 +723,8 @@ function getAdminLevelLabel(type: string): string {
   return levelMap[type.toLowerCase()] ?? type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function groupSearchResultsByLevel(results: SearchResult[]): { level: string; results: SearchResult[] }[] {
-  const groups: Record<string, SearchResult[]> = {};
+function groupSearchResultsByLevel(results: RegionSearchResult[]): { level: string; results: RegionSearchResult[] }[] {
+  const groups: Record<string, RegionSearchResult[]> = {};
   for (const result of results) {
     const level = result.kind === "place"
       ? result.place.jurisdictionType

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CONTENT_ROUTES, ROUTE_PATHS, routePath, type Locale, type PublicRoute } from "./routes";
+import { CONTENT_ROUTES, ROUTE_PATHS, isIndexableRoute, routePath, type Locale, type PublicRoute } from "./routes";
 
 export const SITE_URL = "https://ciutatis.com";
 export const SITE_NAME = "Ciutatis";
@@ -131,21 +131,20 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
   },
 };
 
-// Routes excluded from the sitemap (app/utility pages, not marketing content).
-const NON_CONTENT_ROUTES: ReadonlyArray<Exclude<PublicRoute, "region">> = ["account"];
-
 export function getRouteMeta(locale: Locale, route: Exclude<PublicRoute, "region">): Meta {
   return ROUTE_META[route][locale];
 }
 
-// Build Next Metadata for a content route: localized title/description, canonical,
-// hreflang alternates (en/es + x-default), and Open Graph/Twitter.
+// Build Next Metadata for a route: localized title/description, canonical,
+// hreflang alternates (en/es + x-default), Open Graph/Twitter, and robots
+// noindex for non-indexable app pages (single source: the route registry).
 export function buildMetadata(locale: Locale, route: Exclude<PublicRoute, "region">): Metadata {
   const meta = getRouteMeta(locale, route);
   const canonical = routePath(locale, route);
   const enPath = ROUTE_PATHS[route].en;
   const esPath = ROUTE_PATHS[route].es;
   return {
+    ...(isIndexableRoute(route) ? {} : { robots: { index: false, follow: false } }),
     title: meta.title,
     description: meta.description,
     alternates: {
@@ -172,13 +171,23 @@ export function buildMetadata(locale: Locale, route: Exclude<PublicRoute, "regio
   };
 }
 
-// All canonical localized URLs, for the sitemap.
-export function allRouteUrls(): Array<{ url: string }> {
-  const urls: Array<{ url: string }> = [{ url: SITE_URL + "/" }];
+// All canonical localized URLs for indexable routes, with hreflang alternates.
+// The sitemap derives entirely from the route registry.
+export type SitemapEntry = { url: string; languages: Record<string, string> };
+
+export function allRouteUrls(): SitemapEntry[] {
+  const entries: SitemapEntry[] = [];
   for (const route of CONTENT_ROUTES) {
-    if (NON_CONTENT_ROUTES.includes(route)) continue;
-    urls.push({ url: SITE_URL + ROUTE_PATHS[route].en });
-    urls.push({ url: SITE_URL + ROUTE_PATHS[route].es });
+    if (!isIndexableRoute(route)) continue;
+    const { en, es } = ROUTE_PATHS[route];
+    const languages = {
+      en: SITE_URL + en,
+      es: SITE_URL + es,
+      "x-default": SITE_URL + (route === "home" ? "/" : en),
+    };
+    entries.push({ url: SITE_URL + (route === "home" ? "/" : en), languages });
+    entries.push({ url: SITE_URL + es, languages });
+    if (route === "home") entries.push({ url: SITE_URL + en, languages });
   }
-  return urls;
+  return entries;
 }

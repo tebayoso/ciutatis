@@ -33,6 +33,7 @@ import {
   type PublicRoute,
   type RouteState,
 } from "../lib/routes";
+import { searchPublic, type PublicSearchResult } from "../lib/public-search";
 
 const adminShellUrl = process.env.NEXT_PUBLIC_ADMIN_SHELL_URL ?? "https://admin.ciutatis.com";
 
@@ -642,35 +643,6 @@ const copy = {
     footer: "© 2026 Ciutatis. Infraestructura cívica de código abierto.",
   },
 } as const;
-
-interface InstitutionResult {
-  kind: "institution";
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  brandColor: string | null;
-  logoUrl: string | null;
-  issuePrefix: string;
-}
-
-interface PlaceResult {
-  kind: "place";
-  id: string;
-  name: string;
-  municipalityName: string;
-  countryCode: string;
-  countryName: string | null;
-  jurisdictionType: string;
-  jurisdictionLabel: string;
-  postalCode: string | null;
-  citySlug: string;
-  parentSubdivisionName: string | null;
-  pathPrefix: string;
-  url: string;
-}
-
-type SearchResult = InstitutionResult | PlaceResult;
 
 export default function PublicApp({ initialRouteState }: { initialRouteState: RouteState }) {
   const [{ locale, route, regionPath }, setRouteState] = useState<RouteState>(initialRouteState);
@@ -1552,7 +1524,7 @@ function InstitutionSearch({ locale }: { locale: Locale }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<PublicSearchResult[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1560,11 +1532,7 @@ function InstitutionSearch({ locale }: { locale: Locale }) {
       setLoading(true);
       setError(false);
       try {
-        const params = new URLSearchParams();
-        if (query.trim()) params.set("q", query.trim());
-        const response = await fetch(`/api/public/search${params.size ? `?${params.toString()}` : ""}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Public search failed");
-        setResults((await response.json()) as SearchResult[]);
+        setResults(await searchPublic(query, { signal: controller.signal }));
       } catch (searchError) {
         if (!controller.signal.aborted) setError(true);
       } finally {

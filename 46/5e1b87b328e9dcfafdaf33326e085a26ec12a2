@@ -1,0 +1,43 @@
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_e8c2065b2cb06c 23,50,55,299-331,352,357,601-633,699,731-734,763-765,767,1258-1549
+apps/landing/app/[[...slug]]/page.tsx
+  s_a7c751498ff01a::t_440d2197cacda5 35-39
+apps/landing/lib/routes.ts
+  s_a7c751498ff01a::t_862e03b6b18a18 16,33
+apps/landing/lib/site-meta.ts
+  s_a7c751498ff01a::t_3917d20da00343 120-131,134-136,179
+packages/db-cloudflare/src/migrations/0005_public_contributions.sql
+  s_a7c751498ff01a::t_538d92fd710594 1-13
+packages/db-cloudflare/src/migrations/meta/_journal.json
+  s_a7c751498ff01a::t_7dcadeff40b543 39-45
+packages/db-cloudflare/src/schema/index.ts
+  s_a7c751498ff01a::t_9fe6b0c311926f 21
+packages/db-cloudflare/src/schema/public_contributions.ts
+  s_a7c751498ff01a::t_4df1c71f2444d5 1-24
+workers/api/src/app.ts
+  s_a7c751498ff01a::t_3aaa24613aecc6 36-37,79,81
+workers/api/src/routes/collaborate.ts
+  s_a7c751498ff01a::t_f331d35978b64b 2,145-169
+workers/api/src/routes/index.ts
+  s_a7c751498ff01a::t_f8331edc0948c8 24-25
+workers/api/src/routes/me.ts
+  s_a7c751498ff01a::t_a93325b05e5e3a 1-69
+workers/api/src/routes/public-auth.ts
+  s_a7c751498ff01a::t_c20df4902a2144 1-196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "465e1b87b328e9dcfafdaf33326e085a26ec12a2",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "unknown"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

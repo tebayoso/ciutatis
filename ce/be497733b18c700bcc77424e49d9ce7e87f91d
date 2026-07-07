@@ -1,0 +1,19 @@
+pnpm-lock.yaml
+  s_a7c751498ff01a::t_38b1cc3713ee1d 148-149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "cebe497733b18c700bcc77424e49d9ce7e87f91d",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

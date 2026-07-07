@@ -13,6 +13,7 @@ export type PublicRoute =
   | "how-it-works"
   | "for-governments"
   | "for-citizens"
+  | "account"
   | "region";
 
 export type RouteState = { locale: Locale; route: PublicRoute; regionPath?: string };
@@ -29,6 +30,7 @@ export const ROUTE_PATHS: Record<Exclude<PublicRoute, "region">, { en: string; e
   "how-it-works": { en: "/how-it-works", es: "/es/como-funciona" },
   "for-governments": { en: "/for-governments", es: "/es/para-gobiernos" },
   "for-citizens": { en: "/for-citizens", es: "/es/para-ciudadanos" },
+  account: { en: "/account", es: "/es/cuenta" },
 };
 
 export const CONTENT_ROUTES = Object.keys(ROUTE_PATHS) as Array<Exclude<PublicRoute, "region">>;

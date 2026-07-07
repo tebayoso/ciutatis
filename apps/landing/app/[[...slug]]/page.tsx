@@ -32,7 +32,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
       alternates: { canonical: state.regionPath },
     };
   }
-  return buildMetadata(state.locale, state.route);
+  const meta = buildMetadata(state.locale, state.route);
+  if (state.route === "account") {
+    meta.robots = { index: false, follow: false };
+  }
+  return meta;
 }
 
 export default async function PublicCatchAllPage({ params }: { params: Promise<{ slug?: string[] }> }) {

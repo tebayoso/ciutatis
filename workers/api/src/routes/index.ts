@@ -21,3 +21,5 @@ export { contactRoutes } from "./contact.js";
 export { authRoutes } from "./auth.js";
 export { publicPortalRoutes } from "./public-portal.js";
 export { collaborateRoutes } from "./collaborate.js";
+export { publicAuthRoutes } from "./public-auth.js";
+export { meRoutes } from "./me.js";

@@ -18,6 +18,7 @@ export { requestWorkProducts } from "./request_work_products.js";
 export { emailDraftStatus, emailDrafts } from "./drafts.js";
 export { projectObjectives } from "./project_objectives.js";
 export { pluginInstitutionSettings } from "./plugin_institution_settings.js";
+export { publicContributions } from "./public_contributions.js";
 
 // Backward-compat aliases (old names re-exported from shim files)
 export { companies } from "./companies.js";

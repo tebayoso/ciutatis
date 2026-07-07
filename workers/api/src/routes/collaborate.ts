@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { publicContributions } from "@ciutatis/db-cloudflare";
 import type { AppEnv } from "../lib/types.js";
 
 // Public "Collaborate" intake: citizens drop a document, we recognise exact
@@ -139,6 +140,31 @@ export function collaborateRoutes() {
         { error: "The document parser couldn't process this file.", detail: text.slice(0, 500) },
         response.status === 401 ? 502 : (response.status as 400 | 413 | 415 | 422 | 500),
       );
+    }
+
+    // Attribute the contribution to the citizen if they're signed in. Best-effort:
+    // a logging failure must never break the user's result. Anonymous uploads
+    // (actor.type !== "board") create no row.
+    const actor = c.get("actor");
+    if (actor.type === "board" && actor.userId) {
+      try {
+        const payload = JSON.parse(text) as {
+          status?: string;
+          contentHash?: string;
+          document?: { id?: string; classification?: { label?: string } | null } | null;
+        };
+        await c.get("db").insert(publicContributions).values({
+          userId: actor.userId,
+          contentHash: payload.contentHash ?? "",
+          filename: file.name,
+          contentType: file.type || null,
+          status: payload.status ?? "ingested",
+          documentId: payload.document?.id ?? null,
+          classificationLabel: payload.document?.classification?.label ?? null,
+        });
+      } catch {
+        // Swallow — attribution is non-critical.
+      }
     }
 
     return new Response(text, {

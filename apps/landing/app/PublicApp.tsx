@@ -20,6 +20,7 @@ import {
   Search,
   ShieldCheck,
   UploadCloud,
+  UserCircle,
   Users,
 } from "lucide-react";
 import RegionPage from "./region/RegionPage";
@@ -46,10 +47,12 @@ const copy = {
       "how-it-works": "How it works",
       "for-governments": "For governments",
       "for-citizens": "For citizens",
+      account: "Account",
       home: "Home",
       region: "",
       github: "GitHub",
       signIn: "Sign in",
+      operatorSignIn: "Operator sign in",
       langSwitch: "ES",
     },
     home: {
@@ -293,6 +296,39 @@ const copy = {
         },
       ],
     },
+    account: {
+      eyebrow: "Citizen account",
+      title: "Track your requests and contributions.",
+      subtitle:
+        "A free citizen account lets you follow the public requests you submit and the documents you contribute. No operator role — just your own activity.",
+      signInTab: "Sign in",
+      signUpTab: "Create account",
+      nameLabel: "Name",
+      emailLabel: "Email",
+      passwordLabel: "Password",
+      signInCta: "Sign in",
+      signUpCta: "Create account",
+      loading: "Loading…",
+      working: "Please wait…",
+      greeting: "Signed in as",
+      signOut: "Sign out",
+      requestsTitle: "Your public requests",
+      requestsEmpty: "No public requests yet. Requests you submit while signed in will appear here.",
+      contributionsTitle: "Your contributions",
+      contributionsEmpty: "No documents contributed yet.",
+      contributeCta: "Contribute a document",
+      statusDuplicate: "Already on file",
+      statusIngested: "Added",
+      operatorNote: "Run an institution? Operators sign in on the admin.",
+      operatorCta: "Operator sign in",
+      errors: {
+        required: "Please fill in all fields.",
+        weakPassword: "Password must be at least 8 characters.",
+        invalid: "Invalid email or password.",
+        exists: "An account with this email already exists.",
+        generic: "Something went wrong. Please try again.",
+      },
+    },
     principles: {
       eyebrow: "Operating principles",
       cards: [
@@ -313,10 +349,12 @@ const copy = {
       "how-it-works": "Cómo funciona",
       "for-governments": "Para gobiernos",
       "for-citizens": "Para ciudadanos",
+      account: "Cuenta",
       home: "Inicio",
       region: "",
       github: "GitHub",
       signIn: "Ingresar",
+      operatorSignIn: "Ingreso de operadores",
       langSwitch: "EN",
     },
     home: {
@@ -560,6 +598,39 @@ const copy = {
         },
       ],
     },
+    account: {
+      eyebrow: "Cuenta ciudadana",
+      title: "Seguí tus pedidos y aportes.",
+      subtitle:
+        "Una cuenta ciudadana gratuita te deja seguir los pedidos públicos que enviás y los documentos que aportás. Sin rol de operador — solo tu actividad.",
+      signInTab: "Ingresar",
+      signUpTab: "Crear cuenta",
+      nameLabel: "Nombre",
+      emailLabel: "Email",
+      passwordLabel: "Contraseña",
+      signInCta: "Ingresar",
+      signUpCta: "Crear cuenta",
+      loading: "Cargando…",
+      working: "Esperá un momento…",
+      greeting: "Sesión iniciada como",
+      signOut: "Cerrar sesión",
+      requestsTitle: "Tus pedidos públicos",
+      requestsEmpty: "Todavía no enviaste pedidos públicos. Los que envíes con sesión iniciada aparecerán acá.",
+      contributionsTitle: "Tus aportes",
+      contributionsEmpty: "Todavía no aportaste documentos.",
+      contributeCta: "Aportar un documento",
+      statusDuplicate: "Ya registrado",
+      statusIngested: "Agregado",
+      operatorNote: "¿Operás una institución? Los operadores ingresan en el admin.",
+      operatorCta: "Ingreso de operadores",
+      errors: {
+        required: "Completá todos los campos.",
+        weakPassword: "La contraseña debe tener al menos 8 caracteres.",
+        invalid: "Email o contraseña inválidos.",
+        exists: "Ya existe una cuenta con este email.",
+        generic: "Algo salió mal. Probá de nuevo.",
+      },
+    },
     principles: {
       eyebrow: "Principios operativos",
       cards: [
@@ -625,6 +696,7 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "how-it-works" ? <HowItWorksPage locale={locale} /> : null}
         {route === "for-governments" ? <ForGovernmentsPage locale={locale} /> : null}
         {route === "for-citizens" ? <ForCitizensPage locale={locale} /> : null}
+        {route === "account" ? <AccountPage locale={locale} /> : null}
         {route === "region" && regionPath ? <RegionPage locale={locale} pathPrefix={regionPath} /> : null}
       </main>
       <SiteFooter locale={locale} />
@@ -656,6 +728,10 @@ function Header({ locale, route, alternatePath }: { locale: Locale; route: Publi
         <a className="hidden text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)] sm:block" href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
           {t.nav.github}
         </a>
+        <a className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={routePath(locale, "account")}>
+          <UserCircle className="h-4 w-4" />
+          {t.nav.account}
+        </a>
       </div>
     </header>
   );
@@ -684,8 +760,11 @@ function SiteFooter({ locale }: { locale: Locale }) {
           <a href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer" className="transition-colors hover:text-[var(--ink)]">
             {t.nav.github}
           </a>
+          <a href={routePath(locale, "account")} className="transition-colors hover:text-[var(--ink)]">
+            {t.nav.account}
+          </a>
           <a href={`${adminShellUrl}/admin/auth`} className="transition-colors hover:text-[var(--ink)]">
-            {t.nav.signIn}
+            {t.nav.operatorSignIn}
           </a>
         </nav>
         <p className="text-center text-xs uppercase tracking-widest text-[var(--muted)] font-medium">{t.footer}</p>
@@ -1173,6 +1252,298 @@ function ForCitizensPage({ locale }: { locale: Locale }) {
         ))}
       </div>
     </section>
+  );
+}
+
+type MeProfile = { id: string; name: string; email: string };
+type MeRequest = {
+  publicId: string;
+  institutionSlug: string;
+  category: string;
+  title: string;
+  status: string;
+  createdAt: string;
+};
+type MeContribution = {
+  filename: string;
+  status: string;
+  documentId: string | null;
+  classificationLabel: string | null;
+  createdAt: string;
+};
+
+function formatDate(value: string, locale: Locale): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(locale === "es" ? "es-AR" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function AccountPage({ locale }: { locale: Locale }) {
+  const t = copy[locale].account;
+  const [phase, setPhase] = useState<"loading" | "signedOut" | "signedIn">("loading");
+  const [user, setUser] = useState<MeProfile | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/public/auth/session", { credentials: "include" });
+        const data = (await res.json().catch(() => null)) as { user?: MeProfile | null } | null;
+        if (!active) return;
+        if (data?.user) {
+          setUser(data.user);
+          setPhase("signedIn");
+        } else {
+          setPhase("signedOut");
+        }
+      } catch {
+        if (active) setPhase("signedOut");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <section className="space-y-12">
+      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<UserCircle className="h-3.5 w-3.5 text-[var(--accent)]" />} />
+      {phase === "loading" ? (
+        <p className="text-center text-sm text-[var(--muted-strong)]">{t.loading}</p>
+      ) : null}
+      {phase === "signedOut" ? (
+        <AccountAuth
+          locale={locale}
+          onSignedIn={(u) => {
+            setUser(u);
+            setPhase("signedIn");
+          }}
+        />
+      ) : null}
+      {phase === "signedIn" && user ? (
+        <AccountDashboard
+          locale={locale}
+          user={user}
+          onSignedOut={() => {
+            setUser(null);
+            setPhase("signedOut");
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function AccountAuth({ locale, onSignedIn }: { locale: Locale; onSignedIn: (user: MeProfile) => void }) {
+  const t = copy[locale].account;
+  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (!email || !password || (tab === "signup" && !name)) {
+      setError(t.errors.required);
+      return;
+    }
+    if (tab === "signup" && password.length < 8) {
+      setError(t.errors.weakPassword);
+      return;
+    }
+    setBusy(true);
+    try {
+      const endpoint = tab === "signin" ? "/api/public/auth/sign-in" : "/api/public/auth/sign-up";
+      const body = tab === "signin" ? { email, password } : { name, email, password };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json().catch(() => null)) as { user?: MeProfile; error?: string } | null;
+      if (!res.ok) {
+        if (res.status === 409) setError(t.errors.exists);
+        else if (res.status === 400 && tab === "signin") setError(t.errors.invalid);
+        else setError(data?.error ?? t.errors.generic);
+        return;
+      }
+      if (data?.user) onSignedIn(data.user);
+    } catch {
+      setError(t.errors.generic);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const tabClass = (active: boolean) =>
+    `flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+      active ? "bg-[var(--ink)] text-[var(--page)]" : "text-[var(--muted-strong)] hover:text-[var(--ink)]"
+    }`;
+  const inputClass =
+    "w-full rounded-lg border border-[var(--border-strong)] bg-white/60 px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)]";
+
+  return (
+    <div className="mx-auto w-full max-w-md">
+      <div className="mb-6 flex gap-1 rounded-xl border border-[var(--border-strong)] bg-white/40 p-1">
+        <button type="button" className={tabClass(tab === "signin")} onClick={() => { setTab("signin"); setError(null); }}>
+          {t.signInTab}
+        </button>
+        <button type="button" className={tabClass(tab === "signup")} onClick={() => { setTab("signup"); setError(null); }}>
+          {t.signUpTab}
+        </button>
+      </div>
+      <form onSubmit={submit} className="space-y-4">
+        {tab === "signup" ? (
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{t.nameLabel}</span>
+            <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          </label>
+        ) : null}
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{t.emailLabel}</span>
+          <input className={inputClass} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{t.passwordLabel}</span>
+          <input className={inputClass} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={tab === "signin" ? "current-password" : "new-password"} />
+        </label>
+        {error ? (
+          <div className="flex items-start gap-2 rounded-lg border border-[var(--border-strong)] bg-white/60 px-3 py-2 text-sm text-[var(--ink)]">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+            <span>{error}</span>
+          </div>
+        ) : null}
+        <button type="submit" disabled={busy} className="hero-button-solid w-full justify-center disabled:opacity-60">
+          {busy ? t.working : tab === "signin" ? t.signInCta : t.signUpCta}
+        </button>
+      </form>
+      <p className="mt-6 text-center text-xs text-[var(--muted-strong)]">
+        {t.operatorNote}{" "}
+        <a className="font-medium text-[var(--ink)] underline hover:text-[var(--accent)]" href={`${adminShellUrl}/admin/auth`}>
+          {t.operatorCta}
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function AccountDashboard({ locale, user, onSignedOut }: { locale: Locale; user: MeProfile; onSignedOut: () => void }) {
+  const t = copy[locale].account;
+  const [requests, setRequests] = useState<MeRequest[] | null>(null);
+  const [contributions, setContributions] = useState<MeContribution[] | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [reqs, contribs] = await Promise.all([
+        fetch("/api/public/me/requests", { credentials: "include" })
+          .then((r) => (r.ok ? r.json() : []))
+          .catch(() => []),
+        fetch("/api/public/me/contributions", { credentials: "include" })
+          .then((r) => (r.ok ? r.json() : []))
+          .catch(() => []),
+      ]);
+      if (!active) return;
+      setRequests(reqs as MeRequest[]);
+      setContributions(contribs as MeContribution[]);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await fetch("/api/public/auth/sign-out", { method: "POST", credentials: "include" });
+    } catch {
+      // ignore
+    } finally {
+      onSignedOut();
+    }
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-8">
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border-strong)] bg-white/60 p-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{t.greeting}</p>
+          <p className="text-base font-medium text-[var(--ink)]">{user.name}</p>
+          <p className="text-sm text-[var(--muted-strong)]">{user.email}</p>
+        </div>
+        <button type="button" className="ghost-button" onClick={signOut} disabled={signingOut}>
+          {t.signOut}
+        </button>
+      </div>
+
+      <section>
+        <h3 className="mb-3 text-lg font-medium text-[var(--ink)] font-serif">{t.requestsTitle}</h3>
+        {requests === null ? (
+          <p className="text-sm text-[var(--muted-strong)]">{t.loading}</p>
+        ) : requests.length ? (
+          <ul className="space-y-2">
+            {requests.map((req) => (
+              <li key={req.publicId} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-white/50 px-4 py-3 text-sm">
+                <span className="flex min-w-0 items-center gap-2 text-[var(--ink)]">
+                  <ScrollText className="h-4 w-4 shrink-0 text-[var(--muted-strong)]" />
+                  <span className="truncate">{req.title}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="hidden text-xs text-[var(--muted)] sm:inline">{formatDate(req.createdAt, locale)}</span>
+                  <span className="rounded-full border border-[var(--border-strong)] px-3 py-0.5 text-xs text-[var(--muted-strong)]">{req.status}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-dashed border-[var(--border-strong)] bg-white/30 px-4 py-6 text-center text-sm text-[var(--muted-strong)]">{t.requestsEmpty}</p>
+        )}
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-medium text-[var(--ink)] font-serif">{t.contributionsTitle}</h3>
+          <a className="ghost-button" href={routePath(locale, "collaborate")}>
+            {t.contributeCta}
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+        {contributions === null ? (
+          <p className="text-sm text-[var(--muted-strong)]">{t.loading}</p>
+        ) : contributions.length ? (
+          <ul className="space-y-2">
+            {contributions.map((item, index) => (
+              <li key={`${item.filename}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-white/50 px-4 py-3 text-sm">
+                <span className="flex min-w-0 items-center gap-2 text-[var(--ink)]">
+                  <FileText className="h-4 w-4 shrink-0 text-[var(--muted-strong)]" />
+                  <span className="truncate">{item.filename}</span>
+                  {item.classificationLabel ? (
+                    <span className="shrink-0 text-xs text-[var(--muted)]">· {item.classificationLabel}</span>
+                  ) : null}
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="hidden text-xs text-[var(--muted)] sm:inline">{formatDate(item.createdAt, locale)}</span>
+                  <span className="rounded-full border border-[var(--border-strong)] px-3 py-0.5 text-xs text-[var(--muted-strong)]">
+                    {item.status === "duplicate" ? t.statusDuplicate : t.statusIngested}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-dashed border-[var(--border-strong)] bg-white/30 px-4 py-6 text-center text-sm text-[var(--muted-strong)]">{t.contributionsEmpty}</p>
+        )}
+      </section>
+    </div>
   );
 }
 

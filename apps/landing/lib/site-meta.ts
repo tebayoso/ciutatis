@@ -117,7 +117,22 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
         "Para ciudadanos y observadores: explorá datos públicos en Escrutinio Público, y enviá, seguí y dale continuidad a pedidos desde el Portal Público.",
     },
   },
+  account: {
+    en: {
+      title: "Your account",
+      description:
+        "Sign in or create a free citizen account to track the public requests you submit and the documents you contribute to Ciutatis.",
+    },
+    es: {
+      title: "Tu cuenta",
+      description:
+        "Ingresá o creá una cuenta ciudadana gratuita para seguir los pedidos públicos que enviás y los documentos que aportás a Ciutatis.",
+    },
+  },
 };
+
+// Routes excluded from the sitemap (app/utility pages, not marketing content).
+const NON_CONTENT_ROUTES: ReadonlyArray<Exclude<PublicRoute, "region">> = ["account"];
 
 export function getRouteMeta(locale: Locale, route: Exclude<PublicRoute, "region">): Meta {
   return ROUTE_META[route][locale];
@@ -161,6 +176,7 @@ export function buildMetadata(locale: Locale, route: Exclude<PublicRoute, "regio
 export function allRouteUrls(): Array<{ url: string }> {
   const urls: Array<{ url: string }> = [{ url: SITE_URL + "/" }];
   for (const route of CONTENT_ROUTES) {
+    if (NON_CONTENT_ROUTES.includes(route)) continue;
     urls.push({ url: SITE_URL + ROUTE_PATHS[route].en });
     urls.push({ url: SITE_URL + ROUTE_PATHS[route].es });
   }

@@ -1,0 +1,43 @@
+apps/landing/lib/public-search.ts
+  s_a7c751498ff01a::t_ec4c8761acbe81 1-130
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_a96f94616c438b 144-145
+  s_a7c751498ff01a::t_eca7939f963de7 25-32
+  s_a7c751498ff01a::t_6130481e401421 108
+  s_a7c751498ff01a::t_315d1aac6a1e3b 180
+  s_a7c751498ff01a::t_ea42fb89b4c147 103,415,477,564
+  s_a7c751498ff01a::t_1ae9c3f0d3060e 614
+  s_a7c751498ff01a::t_20fc3f01c83575 726-727
+apps/landing/app/sitemap.ts
+  s_a7c751498ff01a::t_1440da644a0f0c 5,9
+apps/landing/lib/routes.ts
+  s_a7c751498ff01a::t_cdfe200bddc1ab 1-3,21-30,33-49,51-57,60-72,88-89,91
+apps/landing/app/[[...slug]]/page.tsx
+  s_a7c751498ff01a::t_5a43f27f1ae5c4 3,10-11,13
+  s_a7c751498ff01a::t_670939e34a0f5e 32-33
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_86745e8c4d39a0 1527,1535
+  s_a7c751498ff01a::t_1bdd3066e2efc9 36
+workers/dispatcher/src/index.ts
+  s_a7c751498ff01a::t_ef4c28c218797e 1512-1515,1517-1520,1522,1525
+apps/landing/lib/site-meta.ts
+  s_a7c751498ff01a::t_6d0555f1e1b319 2
+  s_a7c751498ff01a::t_1e9c95f3f6c43c 174-179,181-190,192
+  s_a7c751498ff01a::t_6a3decf9a748b1 138-140,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bc5e996f7f3920e44e7309238be42909548b4a4a",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

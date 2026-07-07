@@ -145,6 +145,8 @@ importers:
         specifier: ^4.40.0
         version: 4.90.0(@cloudflare/workers-types@4.20260508.1)
 
+  apps/superparser-portal: {}
+
   cli:
     dependencies:
       '@ciutatis/adapter-cloudflare-workers-ai':

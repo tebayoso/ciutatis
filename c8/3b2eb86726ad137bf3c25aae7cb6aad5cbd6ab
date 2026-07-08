@@ -1,0 +1,19 @@
+workers/api/src/lib/public-portal.ts
+  s_a7c751498ff01a::t_a8d1964df82732 305-314
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c83b2eb86726ad137bf3c25aae7cb6aad5cbd6ab",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

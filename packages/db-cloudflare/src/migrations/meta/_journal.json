@@ -43,6 +43,13 @@
       "when": 1781000000000,
       "tag": "0005_public_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781100000000,
+      "tag": "0006_tenant_geo",
+      "breakpoints": true
     }
   ]
 }

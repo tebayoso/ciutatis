@@ -186,6 +186,10 @@ function toPublicPlaceSummary(row: typeof tenantInstances.$inferSelect) {
     parentSubdivisionName: row.parentSubdivisionName,
     pathPrefix: row.pathPrefix,
     url: deriveTenantUrl(row.routingMode, row.pathPrefix, row.hostname),
+    latitude: row.latitude ?? null,
+    longitude: row.longitude ?? null,
+    osmType: row.osmType ?? null,
+    osmId: row.osmId ?? null,
   };
 }
 
@@ -672,6 +676,10 @@ export function publicPortalService(db: any) {
       dispatcherKey: route.dispatcherKey,
       workerName: route.workerName,
       bootstrapStatus: "pending",
+      latitude: Number.isFinite(Number(nominatimData.lat)) ? Number(nominatimData.lat) : null,
+      longitude: Number.isFinite(Number(nominatimData.lon)) ? Number(nominatimData.lon) : null,
+      osmType: nominatimData.osm_type ?? null,
+      osmId: nominatimData.osm_id != null ? String(nominatimData.osm_id) : null,
     }).returning();
 
     return toPublicPlaceSummary(inserted);

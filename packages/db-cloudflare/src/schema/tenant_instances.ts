@@ -1,4 +1,4 @@
-import { index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import type { TenantBootstrapStatus, TenantInstanceStatus, TenantRoutingMode } from "@paperclipai/shared";
 
 export const tenantInstances = sqliteTable(
@@ -14,6 +14,11 @@ export const tenantInstances = sqliteTable(
     shortCode: text("short_code").notNull(),
     parentSubdivisionCode: text("parent_subdivision_code"),
     parentSubdivisionName: text("parent_subdivision_name"),
+    // Geo anchor from OpenStreetMap (nullable for rows created before capture).
+    latitude: real("latitude"),
+    longitude: real("longitude"),
+    osmType: text("osm_type"),
+    osmId: text("osm_id"),
     routingMode: text("routing_mode").$type<TenantRoutingMode>().notNull().default("path"),
     status: text("status").$type<TenantInstanceStatus>().notNull().default("draft"),
     pathPrefix: text("path_prefix").notNull(),

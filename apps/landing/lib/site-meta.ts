@@ -45,6 +45,18 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
         "Un explorador de datos públicos para la rendición de cuentas: buscá instituciones y lugares, inspeccioná pedidos públicos y seguí la actividad institucional. Solo lectura, separado de la operación interna.",
     },
   },
+  explore: {
+    en: {
+      title: "Explore — civic map of institutions and places",
+      description:
+        "Search cities, municipalities, and public institutions on an interactive OpenStreetMap view: see administrative boundaries, what's already on Ciutatis, and claim places that aren't yet.",
+    },
+    es: {
+      title: "Explorá — mapa cívico de instituciones y lugares",
+      description:
+        "Buscá ciudades, municipios e instituciones públicas en un mapa interactivo de OpenStreetMap: mirá límites administrativos, qué ya está en Ciutatis y reclamá los lugares que faltan.",
+    },
+  },
   portal: {
     en: {
       title: "Public Portal — work with your government",

@@ -8,7 +8,6 @@ import {
   Globe2,
   Landmark,
   MapPin,
-  Navigation,
   Search,
   Shield,
   Users,
@@ -24,12 +23,15 @@ import {
 
 import type { Locale } from "../../lib/routes";
 import {
+  createPlaceFromOsm,
   fetchNominatimEnrichment,
   searchRegionPlaces,
   type NominatimResult,
   type PlaceResult,
   type RegionSearchResult,
 } from "../../lib/public-search";
+import { lookupOsmBoundary, markerFromNominatim, markerFromPlace } from "../../lib/geo";
+import CivicMap from "../components/CivicMap";
 
 const copy = {
   en: {
@@ -148,23 +150,12 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
   async function createPlaceFromNominatim(nominatimResult: NominatimResult) {
     const key = `${nominatimResult.osm_type}-${nominatimResult.osm_id}`;
     setCreatingPlace(key);
-    try {
-      const response = await fetch("/api/public/places", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nominatimResult),
-      });
-      if (response.ok) {
-        const place = await response.json();
-        window.location.href = place.url;
-      } else {
-        const error = await response.json().catch(() => ({ error: "Failed to create place" }));
-        alert(error.error || "Failed to create place");
-      }
-    } catch {
-      alert("Failed to create place");
-    } finally {
-      setCreatingPlace(null);
+    const outcome = await createPlaceFromOsm(nominatimResult);
+    setCreatingPlace(null);
+    if (outcome.ok) {
+      window.location.href = outcome.place.url;
+    } else {
+      alert(outcome.error);
     }
   }
 
@@ -478,14 +469,36 @@ function MapPanel({
   locale: Locale;
 }) {
   const t = copy[locale];
-  const mapUrl = useMemo(() => {
-    if (!nominatim) return null;
-    const lat = Number(nominatim.lat);
-    const lon = Number(nominatim.lon);
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.1}%2C${lat - 0.1}%2C${lon + 0.1}%2C${lat + 0.1}&layer=mapnik&marker=${lat}%2C${lon}`;
-  }, [nominatim]);
+  const [boundary, setBoundary] = useState<unknown | null>(null);
 
-  if (!mapUrl) {
+  // OSM identity: prefer the stored anchor on the Ciutatis place, fall back to
+  // the Nominatim enrichment. Used to fetch the real admin boundary polygon.
+  const osmType = place?.osmType ?? nominatim?.osm_type ?? null;
+  const osmId = place?.osmId ?? (nominatim ? String(nominatim.osm_id) : null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setBoundary(null);
+    if (!osmType || !osmId) return;
+    lookupOsmBoundary(osmType, osmId).then((lookup) => {
+      if (!cancelled) setBoundary(lookup?.geojson ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [osmType, osmId]);
+
+  const markers = useMemo(() => {
+    const marker = (place ? markerFromPlace(place) : null) ?? (nominatim ? markerFromNominatim(nominatim) : null);
+    return marker ? [marker] : [];
+  }, [place, nominatim]);
+
+  const center = useMemo<[number, number] | undefined>(() => {
+    const marker = markers[0];
+    return marker ? [marker.lat, marker.lon] : undefined;
+  }, [markers]);
+
+  if (markers.length === 0 && !boundary) {
     return (
       <div className="flex min-h-[400px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--panel)]">
         <div className="text-center">
@@ -496,26 +509,7 @@ function MapPanel({
     );
   }
 
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--panel)] px-4 py-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted)]">
-          <Navigation className="h-3.5 w-3.5" />
-          {place?.name ?? t.map}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[var(--green)]" />
-          <span className="text-xs font-medium text-[var(--muted-strong)]">OpenStreetMap</span>
-        </div>
-      </div>
-      <iframe
-        src={mapUrl}
-        className="h-[400px] w-full border-0"
-        title={`Map of ${place?.name ?? "location"}`}
-        loading="lazy"
-      />
-    </div>
-  );
+  return <CivicMap className="h-[400px]" center={center} zoom={11} markers={markers} boundary={boundary} />;
 }
 
 function FactCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

@@ -29,6 +29,11 @@ export interface PublicPlaceSummary {
   parentSubdivisionName: string | null;
   pathPrefix: string;
   url: string;
+  // Geo anchor from OSM; null for places created before capture.
+  latitude: number | null;
+  longitude: number | null;
+  osmType: string | null;
+  osmId: string | null;
 }
 
 export type PublicSearchResult =

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -33,7 +33,17 @@ import {
   type PublicRoute,
   type RouteState,
 } from "../lib/routes";
-import { searchPublic, type PublicSearchResult } from "../lib/public-search";
+import {
+  createPlaceFromOsm,
+  searchExplorer,
+  searchPublic,
+  type ExplorerResults,
+  type NominatimResult,
+  type PublicSearchResult,
+  type RegionSearchResult,
+} from "../lib/public-search";
+import { lookupOsmBoundary, markersFromRegionResults, regionResultMarkerId } from "../lib/geo";
+import CivicMap from "./components/CivicMap";
 
 const adminShellUrl = process.env.NEXT_PUBLIC_ADMIN_SHELL_URL ?? "https://admin.ciutatis.com";
 
@@ -42,6 +52,7 @@ const copy = {
     nav: {
       govops: "GovOps",
       scrutiny: "Public Scrutiny",
+      explore: "Explore",
       portal: "Public Portal",
       collaborate: "Collaborate",
       features: "Features",
@@ -113,6 +124,25 @@ const copy = {
             "Use AI agents as accountable operational channels while Ciutatis manages ownership, cost, context, and traceability.",
         },
       ],
+    },
+    explore: {
+      eyebrow: "Civic map",
+      title: "Explore cities and institutions on the map.",
+      subtitle:
+        "Search municipalities, places, and public institutions. See real administrative boundaries from OpenStreetMap, what's already on Ciutatis, and claim the places that aren't yet.",
+      searchLabel: "Search the civic map",
+      searchPlaceholder: "Search a city, municipality, or institution...",
+      loading: "Searching...",
+      empty: "No places or institutions found.",
+      placesGroup: "Places",
+      institutionsGroup: "Institutions",
+      inCiutatis: "In Ciutatis",
+      notInCiutatis: "Not yet in Ciutatis",
+      claim: "Claim this place",
+      creating: "Creating...",
+      openPlace: "Open public site",
+      openInstitution: "Open portal",
+      mapHint: "Select a result to see its boundary on the map.",
     },
     scrutiny: {
       eyebrow: "Public data explorer",
@@ -344,6 +374,7 @@ const copy = {
     nav: {
       govops: "GovOps",
       scrutiny: "Escrutinio Público",
+      explore: "Explorá",
       portal: "Portal Público",
       collaborate: "Colaborá",
       features: "Funcionalidades",
@@ -415,6 +446,25 @@ const copy = {
             "Usá agentes de IA como canales operativos responsables mientras Ciutatis gestiona propiedad, costo, contexto y trazabilidad.",
         },
       ],
+    },
+    explore: {
+      eyebrow: "Mapa cívico",
+      title: "Explorá ciudades e instituciones en el mapa.",
+      subtitle:
+        "Buscá municipios, lugares e instituciones públicas. Mirá límites administrativos reales de OpenStreetMap, qué ya está en Ciutatis y reclamá los lugares que todavía faltan.",
+      searchLabel: "Buscar en el mapa cívico",
+      searchPlaceholder: "Buscá una ciudad, municipio o institución...",
+      loading: "Buscando...",
+      empty: "No se encontraron lugares o instituciones.",
+      placesGroup: "Lugares",
+      institutionsGroup: "Instituciones",
+      inCiutatis: "En Ciutatis",
+      notInCiutatis: "Aún no en Ciutatis",
+      claim: "Reclamar este lugar",
+      creating: "Creando...",
+      openPlace: "Abrir sitio público",
+      openInstitution: "Abrir portal",
+      mapHint: "Elegí un resultado para ver su límite en el mapa.",
     },
     scrutiny: {
       eyebrow: "Explorador de datos públicos",
@@ -662,6 +712,7 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "home" ? <HomePage locale={locale} /> : null}
         {route === "govops" ? <GovOpsPage locale={locale} /> : null}
         {route === "scrutiny" ? <ScrutinyPage locale={locale} /> : null}
+        {route === "explore" ? <ExplorePage locale={locale} /> : null}
         {route === "portal" ? <PortalPage locale={locale} /> : null}
         {route === "collaborate" ? <CollaboratePage locale={locale} /> : null}
         {route === "features" ? <FeaturesPage locale={locale} /> : null}
@@ -858,6 +909,207 @@ function ScrutinyPage({ locale }: { locale: Locale }) {
               <p className="mt-4 text-sm leading-relaxed text-[var(--muted-strong)]">{card.body}</p>
             </article>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ExplorePage({ locale }: { locale: Locale }) {
+  const t = copy[locale].explore;
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ExplorerResults>({ institutions: [], places: [] });
+  const [loading, setLoading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [boundary, setBoundary] = useState<unknown | null>(null);
+  const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+
+  // Debounced search; an empty query loads the default Ciutatis listing.
+  useEffect(() => {
+    let cancelled = false;
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const next = await searchExplorer(query);
+        if (!cancelled) {
+          setResults(next);
+          setSelectedId(null);
+          selectedIdRef.current = null;
+          setBoundary(null);
+        }
+      } catch {
+        if (!cancelled) setResults({ institutions: [], places: [] });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [query]);
+
+  const markers = useMemo(() => markersFromRegionResults(results.places), [results.places]);
+
+  async function selectPlaceResult(result: RegionSearchResult) {
+    const id = regionResultMarkerId(result);
+    setSelectedId(id);
+    selectedIdRef.current = id;
+    const osm =
+      result.kind === "nominatim"
+        ? { type: result.result.osm_type, id: result.result.osm_id }
+        : result.place.osmType && result.place.osmId
+          ? { type: result.place.osmType, id: result.place.osmId }
+          : null;
+    if (!osm) {
+      setBoundary(null);
+      return;
+    }
+    const lookup = await lookupOsmBoundary(osm.type, osm.id);
+    // Ignore stale lookups if the selection moved on.
+    if (selectedIdRef.current === id) setBoundary(lookup?.geojson ?? null);
+  }
+
+  function selectByMarkerId(id: string) {
+    const result = results.places.find((r) => regionResultMarkerId(r) === id);
+    if (result) void selectPlaceResult(result);
+  }
+
+  async function claimPlace(result: NominatimResult) {
+    const key = `${result.osm_type}-${result.osm_id}`;
+    setCreatingKey(key);
+    setClaimError(null);
+    const outcome = await createPlaceFromOsm(result);
+    setCreatingKey(null);
+    if (outcome.ok) {
+      window.location.href = outcome.place.url;
+      return;
+    }
+    setClaimError(outcome.error);
+  }
+
+  const hasResults = results.places.length > 0 || results.institutions.length > 0;
+
+  return (
+    <section className="space-y-12">
+      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<MapPin className="h-3.5 w-3.5 text-[var(--accent)]" />} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-2xl border border-[var(--border)] bg-white/80 p-5 shadow-sm sm:p-6">
+          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]" htmlFor="explore-search">
+            {t.searchLabel}
+          </label>
+          <div className="relative mt-4">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+            <input
+              id="explore-search"
+              className="w-full rounded border border-[var(--border-strong)] bg-white py-3 pl-11 pr-4 text-base outline-none transition focus:border-[var(--accent)]"
+              placeholder={t.searchPlaceholder}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+          {loading ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{t.loading}</p> : null}
+          {!loading && !hasResults ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{t.empty}</p> : null}
+          {claimError ? (
+            <p className="mt-4 flex items-center gap-2 text-sm text-[var(--red)]">
+              <AlertCircle className="h-4 w-4" />
+              {claimError}
+            </p>
+          ) : null}
+
+          {results.places.length > 0 ? (
+            <div className="mt-6">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                <MapPin className="h-3.5 w-3.5 text-[var(--accent)]" />
+                {t.placesGroup}
+              </p>
+              <div className="mt-3 grid gap-2">
+                {results.places.map((result) => {
+                  const id = regionResultMarkerId(result);
+                  const selected = id === selectedId;
+                  const isPlace = result.kind === "place";
+                  const name = isPlace ? result.place.name : result.result.display_name.split(",")[0]?.trim() ?? result.result.display_name;
+                  const subtitle = isPlace
+                    ? [result.place.jurisdictionLabel, result.place.parentSubdivisionName, result.place.countryName ?? result.place.countryCode.toUpperCase()].filter(Boolean).join(" · ")
+                    : result.result.display_name;
+                  const creating = !isPlace && creatingKey === `${result.result.osm_type}-${result.result.osm_id}`;
+                  return (
+                    <div
+                      key={id}
+                      className={`rounded-xl border p-3 transition ${selected ? "border-[var(--accent)] bg-[var(--accent-soft)]/40" : "border-[var(--border)] bg-[var(--panel)] hover:-translate-y-0.5 hover:shadow-sm"}`}
+                    >
+                      <button type="button" className="w-full text-left" onClick={() => void selectPlaceResult(result)}>
+                        <span className="flex items-center gap-2">
+                          {isPlace ? <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" /> : <Globe2 className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />}
+                          <span className="truncate font-medium text-[var(--ink)]">{name}</span>
+                          <span
+                            className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${isPlace ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "border border-[var(--border-strong)] bg-white text-[var(--muted-strong)]"}`}
+                          >
+                            {isPlace ? t.inCiutatis : t.notInCiutatis}
+                          </span>
+                        </span>
+                        <span className="mt-1 block truncate text-xs text-[var(--muted-strong)]">{subtitle}</span>
+                      </button>
+                      {selected ? (
+                        <div className="mt-2 flex items-center justify-end gap-3 border-t border-[var(--border)] pt-2">
+                          {isPlace ? (
+                            <a href={result.place.url} className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
+                              {t.openPlace}
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void claimPlace(result.result)}
+                              disabled={creating}
+                              className="inline-flex items-center gap-1.5 rounded bg-[var(--ink)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:opacity-90 disabled:opacity-50"
+                            >
+                              <MapPin className="h-3.5 w-3.5" />
+                              {creating ? t.creating : t.claim}
+                            </button>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {results.institutions.length > 0 ? (
+            <div className="mt-6">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                <Landmark className="h-3.5 w-3.5 text-[var(--accent)]" />
+                {t.institutionsGroup}
+              </p>
+              <div className="mt-3 grid gap-2">
+                {results.institutions.map((institution) => (
+                  <a
+                    key={institution.id}
+                    href={`/portal/${institution.slug}`}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-3 transition hover:-translate-y-0.5 hover:shadow-sm"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Landmark className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                      <span className="truncate font-medium text-[var(--ink)]">{institution.name}</span>
+                      <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{institution.issuePrefix}</span>
+                    </span>
+                    {institution.description ? (
+                      <span className="mt-1 block truncate text-xs text-[var(--muted-strong)]">{institution.description}</span>
+                    ) : null}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="lg:sticky lg:top-6">
+          <CivicMap className="h-[420px] lg:h-[640px]" markers={markers} boundary={boundary} selectedId={selectedId} onSelect={selectByMarkerId} />
+          <p className="mt-3 text-center text-xs text-[var(--muted-strong)]">{t.mapHint}</p>
         </div>
       </div>
     </section>

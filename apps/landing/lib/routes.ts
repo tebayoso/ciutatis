@@ -7,6 +7,7 @@ export type PublicRoute =
   | "home"
   | "govops"
   | "scrutiny"
+  | "explore"
   | "portal"
   | "collaborate"
   | "features"
@@ -34,6 +35,7 @@ const ROUTES: Record<Exclude<PublicRoute, "region">, RouteDef> = {
   home: { en: "/en", es: "/es", nav: false, indexable: true },
   govops: { en: "/govops", es: "/es/govops", nav: true, indexable: true },
   scrutiny: { en: "/scrutiny", es: "/es/escrutinio", nav: true, indexable: true },
+  explore: { en: "/explore", es: "/es/explorar", nav: true, indexable: true },
   portal: { en: "/portal", es: "/es/portal", nav: true, indexable: true },
   collaborate: { en: "/collaborate", es: "/es/colaborar", nav: true, indexable: true },
   features: { en: "/features", es: "/es/funcionalidades", nav: true, indexable: true },

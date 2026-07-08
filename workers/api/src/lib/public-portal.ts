@@ -302,11 +302,16 @@ export function publicPortalService(db: any) {
     // (migration 0006) self-heal on first view via one cached Nominatim search.
     if (row.latitude == null || row.osmId == null) {
       const countryConfig = getTenantRoutingCountryConfig(row.countryCode);
-      const results = await searchNominatim(
-        `${row.name}, ${countryConfig?.countryName ?? row.countryCode}`,
-        row.countryCode,
-      );
-      const match = results[0];
+      const countryName = countryConfig?.countryName ?? row.countryCode;
+      // Display names may be editorial ("Tandil City"); fall back to the
+      // citySlug, which tracks the actual OSM place name.
+      const queries = [`${row.name}, ${countryName}`];
+      if (row.citySlug) queries.push(`${row.citySlug.replace(/-/g, " ")}, ${countryName}`);
+      let match: NominatimResult | undefined;
+      for (const query of queries) {
+        match = (await searchNominatim(query, row.countryCode))[0];
+        if (match) break;
+      }
       const lat = match ? Number(match.lat) : NaN;
       const lon = match ? Number(match.lon) : NaN;
       if (match && Number.isFinite(lat) && Number.isFinite(lon)) {

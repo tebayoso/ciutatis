@@ -158,6 +158,7 @@ const copy = {
       placeKind: "Place",
       openPlace: "Open public site",
       openInstitution: "Open portal",
+      mapCta: "See places on the civic map",
       liveTag: "Live",
       roadmapTag: "On the roadmap",
       live: {
@@ -480,6 +481,7 @@ const copy = {
       placeKind: "Lugar",
       openPlace: "Abrir sitio público",
       openInstitution: "Abrir portal",
+      mapCta: "Ver lugares en el mapa cívico",
       liveTag: "En vivo",
       roadmapTag: "En el roadmap",
       live: {
@@ -926,6 +928,20 @@ function ExplorePage({ locale }: { locale: Locale }) {
   const [claimError, setClaimError] = useState<string | null>(null);
   const selectedIdRef = useRef<string | null>(null);
 
+  // Shareable searches: seed the query from /explore?q=... on mount, and keep
+  // the URL in sync as the query changes (replaceState — no history spam).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setQuery(q);
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (query.trim()) url.searchParams.set("q", query.trim());
+    else url.searchParams.delete("q");
+    window.history.replaceState(null, "", url);
+  }, [query]);
+
   // Debounced search; an empty query loads the default Ciutatis listing.
   useEffect(() => {
     let cancelled = false;
@@ -977,6 +993,23 @@ function ExplorePage({ locale }: { locale: Locale }) {
     if (result) void selectPlaceResult(result);
   }
 
+  // Keyboard navigation from the search input: ↑/↓ walk the place results
+  // (the map follows), Enter opens the selected Ciutatis place.
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (results.places.length === 0) return;
+      const ids = results.places.map(regionResultMarkerId);
+      const currentIndex = selectedId ? ids.indexOf(selectedId) : -1;
+      const delta = event.key === "ArrowDown" ? 1 : -1;
+      const nextIndex = Math.min(Math.max(currentIndex + delta, 0), ids.length - 1);
+      void selectPlaceResult(results.places[nextIndex]);
+    } else if (event.key === "Enter") {
+      const selected = results.places.find((r) => regionResultMarkerId(r) === selectedId);
+      if (selected?.kind === "place") window.location.href = selected.place.url;
+    }
+  }
+
   async function claimPlace(result: NominatimResult) {
     const key = `${result.osm_type}-${result.osm_id}`;
     setCreatingKey(key);
@@ -1008,6 +1041,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
               placeholder={t.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
             />
           </div>
           {loading ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{t.loading}</p> : null}
@@ -1845,6 +1879,16 @@ function InstitutionSearch({ locale }: { locale: Locale }) {
             </p>
           </a>
         ))}
+      </div>
+      <div className="mt-6 text-center">
+        <a
+          href={`${routePath(locale, "explore")}${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]"
+        >
+          <MapPin className="h-3.5 w-3.5" />
+          {t.mapCta}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </a>
       </div>
     </section>
   );

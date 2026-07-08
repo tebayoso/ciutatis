@@ -41,6 +41,29 @@ export interface NominatimResult {
   geojson?: unknown;
 }
 
+// Fetch from Nominatim through the Workers cache so repeated queries (every
+// explorer keystroke, every region view) don't re-hit openstreetmap.org.
+// Nominatim's usage policy caps clients at 1 req/s — caching is required, not
+// just an optimization. Search results cache for 1h; boundary lookups for 24h.
+async function fetchNominatimCached(url: string, ttlSeconds: number): Promise<Response> {
+  const request = new Request(url, { headers: { "User-Agent": "Ciutatis/1.0 (https://ciutatis.com)" } });
+  try {
+    const cache = (caches as unknown as { default: Cache }).default;
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    const response = await fetch(request);
+    if (response.ok) {
+      const toCache = new Response(response.clone().body, response);
+      toCache.headers.set("Cache-Control", `public, max-age=${ttlSeconds}`);
+      await cache.put(request, toCache);
+    }
+    return response;
+  } catch {
+    // Cache API unavailable (e.g. some local runtimes) — fall through uncached.
+    return fetch(request);
+  }
+}
+
 export async function searchNominatim(query: string, countryCode?: string): Promise<NominatimResult[]> {
   const params = new URLSearchParams({
     format: "json",
@@ -51,9 +74,10 @@ export async function searchNominatim(query: string, countryCode?: string): Prom
   });
   if (countryCode) params.set("countrycodes", countryCode.toLowerCase());
 
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-    headers: { "User-Agent": "Ciutatis/1.0 (https://ciutatis.com)" },
-  });
+  const response = await fetchNominatimCached(
+    `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+    60 * 60,
+  );
 
   if (!response.ok) return [];
   const data = await response.json();
@@ -77,9 +101,9 @@ export async function searchNominatim(query: string, countryCode?: string): Prom
 }
 
 export async function lookupNominatim(osmType: string, osmId: string): Promise<NominatimResult | null> {
-  const response = await fetch(
+  const response = await fetchNominatimCached(
     `https://nominatim.openstreetmap.org/lookup?format=json&osm_ids=${osmType[0].toUpperCase()}${osmId}&addressdetails=1&extratags=1&polygon_geojson=1`,
-    { headers: { "User-Agent": "Ciutatis/1.0 (https://ciutatis.com)" } },
+    24 * 60 * 60,
   );
   if (!response.ok) return null;
   const data = await response.json();
@@ -271,7 +295,33 @@ export function publicPortalService(db: any) {
       .from(tenantInstances)
       .where(eq(tenantInstances.pathPrefix, pathPrefix))
       .limit(1);
-    return rows[0] ? toPublicPlaceSummary(rows[0]) : null;
+    const row = rows[0];
+    if (!row) return null;
+
+    // Lazy geo backfill: rows created before coordinates were captured
+    // (migration 0006) self-heal on first view via one cached Nominatim search.
+    if (row.latitude == null || row.osmId == null) {
+      const countryConfig = getTenantRoutingCountryConfig(row.countryCode);
+      const results = await searchNominatim(
+        `${row.name}, ${countryConfig?.countryName ?? row.countryCode}`,
+        row.countryCode,
+      );
+      const match = results[0];
+      const lat = match ? Number(match.lat) : NaN;
+      const lon = match ? Number(match.lon) : NaN;
+      if (match && Number.isFinite(lat) && Number.isFinite(lon)) {
+        row.latitude = lat;
+        row.longitude = lon;
+        row.osmType = match.osm_type ?? row.osmType;
+        row.osmId = match.osm_id != null ? String(match.osm_id) : row.osmId;
+        await db
+          .update(tenantInstances)
+          .set({ latitude: row.latitude, longitude: row.longitude, osmType: row.osmType, osmId: row.osmId })
+          .where(eq(tenantInstances.id, row.id));
+      }
+    }
+
+    return toPublicPlaceSummary(row);
   }
 
   async function pickAssigneeAgent(companyId: string) {

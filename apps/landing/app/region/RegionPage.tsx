@@ -21,7 +21,7 @@ import {
   Tag,
 } from "lucide-react";
 
-import type { Locale } from "../../lib/routes";
+import { routePath, type Locale } from "../../lib/routes";
 import {
   createPlaceFromOsm,
   fetchNominatimEnrichment,
@@ -57,6 +57,7 @@ const copy = {
     facts: "Key Facts",
     hierarchy: "Administrative Hierarchy",
     discover: "Discover more places",
+    openExplorer: "Open the civic map",
     noResults: "No places found.",
     inCiutatis: "In Ciutatis",
     notInCiutatis: "Not yet in Ciutatis",
@@ -89,6 +90,7 @@ const copy = {
     facts: "Datos Clave",
     hierarchy: "Jerarquía Administrativa",
     discover: "Descubrir más lugares",
+    openExplorer: "Abrir el mapa cívico",
     noResults: "No se encontraron lugares.",
     inCiutatis: "En Ciutatis",
     notInCiutatis: "Aún no en Ciutatis",
@@ -327,9 +329,19 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
 
       {/* Search Other Cities */}
       <section className="rounded-2xl border border-[var(--border)] bg-white/80 p-6 shadow-sm sm:p-8">
-        <div className="mb-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-          <Search className="h-3.5 w-3.5" />
-          {t.discover}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            <Search className="h-3.5 w-3.5" />
+            {t.discover}
+          </div>
+          <a
+            href={`${routePath(locale, "explore")}${searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ""}`}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]"
+          >
+            <MapIcon className="h-3.5 w-3.5" />
+            {t.openExplorer}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
         </div>
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--muted)]" />

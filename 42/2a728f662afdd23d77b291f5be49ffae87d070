@@ -1,0 +1,64 @@
+apps/landing/lib/public-search.ts
+  s_a7c751498ff01a::t_a8358332182743 131-148
+  s_a7c751498ff01a::t_57938f5d8e6d93 30-34
+  s_a7c751498ff01a::t_9f421ab172d10a 84-93,97-98,101-102,107-108,115,118,122-129
+  s_a7c751498ff01a::t_ff161635757256 64-65
+  s_a7c751498ff01a::t_4932ffcc34438e 130
+apps/landing/lib/site-meta.ts
+  s_a7c751498ff01a::t_b79971cb6df9d9 48-59
+packages/shared/src/types/public-portal.ts
+  s_a7c751498ff01a::t_3fb7e7533ae5b9 32-36
+apps/landing/app/components/CivicMap.tsx
+  s_a7c751498ff01a::t_992374ae795859 76-77
+  s_a7c751498ff01a::t_7960e4365b5a35 52-54
+  s_a7c751498ff01a::t_74c185a6e217b8 1-51,55-75,78-168,170-176,178-180
+  s_a7c751498ff01a::t_d4dd9357bbd329 169,177
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_c7854ad40ece02 26,33-34
+  s_a7c751498ff01a::t_aaa5c15143f19a 153-158
+  s_a7c751498ff01a::t_d317af41100bb2 472-501,512
+apps/landing/package.json
+  s_a7c751498ff01a::t_3bbc09829c075c 35,50
+apps/landing/lib/routes.ts
+  s_a7c751498ff01a::t_d8ce5cc7b285b7 10
+  s_a7c751498ff01a::t_f971f9bcf1b597 38
+apps/landing/lib/geo.ts
+  s_a7c751498ff01a::t_568646f66f5df7 1-73
+packages/db-cloudflare/src/migrations/0006_tenant_geo.sql
+  s_a7c751498ff01a::t_3ccb0413fbfed4 1-6
+packages/db-cloudflare/src/migrations/meta/_journal.json
+  s_a7c751498ff01a::t_e055a8afef37f3 46-52
+packages/db-cloudflare/src/schema/tenant_instances.ts
+  s_a7c751498ff01a::t_b5c6278ecbf494 1
+  s_a7c751498ff01a::t_84b494e3e8fe8e 17-21
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_6936bcc3582751 450-468
+  s_a7c751498ff01a::t_256b2bc0c09a21 377
+  s_a7c751498ff01a::t_acfc361a0705ef 3
+  s_a7c751498ff01a::t_831c11ab077ade 55
+  s_a7c751498ff01a::t_7d223210c7d4d6 36-46
+  s_a7c751498ff01a::t_60c2b1374c63a0 715
+  s_a7c751498ff01a::t_5f63e4a95d57d8 128-146
+  s_a7c751498ff01a::t_63f866e69c30c7 918-1118
+workers/api/src/lib/public-portal.ts
+  s_a7c751498ff01a::t_20790bbe5325f7 189-192
+  s_a7c751498ff01a::t_878efb9179dbac 679-682
+pnpm-lock.yaml
+  s_a7c751498ff01a::t_adf423329169f1 92-94,132-134,4192-4194,5643-5645,11180-11183,12678-12679,14520
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "422a728f662afdd23d77b291f5be49ffae87d070",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

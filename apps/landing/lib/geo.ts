@@ -2,7 +2,7 @@
 // Nominatim proxy and mapping of search results / places onto map markers.
 // Server-safe (no Leaflet import) so types can be shared with client code.
 
-import type { NominatimResult, PlaceResult, RegionSearchResult } from "./public-search";
+import type { GeoEntity, NominatimResult, PlaceResult, RegionSearchResult } from "./public-search";
 
 export type CivicMapMarker = {
   id: string;
@@ -56,12 +56,31 @@ export function markerFromNominatim(result: NominatimResult): CivicMapMarker | n
   };
 }
 
-// Markers for the explorer: Ciutatis places (with stored coordinates) plus
-// OSM candidates that aren't in Ciutatis yet.
+export function markerFromGeoEntity(entity: GeoEntity): CivicMapMarker | null {
+  if (entity.lat == null || entity.lon == null) return null;
+  return {
+    id: `geo:${entity.id}`,
+    // Claimed entities render with the "in Ciutatis" accent dot.
+    kind: entity.claimed ? "place" : "osm",
+    name: entity.name,
+    subtitle: [entity.jurisdictionType, entity.provinceName, "Argentina"].filter(Boolean).join(" · "),
+    lat: entity.lat,
+    lon: entity.lon,
+    href: entity.pathPrefix,
+  };
+}
+
+// Markers for the explorer: geo index entities, Ciutatis places (with stored
+// coordinates), and OSM fallback candidates.
 export function markersFromRegionResults(results: RegionSearchResult[]): CivicMapMarker[] {
   const markers: CivicMapMarker[] = [];
   for (const result of results) {
-    const marker = result.kind === "place" ? markerFromPlace(result.place) : markerFromNominatim(result.result);
+    const marker =
+      result.kind === "place"
+        ? markerFromPlace(result.place)
+        : result.kind === "geo"
+          ? markerFromGeoEntity(result.entity)
+          : markerFromNominatim(result.result);
     if (marker) markers.push(marker);
   }
   return markers;
@@ -69,5 +88,7 @@ export function markersFromRegionResults(results: RegionSearchResult[]): CivicMa
 
 // Stable marker id for a search result, so lists and the map can stay in sync.
 export function regionResultMarkerId(result: RegionSearchResult): string {
-  return result.kind === "place" ? `place:${result.place.id}` : `osm:${result.result.osm_type}-${result.result.osm_id}`;
+  if (result.kind === "place") return `place:${result.place.id}`;
+  if (result.kind === "geo") return `geo:${result.entity.id}`;
+  return `osm:${result.result.osm_type}-${result.result.osm_id}`;
 }

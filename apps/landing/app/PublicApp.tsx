@@ -36,6 +36,7 @@ import {
 } from "../lib/routes";
 import {
   createPlaceFromOsm,
+  fetchGeoByPath,
   searchExplorer,
   searchPublic,
   type ExplorerResults,
@@ -919,9 +920,9 @@ function ScrutinyPage({ locale }: { locale: Locale }) {
 }
 
 function resultName(result: RegionSearchResult): string {
-  return result.kind === "place"
-    ? result.place.name
-    : result.result.display_name.split(",")[0]?.trim() ?? result.result.display_name;
+  if (result.kind === "place") return result.place.name;
+  if (result.kind === "geo") return result.entity.name;
+  return result.result.display_name.split(",")[0]?.trim() ?? result.result.display_name;
 }
 
 function ExplorePage({ locale }: { locale: Locale }) {
@@ -1020,6 +1021,13 @@ function ExplorePage({ locale }: { locale: Locale }) {
         (v): v is string => Boolean(v)
       );
     }
+    if (selectedResult.kind === "geo") {
+      const e = selectedResult.entity;
+      const own = e.name.toLowerCase();
+      const chain: (string | null)[] = e.level === "provincia" ? ["Argentina"] : ["Argentina", e.provinceName];
+      if (e.parentName && e.parentName !== e.provinceName) chain.push(e.parentName);
+      return chain.filter((v): v is string => Boolean(v) && v!.toLowerCase() !== own);
+    }
     const addr = selectedResult.result.address;
     const own = resultName(selectedResult).toLowerCase();
     return [addr?.country, addr?.state, addr?.state_district ?? addr?.county].filter(
@@ -1036,12 +1044,20 @@ function ExplorePage({ locale }: { locale: Locale }) {
     const id = regionResultMarkerId(result);
     setSelectedId(id);
     selectedIdRef.current = id;
-    const osm =
-      result.kind === "nominatim"
-        ? { type: result.result.osm_type, id: result.result.osm_id }
-        : result.place.osmType && result.place.osmId
-          ? { type: result.place.osmType, id: result.place.osmId }
-          : null;
+    let osm: { type: string; id: string | number } | null = null;
+    if (result.kind === "nominatim") {
+      osm = { type: result.result.osm_type, id: result.result.osm_id };
+    } else if (result.kind === "place") {
+      osm = result.place.osmType && result.place.osmId ? { type: result.place.osmType, id: result.place.osmId } : null;
+    } else if (result.entity.osmType && result.entity.osmId) {
+      osm = { type: result.entity.osmType, id: result.entity.osmId };
+    } else {
+      // Geo entity without an OSM anchor yet: the detail endpoint backfills it
+      // server-side (one cached Nominatim search) and returns the ids.
+      const detail = await fetchGeoByPath(result.entity.pathPrefix);
+      if (selectedIdRef.current !== id) return;
+      osm = detail?.osmType && detail?.osmId ? { type: detail.osmType, id: detail.osmId } : null;
+    }
     if (!osm) {
       setBoundary(null);
       return;
@@ -1070,6 +1086,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
     } else if (event.key === "Enter") {
       const selected = results.places.find((r) => regionResultMarkerId(r) === selectedId);
       if (selected?.kind === "place") window.location.href = selected.place.url;
+      else if (selected?.kind === "geo") window.location.href = selected.entity.pathPrefix;
     }
   }
 
@@ -1126,12 +1143,23 @@ function ExplorePage({ locale }: { locale: Locale }) {
                 {results.places.map((result) => {
                   const id = regionResultMarkerId(result);
                   const selected = id === selectedId;
-                  const isPlace = result.kind === "place";
-                  const name = isPlace ? result.place.name : result.result.display_name.split(",")[0]?.trim() ?? result.result.display_name;
-                  const subtitle = isPlace
-                    ? [result.place.jurisdictionLabel, result.place.parentSubdivisionName, result.place.countryName ?? result.place.countryCode.toUpperCase()].filter(Boolean).join(" · ")
-                    : result.result.display_name;
-                  const creating = !isPlace && creatingKey === `${result.result.osm_type}-${result.result.osm_id}`;
+                  const name = resultName(result);
+                  const inCiutatis = result.kind === "place" || (result.kind === "geo" && result.entity.claimed);
+                  const subtitle =
+                    result.kind === "place"
+                      ? [result.place.jurisdictionLabel, result.place.parentSubdivisionName, result.place.countryName ?? result.place.countryCode.toUpperCase()].filter(Boolean).join(" · ")
+                      : result.kind === "geo"
+                        ? [result.entity.parentName !== result.entity.provinceName ? result.entity.parentName : null, result.entity.provinceName, "Argentina"].filter(Boolean).join(" · ")
+                        : result.result.display_name;
+                  const badge =
+                    result.kind === "geo" && !result.entity.claimed
+                      ? result.entity.jurisdictionType
+                      : inCiutatis
+                        ? t.inCiutatis
+                        : t.notInCiutatis;
+                  const openHref =
+                    result.kind === "place" ? result.place.url : result.kind === "geo" ? result.entity.pathPrefix : null;
+                  const creating = result.kind === "nominatim" && creatingKey === `${result.result.osm_type}-${result.result.osm_id}`;
                   return (
                     <div
                       key={id}
@@ -1139,24 +1167,24 @@ function ExplorePage({ locale }: { locale: Locale }) {
                     >
                       <button type="button" className="w-full text-left" onClick={() => void selectPlaceResult(result)}>
                         <span className="flex items-center gap-2">
-                          {isPlace ? <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" /> : <Globe2 className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />}
+                          {inCiutatis ? <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" /> : <Globe2 className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />}
                           <span className="truncate font-medium text-[var(--ink)]">{name}</span>
                           <span
-                            className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${isPlace ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "border border-[var(--border-strong)] bg-white text-[var(--muted-strong)]"}`}
+                            className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${inCiutatis ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "border border-[var(--border-strong)] bg-white text-[var(--muted-strong)]"}`}
                           >
-                            {isPlace ? t.inCiutatis : t.notInCiutatis}
+                            {badge}
                           </span>
                         </span>
                         <span className="mt-1 block truncate text-xs text-[var(--muted-strong)]">{subtitle}</span>
                       </button>
                       {selected ? (
                         <div className="mt-2 flex items-center justify-end gap-3 border-t border-[var(--border)] pt-2">
-                          {isPlace ? (
-                            <a href={result.place.url} className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
+                          {openHref ? (
+                            <a href={openHref} className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
                               {t.openPlace}
                               <ArrowRight className="h-3.5 w-3.5" />
                             </a>
-                          ) : (
+                          ) : result.kind === "nominatim" ? (
                             <button
                               type="button"
                               onClick={() => void claimPlace(result.result)}
@@ -1166,7 +1194,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
                               <MapPin className="h-3.5 w-3.5" />
                               {creating ? t.creating : t.claim}
                             </button>
-                          )}
+                          ) : null}
                         </div>
                       ) : null}
                     </div>

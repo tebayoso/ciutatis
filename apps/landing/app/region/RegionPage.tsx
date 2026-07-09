@@ -671,6 +671,40 @@ function SearchResultCard({
     );
   }
 
+  // Canonical geo entity — links to its entity page; claimed ones badge as
+  // "in Ciutatis", the rest show their jurisdiction level.
+  if (result.kind === "geo") {
+    const entity = result.entity;
+    return (
+      <a
+        href={entity.pathPrefix}
+        className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white/80 p-4 transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-sm"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border-strong)] bg-white/80">
+            {entity.claimed ? <MapPin className="h-5 w-5 text-[var(--accent)]" /> : <Globe2 className="h-5 w-5 text-[var(--muted)]" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-[var(--ink)]">{entity.name}</span>
+              {entity.claimed ? (
+                <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--accent)]">{t.inCiutatis}</span>
+              ) : (
+                <span className="rounded-full border border-[var(--border-strong)] bg-white px-2 py-0.5 text-xs font-semibold text-[var(--muted-strong)]">
+                  {entity.jurisdictionType}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-[var(--muted-strong)]">
+              {[entity.parentName !== entity.provinceName ? entity.parentName : null, entity.provinceName, "Argentina"].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="h-5 w-5 text-[var(--accent)]" />
+      </a>
+    );
+  }
+
   // Nominatim result - not in Ciutatis
   const displayName = result.result.display_name;
   const shortName = displayName.split(",")[0]?.trim() ?? displayName;
@@ -754,9 +788,12 @@ function getAdminLevelLabel(type: string): string {
 function groupSearchResultsByLevel(results: RegionSearchResult[]): { level: string; results: RegionSearchResult[] }[] {
   const groups: Record<string, RegionSearchResult[]> = {};
   for (const result of results) {
-    const level = result.kind === "place"
-      ? result.place.jurisdictionType
-      : getAdminLevelLabel(result.result.type);
+    const level =
+      result.kind === "place"
+        ? result.place.jurisdictionType
+        : result.kind === "geo"
+          ? result.entity.jurisdictionType
+          : getAdminLevelLabel(result.result.type);
     if (!groups[level]) groups[level] = [];
     groups[level].push(result);
   }

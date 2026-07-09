@@ -66,8 +66,40 @@ export type NominatimResult = {
   geojson?: unknown;
 };
 
+// Canonical administrative entity from /api/public/geo/* (geo_entities layer).
+export interface GeoEntity {
+  id: string;
+  countryCode: string;
+  level: string; // pais | provincia | departamento | municipio | localidad
+  jurisdictionType: string;
+  name: string;
+  slug: string;
+  pathPrefix: string;
+  parentId: string | null;
+  provinceName: string | null;
+  parentName: string | null;
+  lat: number | null;
+  lon: number | null;
+  osmType: string | null;
+  osmId: string | null;
+  claimed: boolean;
+  category: string | null;
+}
+
+export interface GeoEntityDetail extends GeoEntity {
+  parents: GeoEntity[]; // outermost first
+  childCount: number;
+}
+
+export interface GeoChildrenPage {
+  total: number;
+  offset: number;
+  items: GeoEntity[];
+}
+
 export type RegionSearchResult =
   | { kind: "place"; place: PlaceResult }
+  | { kind: "geo"; entity: GeoEntity }
   | { kind: "nominatim"; result: NominatimResult };
 
 // Institutions + places from the Ciutatis index. An empty query returns the
@@ -87,16 +119,19 @@ export type ExplorerResults = {
   places: RegionSearchResult[];
 };
 
-// Explorer search: Ciutatis institutions + places merged with Nominatim admin
-// boundaries. Nominatim entries whose primary name matches an existing
-// Ciutatis place are dropped so "in Ciutatis" wins over "not yet in Ciutatis".
-// An empty query returns the default Ciutatis listing (no Nominatim call).
+// Explorer search, backed by the canonical geo index: institutions from the
+// Ciutatis search plus admin entities from /geo/search (accent-insensitive,
+// ranked, no rate limits). Nominatim is only a fallback for queries the geo
+// index can't answer (non-Argentine places). An empty query enters browse
+// mode: Argentina's provinces plus the default institution listing.
 export async function searchExplorer(query: string): Promise<ExplorerResults> {
   const q = query.trim();
 
-  const [ciutatisResponse, nominatimResponse] = await Promise.all([
+  const [ciutatisResponse, geoResponse] = await Promise.all([
     fetch(`/api/public/search${q ? `?q=${encodeURIComponent(q)}` : ""}`).catch(() => null),
-    q ? fetch(`/api/public/nominatim/search?q=${encodeURIComponent(q)}`).catch(() => null) : Promise.resolve(null),
+    q
+      ? fetch(`/api/public/geo/search?q=${encodeURIComponent(q)}&max=20`).catch(() => null)
+      : fetch(`/api/public/geo/children?id=ar:00`).catch(() => null),
   ]);
 
   const institutions: InstitutionResult[] = [];
@@ -105,22 +140,57 @@ export async function searchExplorer(query: string): Promise<ExplorerResults> {
   if (ciutatisResponse?.ok) {
     const ciutatisData = (await ciutatisResponse.json()) as PublicSearchResult[];
     for (const item of ciutatisData) {
-      if (item.kind === "place") places.push({ kind: "place", place: item });
-      else institutions.push(item);
+      if (item.kind === "institution") institutions.push(item);
+      // Claimed places surface through the geo index (claimed flag) — the
+      // legacy place results are skipped to avoid duplicates.
     }
   }
 
-  if (nominatimResponse?.ok) {
-    const nominatimData = (await nominatimResponse.json()) as NominatimResult[];
-    for (const item of nominatimData) {
-      const alreadyExists = places.some(
-        (r) => r.kind === "place" && r.place.name.toLowerCase() === item.display_name.split(",")[0]?.trim().toLowerCase()
-      );
-      if (!alreadyExists) places.push({ kind: "nominatim", result: item });
+  if (geoResponse?.ok) {
+    const geoData = (await geoResponse.json()) as GeoEntity[] | GeoChildrenPage;
+    const entities = Array.isArray(geoData) ? geoData : geoData.items;
+    for (const entity of entities) places.push({ kind: "geo", entity });
+  }
+
+  // Fallback for queries outside the geo index (e.g. non-AR places): OSM.
+  if (q && places.length === 0) {
+    const nominatimResponse = await fetch(`/api/public/nominatim/search?q=${encodeURIComponent(q)}`).catch(() => null);
+    if (nominatimResponse?.ok) {
+      const nominatimData = (await nominatimResponse.json()) as NominatimResult[];
+      for (const item of nominatimData) places.push({ kind: "nominatim", result: item });
     }
   }
 
   return { institutions, places };
+}
+
+// Entity detail (parents chain + child count); triggers the server-side OSM
+// backfill, so a follow-up boundary lookup has osm ids to work with.
+export async function fetchGeoByPath(path: string): Promise<GeoEntityDetail | null> {
+  try {
+    const response = await fetch(`/api/public/geo/by-path?path=${encodeURIComponent(path)}`);
+    if (!response.ok) return null;
+    return (await response.json()) as GeoEntityDetail;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchGeoChildren(
+  id: string,
+  options?: { level?: string; offset?: number; max?: number }
+): Promise<GeoChildrenPage | null> {
+  try {
+    const params = new URLSearchParams({ id });
+    if (options?.level) params.set("level", options.level);
+    if (options?.offset) params.set("offset", String(options.offset));
+    if (options?.max) params.set("max", String(options.max));
+    const response = await fetch(`/api/public/geo/children?${params.toString()}`);
+    if (!response.ok) return null;
+    return (await response.json()) as GeoChildrenPage;
+  } catch {
+    return null;
+  }
 }
 
 // Region discovery (places only) — the region pages' search.

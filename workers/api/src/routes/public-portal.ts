@@ -8,6 +8,7 @@ import { getActorInfo } from "../lib/authz.js";
 import { logActivity } from "../lib/activity.js";
 import { enqueueHostedHeartbeatRun } from "../lib/hosted-heartbeats.js";
 import { publicPortalService, searchNominatim, lookupNominatim } from "../lib/public-portal.js";
+import { publicGeoService } from "../lib/public-geo.js";
 
 export function publicPortalRoutes() {
   const app = new Hono<AppEnv>();
@@ -15,6 +16,45 @@ export function publicPortalRoutes() {
   app.get("/search", async (c) => {
     const portal = publicPortalService(c.get("db"));
     return c.json(await portal.searchPublic({ q: c.req.query("q") ?? undefined }));
+  });
+
+  // Canonical geo reference layer (see workfiles/argentina-geo-index-design.md).
+  app.get("/geo/search", async (c) => {
+    const q = c.req.query("q");
+    if (!q) return c.json([]);
+    const geo = publicGeoService(c.get("db"));
+    const levels = c.req.query("levels")?.split(",").filter(Boolean);
+    return c.json(
+      await geo.search({
+        q,
+        country: c.req.query("country") ?? "ar",
+        levels,
+        max: Number(c.req.query("max")) || undefined,
+      }),
+    );
+  });
+
+  app.get("/geo/by-path", async (c) => {
+    const path = c.req.query("path");
+    if (!path) return c.json({ error: "path is required" }, 400);
+    const geo = publicGeoService(c.get("db"));
+    const entity = await geo.getByPath(path);
+    if (!entity) return c.json({ error: "Geo entity not found" }, 404);
+    return c.json(entity);
+  });
+
+  app.get("/geo/children", async (c) => {
+    const id = c.req.query("id");
+    if (!id) return c.json({ error: "id is required" }, 400);
+    const geo = publicGeoService(c.get("db"));
+    return c.json(
+      await geo.children({
+        id,
+        level: c.req.query("level") ?? undefined,
+        offset: Number(c.req.query("offset")) || 0,
+        max: Number(c.req.query("max")) || undefined,
+      }),
+    );
   });
 
   app.get("/institutions", async (c) => {

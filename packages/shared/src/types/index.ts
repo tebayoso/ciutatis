@@ -6,6 +6,9 @@ export type { PublicContactSubmission, PublicContactLocale } from "./public-cont
 export type {
   PublicInstitutionSummary,
   PublicPlaceSummary,
+  PublicGeoEntity,
+  PublicGeoEntityDetail,
+  PublicGeoChildrenPage,
   PublicSearchResult,
   PublicRequestSummary,
   PublicRequestUpdate,

@@ -36,6 +36,38 @@ export interface PublicPlaceSummary {
   osmId: string | null;
 }
 
+// Canonical administrative entity from the geo reference layer (geo_entities).
+export interface PublicGeoEntity {
+  id: string;
+  countryCode: string;
+  level: string; // pais | provincia | departamento | municipio | localidad
+  jurisdictionType: string;
+  name: string;
+  slug: string;
+  pathPrefix: string;
+  parentId: string | null;
+  provinceName: string | null;
+  parentName: string | null;
+  lat: number | null;
+  lon: number | null;
+  osmType: string | null;
+  osmId: string | null;
+  claimed: boolean;
+  category: string | null;
+}
+
+export interface PublicGeoEntityDetail extends PublicGeoEntity {
+  // Breadcrumb chain, outermost first (pais → ... → immediate parent).
+  parents: PublicGeoEntity[];
+  childCount: number;
+}
+
+export interface PublicGeoChildrenPage {
+  total: number;
+  offset: number;
+  items: PublicGeoEntity[];
+}
+
 export type PublicSearchResult =
   | (PublicInstitutionSummary & { kind: "institution" })
   | (PublicPlaceSummary & { kind: "place" });

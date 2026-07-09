@@ -14,6 +14,7 @@ export type PublicRoute =
   | "how-it-works"
   | "for-governments"
   | "for-citizens"
+  | "argentina"
   | "account"
   | "region";
 
@@ -42,6 +43,8 @@ const ROUTES: Record<Exclude<PublicRoute, "region">, RouteDef> = {
   "how-it-works": { en: "/how-it-works", es: "/es/como-funciona", nav: false, indexable: true },
   "for-governments": { en: "/for-governments", es: "/es/para-gobiernos", nav: false, indexable: true },
   "for-citizens": { en: "/for-citizens", es: "/es/para-ciudadanos", nav: false, indexable: true },
+  // Country hub for the Argentine geo index; one canonical URL for both locales.
+  argentina: { en: "/ar", es: "/ar", nav: true, indexable: true },
   account: { en: "/account", es: "/es/cuenta", nav: false, indexable: false },
 };
 

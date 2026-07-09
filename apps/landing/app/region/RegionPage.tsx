@@ -26,6 +26,7 @@ import {
   createPlaceFromOsm,
   fetchNominatimEnrichment,
   searchRegionPlaces,
+  type GeoEntityDetail,
   type NominatimResult,
   type PlaceResult,
   type RegionSearchResult,
@@ -102,7 +103,17 @@ const copy = {
   },
 };
 
-export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pathPrefix: string }) {
+export default function RegionPage({
+  locale,
+  pathPrefix,
+  geoDetail = null,
+}: {
+  locale: Locale;
+  pathPrefix: string;
+  // Canonical geo entity for this path (from the geo index), when known.
+  // Provides parent entity pages for the breadcrumb/hierarchy links.
+  geoDetail?: GeoEntityDetail | null;
+}) {
   const t = copy[locale];
   const [place, setPlace] = useState<PlaceResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -211,7 +222,7 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
   return (
     <div className="space-y-16">
       {/* Breadcrumb */}
-      <Breadcrumb locale={locale} pathPrefix={pathPrefix} place={place} nominatim={nominatimData} />
+      <Breadcrumb locale={locale} pathPrefix={pathPrefix} place={place} nominatim={nominatimData} geoParents={geoDetail?.parents ?? null} />
 
       {/* Unclaimed Banner */}
       {!place && (
@@ -416,21 +427,27 @@ function Breadcrumb({
   pathPrefix,
   place,
   nominatim,
+  geoParents,
 }: {
   locale: Locale;
   pathPrefix: string;
   place: PlaceResult | null;
   nominatim: NominatimResult | null;
+  geoParents: { name: string; pathPrefix: string }[] | null;
 }) {
-  // Parent entities navigate to the explorer, which renders any admin
-  // boundary by name (country, province) on the civic map.
-  const country = place?.countryName ?? nominatim?.address?.country ?? pathPrefix.split("/").filter(Boolean)[0]?.toUpperCase();
-  const province = place?.parentSubdivisionName ?? nominatim?.address?.state ?? null;
   const current = place?.name ?? nominatim?.display_name.split(",")[0]?.trim() ?? pathPrefix.split("/").filter(Boolean).pop() ?? pathPrefix;
 
   const crumbs: { label: string; href?: string }[] = [];
-  if (country) crumbs.push({ label: country, href: explorerHref(locale, country) });
-  if (province) crumbs.push({ label: province, href: explorerHref(locale, province) });
+  if (geoParents && geoParents.length > 0) {
+    // Canonical entity pages from the geo index (country → province → ...).
+    for (const parent of geoParents) crumbs.push({ label: parent.name, href: parent.pathPrefix });
+  } else {
+    // Fallback for paths outside the geo index: parents open the explorer.
+    const country = place?.countryName ?? nominatim?.address?.country ?? pathPrefix.split("/").filter(Boolean)[0]?.toUpperCase();
+    const province = place?.parentSubdivisionName ?? nominatim?.address?.state ?? null;
+    if (country) crumbs.push({ label: country, href: explorerHref(locale, country) });
+    if (province) crumbs.push({ label: province, href: explorerHref(locale, province) });
+  }
   crumbs.push({ label: current });
 
   return (

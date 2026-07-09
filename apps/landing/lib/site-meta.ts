@@ -129,6 +129,18 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
         "Para ciudadanos y observadores: explorá datos públicos en Escrutinio Público, y enviá, seguí y dale continuidad a pedidos desde el Portal Público.",
     },
   },
+  argentina: {
+    en: {
+      title: "Argentina — civic map of provinces, municipios and localities",
+      description:
+        "Browse Argentina's complete administrative topography on Ciutatis: 24 provinces, 529 departamentos, 2,082 municipios and 4,037 localities — searchable, mapped, and ready to claim.",
+    },
+    es: {
+      title: "Argentina — mapa cívico de provincias, municipios y localidades",
+      description:
+        "Explorá la topografía administrativa completa de Argentina en Ciutatis: 24 provincias, 529 departamentos, 2.082 municipios y 4.037 localidades — buscables, mapeadas y listas para reclamar.",
+    },
+  },
   account: {
     en: {
       title: "Your account",

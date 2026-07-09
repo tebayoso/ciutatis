@@ -24,7 +24,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
-import RegionPage from "./region/RegionPage";
+import GeoRegionRouter from "./geo/GeoEntityPage";
 import {
   NAV_ROUTES,
   alternatePath,
@@ -55,6 +55,7 @@ const copy = {
       govops: "GovOps",
       scrutiny: "Public Scrutiny",
       explore: "Explore",
+      argentina: "Argentina",
       portal: "Public Portal",
       collaborate: "Collaborate",
       features: "Features",
@@ -378,6 +379,7 @@ const copy = {
       govops: "GovOps",
       scrutiny: "Escrutinio Público",
       explore: "Explorá",
+      argentina: "Argentina",
       portal: "Portal Público",
       collaborate: "Colaborá",
       features: "Funcionalidades",
@@ -724,7 +726,8 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "for-governments" ? <ForGovernmentsPage locale={locale} /> : null}
         {route === "for-citizens" ? <ForCitizensPage locale={locale} /> : null}
         {route === "account" ? <AccountPage locale={locale} /> : null}
-        {route === "region" && regionPath ? <RegionPage locale={locale} pathPrefix={regionPath} /> : null}
+        {route === "region" && regionPath ? <GeoRegionRouter locale={locale} pathPrefix={regionPath} /> : null}
+        {route === "argentina" ? <GeoRegionRouter locale={locale} pathPrefix="/ar" /> : null}
       </main>
       <SiteFooter locale={locale} />
     </div>

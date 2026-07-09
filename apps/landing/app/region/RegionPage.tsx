@@ -407,6 +407,10 @@ export default function RegionPage({ locale, pathPrefix }: { locale: Locale; pat
   );
 }
 
+function explorerHref(locale: Locale, name: string): string {
+  return `${routePath(locale, "explore")}?q=${encodeURIComponent(name)}`;
+}
+
 function Breadcrumb({
   locale,
   pathPrefix,
@@ -418,14 +422,16 @@ function Breadcrumb({
   place: PlaceResult | null;
   nominatim: NominatimResult | null;
 }) {
-  const parts = pathPrefix.split("/").filter(Boolean);
-  const labels = parts.map((part, index) => {
-    const isLast = index === parts.length - 1;
-    const label = isLast
-      ? place?.name ?? nominatim?.display_name.split(",")[0]?.trim() ?? part
-      : part.charAt(0).toUpperCase() + part.slice(1);
-    return { part, label, isLast };
-  });
+  // Parent entities navigate to the explorer, which renders any admin
+  // boundary by name (country, province) on the civic map.
+  const country = place?.countryName ?? nominatim?.address?.country ?? pathPrefix.split("/").filter(Boolean)[0]?.toUpperCase();
+  const province = place?.parentSubdivisionName ?? nominatim?.address?.state ?? null;
+  const current = place?.name ?? nominatim?.display_name.split(",")[0]?.trim() ?? pathPrefix.split("/").filter(Boolean).pop() ?? pathPrefix;
+
+  const crumbs: { label: string; href?: string }[] = [];
+  if (country) crumbs.push({ label: country, href: explorerHref(locale, country) });
+  if (province) crumbs.push({ label: province, href: explorerHref(locale, province) });
+  crumbs.push({ label: current });
 
   return (
     <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
@@ -433,13 +439,15 @@ function Breadcrumb({
         <ArrowLeft className="h-3.5 w-3.5" />
         {locale === "es" ? "Inicio" : "Home"}
       </a>
-      {labels.map((item, index) => (
+      {crumbs.map((item, index) => (
         <div key={index} className="flex items-center gap-2">
           <ChevronRight className="h-3.5 w-3.5 text-[var(--muted)]" />
-          {item.isLast ? (
-            <span className="font-semibold text-[var(--ink)]">{item.label}</span>
+          {item.href ? (
+            <a href={item.href} className="text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)] hover:underline">
+              {item.label}
+            </a>
           ) : (
-            <span className="text-[var(--muted-strong)]">{item.label}</span>
+            <span aria-current="page" className="font-semibold text-[var(--ink)]">{item.label}</span>
           )}
         </div>
       ))}
@@ -571,20 +579,24 @@ function HierarchySteps({
   nominatim: NominatimResult | null;
   locale: Locale;
 }) {
-  const steps = [];
+  const steps: { label: string; icon: React.ReactNode; active?: boolean; href?: string }[] = [];
 
+  // Parent admin entities link to the explorer (OSM resolves them by name).
+  // The editorial municipality label ("Municipio de X") is not an OSM name,
+  // so that chip stays unlinked.
   if (place) {
-    steps.push({ label: place.countryName ?? place.countryCode.toUpperCase(), icon: <Globe2 className="h-4 w-4" /> });
+    const country = place.countryName ?? place.countryCode.toUpperCase();
+    steps.push({ label: country, icon: <Globe2 className="h-4 w-4" />, href: explorerHref(locale, country) });
     if (place.parentSubdivisionName) {
-      steps.push({ label: place.parentSubdivisionName, icon: <Building2 className="h-4 w-4" /> });
+      steps.push({ label: place.parentSubdivisionName, icon: <Building2 className="h-4 w-4" />, href: explorerHref(locale, place.parentSubdivisionName) });
     }
     steps.push({ label: place.municipalityName, icon: <Landmark className="h-4 w-4" /> });
     steps.push({ label: place.name, icon: <MapPin className="h-4 w-4" />, active: true });
   } else if (nominatim?.address) {
     const addr = nominatim.address;
-    if (addr.country) steps.push({ label: addr.country, icon: <Globe2 className="h-4 w-4" /> });
-    if (addr.state) steps.push({ label: addr.state, icon: <Building2 className="h-4 w-4" /> });
-    if (addr.county) steps.push({ label: addr.county, icon: <Landmark className="h-4 w-4" /> });
+    if (addr.country) steps.push({ label: addr.country, icon: <Globe2 className="h-4 w-4" />, href: explorerHref(locale, addr.country) });
+    if (addr.state) steps.push({ label: addr.state, icon: <Building2 className="h-4 w-4" />, href: explorerHref(locale, addr.state) });
+    if (addr.county) steps.push({ label: addr.county, icon: <Landmark className="h-4 w-4" />, href: explorerHref(locale, addr.county) });
     if (addr.city || addr.town || addr.municipality) {
       steps.push({ label: addr.city || addr.town || addr.municipality || "", icon: <MapPin className="h-4 w-4" />, active: true });
     }
@@ -592,21 +604,31 @@ function HierarchySteps({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-3">
-          <div
-            className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium ${
-              step.active
-                ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--ink)]"
-                : "border-[var(--border)] bg-[var(--panel)] text-[var(--muted-strong)]"
-            }`}
-          >
+      {steps.map((step, index) => {
+        const chipClass = `flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium ${
+          step.active
+            ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--ink)]"
+            : "border-[var(--border)] bg-[var(--panel)] text-[var(--muted-strong)]"
+        }`;
+        const chipContent = (
+          <>
             <span className={step.active ? "text-[var(--accent)]" : "text-[var(--muted)]"}>{step.icon}</span>
             {step.label}
+          </>
+        );
+        return (
+          <div key={index} className="flex items-center gap-3">
+            {step.href ? (
+              <a href={step.href} className={`${chipClass} transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:text-[var(--ink)] hover:shadow-sm`}>
+                {chipContent}
+              </a>
+            ) : (
+              <div className={chipClass}>{chipContent}</div>
+            )}
+            {index < steps.length - 1 && <ChevronRight className="h-4 w-4 text-[var(--muted)]" />}
           </div>
-          {index < steps.length - 1 && <ChevronRight className="h-4 w-4 text-[var(--muted)]" />}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

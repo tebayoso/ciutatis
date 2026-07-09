@@ -1501,12 +1501,48 @@ function renderTandilTenantPage(args: {
 </html>`;
 }
 
+async function serveGeoSitemap(request: Request, env: Env): Promise<Response> {
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(new URL("/sitemaps/geo-ar.xml", request.url).toString());
+  const cached = await cache.match(cacheKey).catch(() => undefined);
+  if (cached) return cached;
+
+  const { results } = await env.DB.prepare(
+    "SELECT path_prefix, updated_at FROM geo_entities WHERE country_code = 'ar' ORDER BY path_prefix",
+  ).all<{ path_prefix: string; updated_at: number }>();
+
+  const origin = "https://ciutatis.com";
+  const urls = (results ?? [])
+    .map((row) => {
+      const lastmod = new Date(Number(row.updated_at)).toISOString().slice(0, 10);
+      return `<url><loc>${origin}${row.path_prefix}</loc><lastmod>${lastmod}</lastmod></url>`;
+    })
+    .join("");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
+
+  const response = new Response(xml, {
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+  await cache.put(cacheKey, response.clone()).catch(() => {});
+  return response;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/__dispatcher/health") {
       return Response.json({ ok: true, mode: "tenant-public-site" });
+    }
+
+    // Geo sitemap: all canonical entity pages from the geo reference layer,
+    // served straight from D1 and edge-cached for a day (the dataset rarely
+    // changes). Referenced from robots.txt next to the static-routes sitemap.
+    if (url.pathname === "/sitemaps/geo-ar.xml") {
+      return serveGeoSitemap(request, env);
     }
 
     // Only tenant `__tenant` API paths are handled here; everything else is

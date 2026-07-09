@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   CheckCircle2,
+  ChevronRight,
   FileSignature,
   FileText,
   Gauge,
@@ -917,6 +918,12 @@ function ScrutinyPage({ locale }: { locale: Locale }) {
   );
 }
 
+function resultName(result: RegionSearchResult): string {
+  return result.kind === "place"
+    ? result.place.name
+    : result.result.display_name.split(",")[0]?.trim() ?? result.result.display_name;
+}
+
 function ExplorePage({ locale }: { locale: Locale }) {
   const t = copy[locale].explore;
   const [query, setQuery] = useState("");
@@ -927,12 +934,19 @@ function ExplorePage({ locale }: { locale: Locale }) {
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const selectedIdRef = useRef<string | null>(null);
+  // When set, the next search result auto-selects its best match — used when
+  // arriving via ?q= (breadcrumbs, shared links) so the boundary draws
+  // without an extra click. Typing never sets it.
+  const autoSelectRef = useRef(false);
 
   // Shareable searches: seed the query from /explore?q=... on mount, and keep
   // the URL in sync as the query changes (replaceState — no history spam).
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
-    if (q) setQuery(q);
+    if (q) {
+      autoSelectRef.current = true;
+      setQuery(q);
+    }
   }, []);
 
   useEffect(() => {
@@ -951,9 +965,25 @@ function ExplorePage({ locale }: { locale: Locale }) {
         const next = await searchExplorer(query);
         if (!cancelled) {
           setResults(next);
-          setSelectedId(null);
-          selectedIdRef.current = null;
-          setBoundary(null);
+          const autoSelect = autoSelectRef.current;
+          autoSelectRef.current = false;
+          if (autoSelect && next.places.length > 0) {
+            // Exact name match, then containment ("Provincia de Buenos Aires"
+            // → OSM's "Buenos Aires"), then first result.
+            const normalized = query.trim().toLowerCase();
+            const best =
+              next.places.find((r) => resultName(r).toLowerCase() === normalized) ??
+              next.places.find((r) => {
+                const name = resultName(r).toLowerCase();
+                return normalized.includes(name) || name.includes(normalized);
+              }) ??
+              next.places[0];
+            void selectPlaceResult(best);
+          } else {
+            setSelectedId(null);
+            selectedIdRef.current = null;
+            setBoundary(null);
+          }
         }
       } catch {
         if (!cancelled) setResults({ institutions: [], places: [] });
@@ -968,6 +998,34 @@ function ExplorePage({ locale }: { locale: Locale }) {
   }, [query]);
 
   const markers = useMemo(() => markersFromRegionResults(results.places), [results.places]);
+
+  const selectedResult = useMemo(
+    () => results.places.find((r) => regionResultMarkerId(r) === selectedId) ?? null,
+    [results.places, selectedId]
+  );
+
+  // Parent admin entities of the selected result, outermost first. Each is a
+  // breadcrumb that re-queries the explorer and auto-selects the parent, so
+  // users can walk up the hierarchy (city → province → country) on the map.
+  const parentTrail = useMemo(() => {
+    if (!selectedResult) return [];
+    if (selectedResult.kind === "place") {
+      const p = selectedResult.place;
+      return [p.countryName ?? p.countryCode.toUpperCase(), p.parentSubdivisionName].filter(
+        (v): v is string => Boolean(v)
+      );
+    }
+    const addr = selectedResult.result.address;
+    const own = resultName(selectedResult).toLowerCase();
+    return [addr?.country, addr?.state, addr?.county].filter(
+      (v): v is string => Boolean(v) && v!.toLowerCase() !== own
+    );
+  }, [selectedResult]);
+
+  function goToParent(name: string) {
+    autoSelectRef.current = true;
+    setQuery(name);
+  }
 
   async function selectPlaceResult(result: RegionSearchResult) {
     const id = regionResultMarkerId(result);
@@ -1142,6 +1200,25 @@ function ExplorePage({ locale }: { locale: Locale }) {
         </div>
 
         <div className="lg:sticky lg:top-6">
+          {selectedResult && parentTrail.length > 0 ? (
+            <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
+              {parentTrail.map((name) => (
+                <span key={name} className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => goToParent(name)}
+                    className="rounded-full border border-[var(--border)] bg-[var(--panel)] px-3 py-1 font-medium text-[var(--muted-strong)] transition hover:border-[var(--border-strong)] hover:text-[var(--ink)]"
+                  >
+                    {name}
+                  </button>
+                  <ChevronRight className="h-3 w-3 text-[var(--muted)]" />
+                </span>
+              ))}
+              <span className="rounded-full border border-[var(--accent)] bg-[var(--accent-soft)]/60 px-3 py-1 font-semibold text-[var(--ink)]">
+                {resultName(selectedResult)}
+              </span>
+            </nav>
+          ) : null}
           <CivicMap className="h-[420px] lg:h-[640px]" markers={markers} boundary={boundary} selectedId={selectedId} onSelect={selectByMarkerId} />
           <p className="mt-3 text-center text-xs text-[var(--muted-strong)]">{t.mapHint}</p>
         </div>

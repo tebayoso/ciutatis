@@ -1,0 +1,36 @@
+workers/api/src/lib/public-geo.ts
+  s_a7c751498ff01a::t_ee9879a7ea8cb6 2,4,6-19,48-110,112-133,138-200
+  s_a7c751498ff01a::t_b39d6c9edf8bb2 137
+  s_a7c751498ff01a::t_33c6f6b02a2669 27
+  s_a7c751498ff01a::t_6be98ad350a350 5
+  s_a7c751498ff01a::t_7b3e42c201ec6f 111
+  s_a7c751498ff01a::t_0eb217e36926e4 1
+  s_a7c751498ff01a::t_4eb8228728b689 20-26,28-47
+  s_a7c751498ff01a::t_ede8deec441236 3
+  s_a7c751498ff01a::t_d34883abed1c79 134-136
+packages/shared/src/types/public-portal.ts
+  s_a7c751498ff01a::t_3dd75249ae5d5b 39-70
+packages/shared/src/index.ts
+  s_a7c751498ff01a::t_0b484099280dea 383-385
+packages/shared/src/types/index.ts
+  s_a7c751498ff01a::t_57f0d14e0b64d8 9-11
+workers/api/src/routes/public-portal.ts
+  s_a7c751498ff01a::t_d5ae0264afd1ec 21-59
+  s_a7c751498ff01a::t_38a669ecaa00ef 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "168f6c0b9636729f55fc562814d0b4b48a5687a8",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

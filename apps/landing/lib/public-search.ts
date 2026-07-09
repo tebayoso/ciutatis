@@ -50,6 +50,7 @@ export type NominatimResult = {
     town?: string;
     municipality?: string;
     county?: string;
+    state_district?: string;
     state?: string;
     country?: string;
     country_code?: string;

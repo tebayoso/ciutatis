@@ -968,15 +968,20 @@ function ExplorePage({ locale }: { locale: Locale }) {
           const autoSelect = autoSelectRef.current;
           autoSelectRef.current = false;
           if (autoSelect && next.places.length > 0) {
-            // Exact name match, then containment ("Provincia de Buenos Aires"
-            // → OSM's "Buenos Aires"), then first result.
+            // Rank: Ciutatis places beat raw OSM rows (they carry the "open
+            // place" affordance), exact name match beats containment
+            // ("Provincia de Buenos Aires" → OSM's "Buenos Aires").
             const normalized = query.trim().toLowerCase();
+            const exact = (r: RegionSearchResult) => resultName(r).toLowerCase() === normalized;
+            const contains = (r: RegionSearchResult) => {
+              const name = resultName(r).toLowerCase();
+              return normalized.includes(name) || name.includes(normalized);
+            };
             const best =
-              next.places.find((r) => resultName(r).toLowerCase() === normalized) ??
-              next.places.find((r) => {
-                const name = resultName(r).toLowerCase();
-                return normalized.includes(name) || name.includes(normalized);
-              }) ??
+              next.places.find((r) => r.kind === "place" && exact(r)) ??
+              next.places.find((r) => r.kind === "place" && contains(r)) ??
+              next.places.find(exact) ??
+              next.places.find(contains) ??
               next.places[0];
             void selectPlaceResult(best);
           } else {
@@ -1017,7 +1022,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
     }
     const addr = selectedResult.result.address;
     const own = resultName(selectedResult).toLowerCase();
-    return [addr?.country, addr?.state, addr?.county].filter(
+    return [addr?.country, addr?.state, addr?.state_district ?? addr?.county].filter(
       (v): v is string => Boolean(v) && v!.toLowerCase() !== own
     );
   }, [selectedResult]);

@@ -19,6 +19,8 @@ export const tenantInstances = sqliteTable(
     longitude: real("longitude"),
     osmType: text("osm_type"),
     osmId: text("osm_id"),
+    // Canonical geo entity this tenant claims (geo_entities.id).
+    geoId: text("geo_id"),
     routingMode: text("routing_mode").$type<TenantRoutingMode>().notNull().default("path"),
     status: text("status").$type<TenantInstanceStatus>().notNull().default("draft"),
     pathPrefix: text("path_prefix").notNull(),

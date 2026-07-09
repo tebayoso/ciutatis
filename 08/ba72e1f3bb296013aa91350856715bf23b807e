@@ -1,0 +1,25 @@
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_2d77915488099e 971-972,975-980
+  s_a7c751498ff01a::t_3c5d7aa4f30d1a 10
+  s_a7c751498ff01a::t_97c04e1dd6defc 921-926
+  s_a7c751498ff01a::t_d3e9e4e240b01c 937-940,946-949
+  s_a7c751498ff01a::t_8eae75247bf24b 968-970,973-974,981-986
+  s_a7c751498ff01a::t_77b11932bc0484 1002-1029
+  s_a7c751498ff01a::t_2d9352bfc49044 1203-1221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "08ba72e1f3bb296013aa91350856715bf23b807e",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

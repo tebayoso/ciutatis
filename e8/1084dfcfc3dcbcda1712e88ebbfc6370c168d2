@@ -1,0 +1,35 @@
+apps/landing/lib/geo.ts
+  s_a7c751498ff01a::t_89deba2627c8ca 59-74,78-83,91-93
+  s_a7c751498ff01a::t_6d8957bec85b75 5
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_f03b34ab7e8d0d 674-707
+  s_a7c751498ff01a::t_81a02688d3cb9e 791-796
+apps/landing/lib/public-search.ts
+  s_a7c751498ff01a::t_2267473b7113bb 69-99,102
+  s_a7c751498ff01a::t_631d0a74cd282b 122-126,130,132-134,143-145,149-160,167-194
+  s_a7c751498ff01a::t_a7f6e513dea0fb 195
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_47053a224f7fe4 1024-1026,1028,1030
+  s_a7c751498ff01a::t_34d43a295538f5 1089
+  s_a7c751498ff01a::t_6c330d393d6311 923-925
+  s_a7c751498ff01a::t_514217fdd38ee8 1047-1060
+  s_a7c751498ff01a::t_463b0d13af053d 1027
+  s_a7c751498ff01a::t_c357dc13f8fb4c 1029
+  s_a7c751498ff01a::t_bbec83fa815cab 39,1146-1162,1170,1173,1175,1182-1183,1187,1197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e81084dfcfc3dcbcda1712e88ebbfc6370c168d2",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

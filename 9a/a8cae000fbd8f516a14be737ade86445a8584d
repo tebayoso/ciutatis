@@ -1,0 +1,33 @@
+apps/landing/app/robots.ts
+  s_a7c751498ff01a::t_df3f3c5e2427a1 7
+workers/dispatcher/src/index.ts
+  s_a7c751498ff01a::t_da379090c8e16f 1541-1547
+  s_a7c751498ff01a::t_03e3cb1c9a3366 1504-1532
+apps/landing/app/[[...slug]]/page.tsx
+  s_a7c751498ff01a::t_f605dd7e2e3d6d 22-49,54
+  s_1af58fb57533f0::t_a8b927f4a87d2e 55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9aa8cae000fbd8f516a14be737ade86445a8584d",
+  "prompts": {},
+  "sessions": {
+    "s_1af58fb57533f0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "91c1c81e-cd20-4253-87e6-7c12c9a2496e",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    },
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_9691dca0128acb 1025
+  s_a7c751498ff01a::t_bb439a8f7d6cc7 971-973,975-979,981-984
+apps/landing/lib/public-search.ts
+  s_47d69eb43619aa::t_1ce828f47e470d 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0ade007843fac61e7b607859356f7e7238bf1aa0",
+  "prompts": {},
+  "sessions": {
+    "s_47d69eb43619aa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f5953da8-6995-4704-b8d1-e036ca597865",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    },
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_f1cb2ecf53cf26 106-116
+  s_a7c751498ff01a::t_14e34d760ee6cd 430,436,441-450
+  s_a7c751498ff01a::t_3ac8a2e2b4187e 29
+  s_a7c751498ff01a::t_1609d8c8775058 225
+apps/landing/lib/routes.ts
+  s_a7c751498ff01a::t_763156eec50578 17
+  s_a7c751498ff01a::t_86942048278411 46-47
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_23a35025560542 27,58,382,729-730
+apps/landing/app/geo/GeoEntityPage.tsx
+  s_a7c751498ff01a::t_ae4273ea91fc53 1-241
+apps/landing/lib/site-meta.ts
+  s_a7c751498ff01a::t_1dc27bf3ba678c 132-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c07d18949dd5b49c99340a27f9bb1a7a9fb0ceb0",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

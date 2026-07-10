@@ -1183,7 +1183,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
                     result.kind === "place"
                       ? [result.place.jurisdictionLabel, result.place.parentSubdivisionName, result.place.countryName ?? result.place.countryCode.toUpperCase()].filter(Boolean).join(" · ")
                       : result.kind === "geo"
-                        ? [result.entity.parentName !== result.entity.provinceName ? result.entity.parentName : null, result.entity.provinceName, "Argentina"].filter(Boolean).join(" · ")
+                        ? [...new Set([result.entity.parentName, result.entity.provinceName, "Argentina"].filter((v) => v && v !== result.entity.name))].join(" · ")
                         : result.result.display_name;
                   const badge =
                     result.kind === "geo" && !result.entity.claimed

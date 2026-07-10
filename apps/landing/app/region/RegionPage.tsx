@@ -717,7 +717,7 @@ function SearchResultCard({
               )}
             </div>
             <p className="text-sm text-[var(--muted-strong)]">
-              {[entity.parentName !== entity.provinceName ? entity.parentName : null, entity.provinceName, "Argentina"].filter(Boolean).join(" · ")}
+              {[...new Set([entity.parentName, entity.provinceName, "Argentina"].filter((v) => v && v !== entity.name))].join(" · ")}
             </p>
           </div>
         </div>

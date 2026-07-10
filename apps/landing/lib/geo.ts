@@ -63,7 +63,7 @@ export function markerFromGeoEntity(entity: GeoEntity): CivicMapMarker | null {
     // Claimed entities render with the "in Ciutatis" accent dot.
     kind: entity.claimed ? "place" : "osm",
     name: entity.name,
-    subtitle: [entity.jurisdictionType, entity.provinceName, "Argentina"].filter(Boolean).join(" · "),
+    subtitle: [...new Set([entity.jurisdictionType, entity.provinceName, "Argentina"].filter((v) => v && v !== entity.name))].join(" · "),
     lat: entity.lat,
     lon: entity.lon,
     href: entity.pathPrefix,

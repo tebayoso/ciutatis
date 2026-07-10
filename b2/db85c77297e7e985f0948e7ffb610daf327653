@@ -1,0 +1,106 @@
+packages/db-cloudflare/seeds/geo-ar-14.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-18.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-01.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/seeds/geo-ar-12.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-08.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-24.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-23.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-00.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/src/migrations/0008_geo_departamento_link.sql
+  s_a7c751498ff01a::t_dd24092560c025 1-3
+packages/db-cloudflare/seeds/geo-ar-11.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-06.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/seeds/geo-ar-26.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-353
+packages/db-cloudflare/seeds/geo-ar-09.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-25.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/src/schema/geo_entities.ts
+  s_a7c751498ff01a::t_541e19ab94b029 19-22
+packages/db-cloudflare/seeds/geo-ar-15.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-07.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_5991a7b7e40c24 36
+  s_a7c751498ff01a::t_3069007a8ee5da 310-312
+packages/db-cloudflare/seeds/geo-ar-16.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/src/migrations/meta/_journal.json
+  s_a7c751498ff01a::t_c70dd740377172 60-66
+packages/db-cloudflare/seeds/geo-ar-10.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-04.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/seeds/geo-ar-13.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-22.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+apps/landing/app/[[...slug]]/page.tsx
+  s_a7c751498ff01a::t_fe2683dc519908 44-45
+  s_a7c751498ff01a::t_3fc4d60a2ba413 34
+apps/landing/app/geo/GeoChildrenSection.tsx
+  s_a7c751498ff01a::t_7cf5781dd8a8fb 1-94
+scripts/seed-geo-ar.mjs
+  s_a7c751498ff01a::t_bec494922c181d 17-20
+  s_a7c751498ff01a::t_0f761eece00f67 211
+  s_a7c751498ff01a::t_b1c2b0abafd205 232
+  s_a7c751498ff01a::t_8f33072656e5b3 91,101-118
+packages/db-cloudflare/seeds/geo-ar-03.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/seeds/geo-ar-17.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-02.sql
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+packages/db-cloudflare/seeds/geo-ar-05.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 2-491
+  s_a7c751498ff01a::t_e3220352a3fbd9 1,492-505
+packages/db-cloudflare/seeds/geo-ar-19.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+packages/db-cloudflare/seeds/geo-ar-20.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+workers/api/src/lib/public-geo.ts
+  s_a7c751498ff01a::t_862209a7860a65 180
+  s_a7c751498ff01a::t_7ace0426f5a35d 128-141
+  s_a7c751498ff01a::t_d60415683ded72 193-195
+  s_a7c751498ff01a::t_5f1b676dcff5bf 1
+apps/landing/app/geo/GeoEntityPage.tsx
+  s_a7c751498ff01a::t_cbf60d66546234 48-54
+  s_a7c751498ff01a::t_40c96b03d6e9b3 171
+  s_a7c751498ff01a::t_1e4e762dc4d63a 10,13,16
+packages/db-cloudflare/seeds/geo-ar-21.sql
+  s_a7c751498ff01a::t_f5b8b8d2ec1017 1-505
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b2db85c77297e7e985f0948e7ffb610daf327653",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

@@ -33,6 +33,7 @@ import {
 } from "../../lib/public-search";
 import { lookupOsmBoundary, markerFromNominatim, markerFromPlace } from "../../lib/geo";
 import CivicMap from "../components/CivicMap";
+import GeoChildrenSection from "../geo/GeoChildrenSection";
 
 const copy = {
   en: {
@@ -305,6 +306,9 @@ export default function RegionPage({
           <HierarchySteps place={place} nominatim={nominatimData} locale={locale} />
         </section>
       )}
+
+      {/* Territories inside this entity (localidades of a claimed municipio). */}
+      {geoDetail ? <GeoChildrenSection locale={locale} geoId={geoDetail.id} childCount={geoDetail.childCount} /> : null}
 
       {/* OpenStreetMap Data */}
       {nominatimData?.extratags && (

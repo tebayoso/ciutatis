@@ -16,6 +16,10 @@ export const geoEntities = sqliteTable(
     pathPrefix: text("path_prefix").notNull(),
     parentId: text("parent_id"),
     provinceId: text("province_id"),
+    // Containing departamento/partido for localidades. Localidades parent to
+    // their municipio when one exists, so this keeps the departamento link
+    // (a municipio can span departamentos — this is the localidad's own).
+    departamentoId: text("departamento_id"),
     lat: real("lat"),
     lon: real("lon"),
     osmType: text("osm_type"),

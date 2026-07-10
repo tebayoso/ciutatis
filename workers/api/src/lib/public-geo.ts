@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { geoEntities } from "@ciutatis/db-cloudflare";
 import type { PublicGeoChildrenPage, PublicGeoEntity, PublicGeoEntityDetail } from "@paperclipai/shared";
@@ -125,8 +125,20 @@ export function publicGeoService(db: any) {
 
   async function getByPath(path: string): Promise<PublicGeoEntityDetail | null> {
     const rows = await baseSelect().where(eq(geoEntities.pathPrefix, path)).limit(1);
-    const row = rows[0];
-    if (!row) return null;
+    let row = rows[0];
+    if (!row) {
+      // Claimed entities keep their tenant path as path_prefix, so their
+      // id-based path misses. Resolve by the embedded source id
+      // (/ar/municipio/{indecId}-{slug}) and return the canonical row —
+      // callers redirect to its pathPrefix.
+      const match = path.match(/^\/([a-z]{2})\/[a-z-]+\/(\d+)-/);
+      if (match) {
+        const [, country, sourceId] = match;
+        const candidates = [`${country}:${sourceId}`, `${country}:loc:${sourceId}`];
+        row = (await baseSelect().where(inArray(geoEntities.id, candidates)).limit(1))[0];
+      }
+      if (!row) return null;
+    }
 
     // Lazy OSM backfill (same pattern as tenant places): one cached Nominatim
     // search on first view; provinces/municipios resolve by "name, province".
@@ -165,7 +177,7 @@ export function publicGeoService(db: any) {
     const countRows = await db
       .select({ n: sql<number>`COUNT(*)` })
       .from(geoEntities)
-      .where(eq(geoEntities.parentId, row.id));
+      .where(or(eq(geoEntities.parentId, row.id), eq(geoEntities.departamentoId, row.id)));
 
     return { ...toEntity(row), parents, childCount: Number(countRows[0]?.n ?? 0) };
   }
@@ -178,7 +190,9 @@ export function publicGeoService(db: any) {
   }): Promise<PublicGeoChildrenPage> {
     const max = Math.min(Math.max(input.max ?? 100, 1), 200);
     const offset = Math.max(input.offset ?? 0, 0);
-    const conditions = [eq(geoEntities.parentId, input.id)];
+    // Membership is parent_id OR departamento_id: localidades parent to their
+    // municipio, but still belong to a departamento/partido territorially.
+    const conditions = [or(eq(geoEntities.parentId, input.id), eq(geoEntities.departamentoId, input.id))];
     if (input.level) conditions.push(eq(geoEntities.level, input.level));
     const where = and(...conditions);
 

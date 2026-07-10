@@ -7,41 +7,29 @@
 // admin boundary, children navigation, and the claim call-to-action.
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight, Globe2, Layers, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Globe2, MapPin } from "lucide-react";
 
 import { routePath, type Locale } from "../../lib/routes";
-import {
-  fetchGeoByPath,
-  fetchGeoChildren,
-  type GeoEntity,
-  type GeoEntityDetail,
-} from "../../lib/public-search";
+import { fetchGeoByPath, type GeoEntityDetail } from "../../lib/public-search";
 import { lookupOsmBoundary } from "../../lib/geo";
 import CivicMap from "../components/CivicMap";
+import GeoChildrenSection from "./GeoChildrenSection";
 import RegionPage from "../region/RegionPage";
 
 const copy = {
   en: {
     home: "Home",
     loading: "Loading civic data...",
-    childrenTitle: "Inside this territory",
-    loadMore: "Load more",
     openExplorer: "Open in the civic map",
     claim: "Claim this place",
     claimHint: "This territory hasn't been claimed yet. Be the first to bring it to Ciutatis.",
-    inCiutatis: "In Ciutatis",
-    entities: "entities",
   },
   es: {
     home: "Inicio",
     loading: "Cargando datos cívicos...",
-    childrenTitle: "Dentro de este territorio",
-    loadMore: "Cargar más",
     openExplorer: "Abrir en el mapa cívico",
     claim: "Reclamar este lugar",
     claimHint: "Este territorio aún no fue reclamado. Sé el primero en traerlo a Ciutatis.",
-    inCiutatis: "En Ciutatis",
-    entities: "entidades",
   },
 };
 
@@ -57,6 +45,13 @@ export default function GeoRegionRouter({ locale, pathPrefix }: { locale: Locale
     setDetail(null);
     fetchGeoByPath(pathPrefix).then((d) => {
       if (cancelled) return;
+      // Id-based paths resolve to the entity's canonical path (claimed
+      // entities live at their tenant path) — redirect instead of rendering
+      // a duplicate.
+      if (d && d.pathPrefix !== pathPrefix) {
+        window.location.replace(d.pathPrefix);
+        return;
+      }
       setDetail(d);
       setState(d && !d.claimed ? "geo" : "legacy");
     });
@@ -81,9 +76,6 @@ export default function GeoRegionRouter({ locale, pathPrefix }: { locale: Locale
 function GeoEntityPage({ locale, detail }: { locale: Locale; detail: GeoEntityDetail }) {
   const t = copy[locale];
   const [boundary, setBoundary] = useState<unknown | null>(null);
-  const [children, setChildren] = useState<GeoEntity[]>([]);
-  const [childTotal, setChildTotal] = useState(0);
-  const [loadingChildren, setLoadingChildren] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,29 +89,6 @@ function GeoEntityPage({ locale, detail }: { locale: Locale; detail: GeoEntityDe
       cancelled = true;
     };
   }, [detail.osmType, detail.osmId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setChildren([]);
-    setChildTotal(0);
-    if (detail.childCount > 0) {
-      fetchGeoChildren(detail.id).then((page) => {
-        if (cancelled || !page) return;
-        setChildren(page.items);
-        setChildTotal(page.total);
-      });
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [detail.id, detail.childCount]);
-
-  async function loadMore() {
-    setLoadingChildren(true);
-    const page = await fetchGeoChildren(detail.id, { offset: children.length });
-    setLoadingChildren(false);
-    if (page) setChildren((prev) => [...prev, ...page.items]);
-  }
 
   const subtitle = useMemo(
     () => [...detail.parents.map((p) => p.name)].reverse().join(" · "),
@@ -199,43 +168,7 @@ function GeoEntityPage({ locale, detail }: { locale: Locale; detail: GeoEntityDe
         <CivicMap className="h-[400px]" center={center} zoom={detail.level === "pais" ? 4 : detail.level === "provincia" ? 6 : 10} markers={markers} boundary={boundary} />
       </section>
 
-      {childTotal > 0 ? (
-        <section className="rounded-2xl border border-[var(--border)] bg-white/80 p-6 shadow-sm sm:p-8">
-          <div className="mb-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
-            <Layers className="h-3.5 w-3.5" />
-            {t.childrenTitle}
-            <span className="text-[var(--muted)]">— {childTotal} {t.entities}</span>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {children.map((child) => (
-              <a
-                key={child.id}
-                href={child.pathPrefix}
-                className="flex items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--panel)] p-3 transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-sm"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-[var(--ink)]">{child.name}</span>
-                  <span className="block truncate text-xs text-[var(--muted-strong)]">{child.jurisdictionType}</span>
-                </span>
-                {child.claimed ? (
-                  <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--accent)]">
-                    {t.inCiutatis}
-                  </span>
-                ) : (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-                )}
-              </a>
-            ))}
-          </div>
-          {children.length < childTotal ? (
-            <div className="mt-6 flex justify-center">
-              <button type="button" onClick={() => void loadMore()} disabled={loadingChildren} className="ghost-button disabled:opacity-50">
-                {t.loadMore} ({children.length}/{childTotal})
-              </button>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+      <GeoChildrenSection locale={locale} geoId={detail.id} childCount={detail.childCount} />
     </div>
   );
 }

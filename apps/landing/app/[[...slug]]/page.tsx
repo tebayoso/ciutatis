@@ -31,6 +31,7 @@ async function geoMetadata(path: string): Promise<Metadata | null> {
     const entity = (await response.json()) as {
       name: string;
       jurisdictionType: string;
+      pathPrefix: string;
       parents: { name: string }[];
       childCount: number;
     };
@@ -40,7 +41,8 @@ async function geoMetadata(path: string): Promise<Metadata | null> {
       description: `${entity.name} on the Ciutatis civic map: administrative boundaries, hierarchy${
         entity.childCount > 0 ? `, ${entity.childCount} contained territories` : ""
       }, public requests and open civic data.`,
-      alternates: { canonical: path },
+      // Id-based aliases canonicalize to the entity's real path.
+      alternates: { canonical: entity.pathPrefix || path },
     };
   } catch {
     return null;

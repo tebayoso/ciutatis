@@ -14,8 +14,10 @@ import { fileURLToPath } from "node:url";
 const API = "https://apis.datos.gob.ar/georef/api";
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "packages", "db-cloudflare", "seeds");
 const NOW = Date.now();
-const CHUNK_ROWS = 1000; // rows per seed file
-const INSERT_ROWS = 40; // rows per INSERT statement (D1 statement size limit)
+// Local D1 (miniflare) runs each file as one SQL string capped at ~100KB
+// (SQLITE_TOOBIG), so files must stay well under that.
+const CHUNK_ROWS = 250; // rows per seed file
+const INSERT_ROWS = 15; // rows per INSERT statement
 
 function unaccent(value) {
   return value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
@@ -86,6 +88,7 @@ function row(entity) {
     sqlText(entity.pathPrefix),
     sqlText(entity.parentId),
     sqlText(entity.provinceId),
+    sqlText(entity.departamentoId ?? null),
     sqlNum(entity.lat),
     sqlNum(entity.lon),
     sqlText("georef"),
@@ -95,7 +98,24 @@ function row(entity) {
 }
 
 const COLUMNS =
-  "(id, country_code, level, jurisdiction_type, name, search_name, slug, path_prefix, parent_id, province_id, lat, lon, source, category, updated_at)";
+  "(id, country_code, level, jurisdiction_type, name, search_name, slug, path_prefix, parent_id, province_id, departamento_id, lat, lon, source, category, updated_at)";
+
+// Upsert that preserves runtime state on re-seed: OSM backfills, tenant links,
+// and the tenant-owned path of claimed entities survive; georef fields refresh.
+const ON_CONFLICT = `ON CONFLICT(id) DO UPDATE SET
+  level = excluded.level,
+  jurisdiction_type = excluded.jurisdiction_type,
+  name = excluded.name,
+  search_name = excluded.search_name,
+  slug = excluded.slug,
+  path_prefix = CASE WHEN geo_entities.tenant_instance_id IS NULL THEN excluded.path_prefix ELSE geo_entities.path_prefix END,
+  parent_id = excluded.parent_id,
+  province_id = excluded.province_id,
+  departamento_id = excluded.departamento_id,
+  lat = COALESCE(geo_entities.lat, excluded.lat),
+  lon = COALESCE(geo_entities.lon, excluded.lon),
+  category = excluded.category,
+  updated_at = excluded.updated_at`;
 
 async function main() {
   console.log("Fetching georef datasets...");
@@ -188,6 +208,7 @@ async function main() {
       pathPrefix: `/ar/localidad/${l.id}-${slug}`,
       parentId: municipioParent ?? departamentoParent ?? `ar:${l.provincia.id}`,
       provinceId: `ar:${l.provincia.id}`,
+      departamentoId: departamentoParent,
       lat: l.centroide?.lat,
       lon: l.centroide?.lon,
       category: l.categoria ?? null,
@@ -208,7 +229,7 @@ async function main() {
     const statements = [];
     for (let j = 0; j < chunk.length; j += INSERT_ROWS) {
       const values = chunk.slice(j, j + INSERT_ROWS).map(row).join(",\n");
-      statements.push(`INSERT OR REPLACE INTO geo_entities ${COLUMNS} VALUES\n${values};`);
+      statements.push(`INSERT INTO geo_entities ${COLUMNS} VALUES\n${values}\n${ON_CONFLICT};`);
     }
     const name = `geo-ar-${String(files.length).padStart(2, "0")}.sql`;
     writeFileSync(join(OUT_DIR, name), statements.join("\n"));

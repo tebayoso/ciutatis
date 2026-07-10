@@ -1111,8 +1111,11 @@ function ExplorePage({ locale }: { locale: Locale }) {
   return (
     <section className="space-y-12">
       <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<MapPin className="h-3.5 w-3.5 text-[var(--accent)]" />} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
-        <div className="rounded-2xl border border-[var(--border)] bg-white/80 p-5 shadow-sm sm:p-6">
+      {/* Mobile flow: search → map → results. On lg the map moves to a sticky
+          right column spanning both left-column cards. Base grid-cols-1 keeps
+          the implicit column from stretching to intrinsic content width. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
+        <div className="rounded-2xl border border-[var(--border)] bg-white/80 p-5 shadow-sm sm:p-6 lg:col-start-1 lg:row-start-1">
           <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]" htmlFor="explore-search">
             {t.searchLabel}
           </label>
@@ -1128,21 +1131,49 @@ function ExplorePage({ locale }: { locale: Locale }) {
             />
           </div>
           {loading ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{t.loading}</p> : null}
-          {!loading && !hasResults ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{t.empty}</p> : null}
+        </div>
+
+        <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6">
+          {selectedResult && parentTrail.length > 0 ? (
+            <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
+              {parentTrail.map((name) => (
+                <span key={name} className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => goToParent(name)}
+                    className="rounded-full border border-[var(--border)] bg-[var(--panel)] px-3 py-1 font-medium text-[var(--muted-strong)] transition hover:border-[var(--border-strong)] hover:text-[var(--ink)]"
+                  >
+                    {name}
+                  </button>
+                  <ChevronRight className="h-3 w-3 text-[var(--muted)]" />
+                </span>
+              ))}
+              <span className="rounded-full border border-[var(--accent)] bg-[var(--accent-soft)]/60 px-3 py-1 font-semibold text-[var(--ink)]">
+                {resultName(selectedResult)}
+              </span>
+            </nav>
+          ) : null}
+          <CivicMap className="h-[45vh] min-h-[340px] lg:h-[640px]" markers={markers} boundary={boundary} selectedId={selectedId} onSelect={selectByMarkerId} />
+          <p className="mt-3 text-center text-xs text-[var(--muted-strong)]">{t.mapHint}</p>
+        </div>
+
+        {hasResults || claimError || !loading ? (
+        <div className="rounded-2xl border border-[var(--border)] bg-white/80 p-5 shadow-sm sm:p-6 lg:col-start-1 lg:row-start-2">
+          {!loading && !hasResults ? <p className="text-sm text-[var(--muted-strong)]">{t.empty}</p> : null}
           {claimError ? (
-            <p className="mt-4 flex items-center gap-2 text-sm text-[var(--red)]">
+            <p className="flex items-center gap-2 text-sm text-[var(--red)]">
               <AlertCircle className="h-4 w-4" />
               {claimError}
             </p>
           ) : null}
 
           {results.places.length > 0 ? (
-            <div className="mt-6">
+            <div className="mt-6 first:mt-0">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                 <MapPin className="h-3.5 w-3.5 text-[var(--accent)]" />
                 {t.placesGroup}
               </p>
-              <div className="mt-3 grid gap-2">
+              <div className="mt-3 grid grid-cols-1 gap-2">
                 {results.places.map((result) => {
                   const id = regionResultMarkerId(result);
                   const selected = id === selectedId;
@@ -1171,7 +1202,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
                       <button type="button" className="w-full text-left" onClick={() => void selectPlaceResult(result)}>
                         <span className="flex items-center gap-2">
                           {inCiutatis ? <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" /> : <Globe2 className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />}
-                          <span className="truncate font-medium text-[var(--ink)]">{name}</span>
+                          <span className="min-w-0 truncate font-medium text-[var(--ink)]">{name}</span>
                           <span
                             className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${inCiutatis ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "border border-[var(--border-strong)] bg-white text-[var(--muted-strong)]"}`}
                           >
@@ -1208,12 +1239,12 @@ function ExplorePage({ locale }: { locale: Locale }) {
           ) : null}
 
           {results.institutions.length > 0 ? (
-            <div className="mt-6">
+            <div className="mt-6 first:mt-0">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                 <Landmark className="h-3.5 w-3.5 text-[var(--accent)]" />
                 {t.institutionsGroup}
               </p>
-              <div className="mt-3 grid gap-2">
+              <div className="mt-3 grid grid-cols-1 gap-2">
                 {results.institutions.map((institution) => (
                   <a
                     key={institution.id}
@@ -1222,7 +1253,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
                   >
                     <span className="flex items-center gap-2">
                       <Landmark className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-                      <span className="truncate font-medium text-[var(--ink)]">{institution.name}</span>
+                      <span className="min-w-0 truncate font-medium text-[var(--ink)]">{institution.name}</span>
                       <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{institution.issuePrefix}</span>
                     </span>
                     {institution.description ? (
@@ -1234,30 +1265,7 @@ function ExplorePage({ locale }: { locale: Locale }) {
             </div>
           ) : null}
         </div>
-
-        <div className="lg:sticky lg:top-6">
-          {selectedResult && parentTrail.length > 0 ? (
-            <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
-              {parentTrail.map((name) => (
-                <span key={name} className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => goToParent(name)}
-                    className="rounded-full border border-[var(--border)] bg-[var(--panel)] px-3 py-1 font-medium text-[var(--muted-strong)] transition hover:border-[var(--border-strong)] hover:text-[var(--ink)]"
-                  >
-                    {name}
-                  </button>
-                  <ChevronRight className="h-3 w-3 text-[var(--muted)]" />
-                </span>
-              ))}
-              <span className="rounded-full border border-[var(--accent)] bg-[var(--accent-soft)]/60 px-3 py-1 font-semibold text-[var(--ink)]">
-                {resultName(selectedResult)}
-              </span>
-            </nav>
-          ) : null}
-          <CivicMap className="h-[420px] lg:h-[640px]" markers={markers} boundary={boundary} selectedId={selectedId} onSelect={selectByMarkerId} />
-          <p className="mt-3 text-center text-xs text-[var(--muted-strong)]">{t.mapHint}</p>
-        </div>
+        ) : null}
       </div>
     </section>
   );
@@ -1534,7 +1542,7 @@ function FeaturesPage({ locale }: { locale: Locale }) {
       <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<Gauge className="h-3.5 w-3.5 text-[var(--accent)]" />} />
       <div className="space-y-14">
         {t.groups.map((group) => (
-          <div key={group.tag} className="grid gap-8 lg:grid-cols-[1fr_2fr] lg:items-start">
+          <div key={group.tag} className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_2fr] lg:items-start">
             <div className="lg:sticky lg:top-12">
               <h2 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">{group.tag}</h2>
             </div>
@@ -1965,7 +1973,7 @@ function InstitutionSearch({ locale }: { locale: Locale }) {
         onChange={(event) => setQuery(event.target.value)}
       />
       {status ? <p className="mt-4 text-sm text-[var(--muted-strong)]">{status}</p> : null}
-      <div className="mt-6 grid gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-4">
         {results.map((result) => (
           <a key={`${result.kind}:${result.id}`} href={result.kind === "institution" ? `/portal/${result.slug}` : result.url} className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-start justify-between gap-4">
@@ -2039,7 +2047,7 @@ function SectionIntro({ eyebrow, title, subtitle }: { eyebrow: string; title: st
 function Principles({ locale }: { locale: Locale }) {
   const t = copy[locale].principles;
   return (
-    <section className="grid gap-12 border-t border-[var(--border)] pt-16 lg:grid-cols-[1fr_2fr] lg:items-start">
+    <section className="grid grid-cols-1 gap-12 border-t border-[var(--border)] pt-16 lg:grid-cols-[1fr_2fr] lg:items-start">
       <div className="lg:sticky lg:top-12">
         <h2 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">{t.eyebrow}</h2>
       </div>

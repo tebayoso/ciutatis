@@ -231,7 +231,7 @@ export default function RegionPage({
       )}
 
       {/* Hero Section */}
-      <section className="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+      <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-start">
         <div className="space-y-8">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-strong)] bg-white/50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-strong)] backdrop-blur-md">
@@ -374,7 +374,7 @@ export default function RegionPage({
           </div>
         )}
         {searchResults.length > 0 && (
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 grid grid-cols-1 gap-3">
             {groupSearchResultsByLevel(searchResults).map((group, groupIndex) => (
               <div key={groupIndex} className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted)]">

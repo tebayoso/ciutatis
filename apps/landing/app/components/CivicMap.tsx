@@ -174,7 +174,7 @@ export default function CivicMap({
         </div>
         <span className="text-xs font-medium text-[var(--muted-strong)]">OpenStreetMap</span>
       </div>
-      <div ref={containerRef} className="min-h-[400px] w-full flex-1" role="application" aria-label="Civic map" />
+      <div ref={containerRef} className="min-h-0 w-full flex-1" role="application" aria-label="Civic map" />
     </div>
   );
 }

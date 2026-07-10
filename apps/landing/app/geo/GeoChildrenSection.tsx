@@ -61,7 +61,7 @@ export default function GeoChildrenSection({
         {t.title}
         <span className="text-[var(--muted)]">— {total} {t.entities}</span>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {children.map((child) => (
           <a
             key={child.id}

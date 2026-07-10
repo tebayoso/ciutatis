@@ -1,0 +1,23 @@
+apps/landing/app/PublicApp.tsx
+  s_a7c751498ff01a::t_67c2dc3aa1871a 1186
+apps/landing/app/region/RegionPage.tsx
+  s_a7c751498ff01a::t_67c2dc3aa1871a 720
+apps/landing/lib/geo.ts
+  s_a7c751498ff01a::t_67c2dc3aa1871a 66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "73b853788ed1dbae42340a0c74eff80760f65f2e",
+  "prompts": {},
+  "sessions": {
+    "s_a7c751498ff01a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4b5e398-e8f5-438e-9381-aad09253dba2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jorge de los Santos <tebayoso@gmail.com>"
+    }
+  }
+}

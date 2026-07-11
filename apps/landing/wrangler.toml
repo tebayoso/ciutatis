@@ -26,6 +26,10 @@ binding = "ASSETS"
 # Base URL of the Ciutatis API server, used by middleware/SSR for session checks.
 # Override per-environment below or via Worker secrets/vars in the dashboard.
 API_INTERNAL_BASE = "https://admin.ciutatis.com"
+SENTRY_ORG = "thcargentina"
+SENTRY_PROJECT = "ciutatus-public"
+# Set NEXT_PUBLIC_SENTRY_DSN + SENTRY_DSN (and optionally SENTRY_AUTH_TOKEN) in
+# the Cloudflare dashboard / deploy env. Public DSN is safe to expose.
 
 [env.production]
 name = "ciutatis-web"

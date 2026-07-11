@@ -134,6 +134,11 @@ export default function RegionPage({
           signal: controller.signal,
         });
         if (response.ok) {
+          const contentType = response.headers.get("content-type") ?? "";
+          if (!contentType.includes("application/json")) {
+            setError(true);
+            return;
+          }
           const data = await response.json();
           setPlace(data);
           // Also search Nominatim for enrichment

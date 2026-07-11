@@ -5,7 +5,7 @@ function attachmentContentPath(attachmentId: string): string {
   return `/api/attachments/${attachmentId}/content`;
 }
 
-export const requestWorkProductTypeSchema = z.enum([
+export const issueWorkProductTypeSchema = z.enum([
   "preview_url",
   "runtime_service",
   "pull_request",
@@ -15,7 +15,7 @@ export const requestWorkProductTypeSchema = z.enum([
   "document",
 ]);
 
-export const requestWorkProductStatusSchema = z.enum([
+export const issueWorkProductStatusSchema = z.enum([
   "active",
   "ready_for_review",
   "approved",
@@ -27,14 +27,13 @@ export const requestWorkProductStatusSchema = z.enum([
   "draft",
 ]);
 
-export const requestWorkProductReviewStateSchema = z.enum([
+export const issueWorkProductReviewStateSchema = z.enum([
   "none",
   "needs_board_review",
   "approved",
   "changes_requested",
 ]);
 
-export const createRequestWorkProductSchema = z.object({
 export const attachmentArtifactWorkProductMetadataSchema = z.object({
   attachmentId: z.string().uuid(),
   contentType: z.string().min(1),
@@ -53,11 +52,19 @@ export const attachmentArtifactWorkProductMetadataSchema = z.object({
     });
   }
   if (value.openPath !== contentPath) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
       path: ["openPath"],
       message: "openPath must point to the same-origin attachment content route",
+    });
+  }
   if (value.downloadPath !== `${contentPath}?download=1`) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
       path: ["downloadPath"],
       message: "downloadPath must point to the same-origin attachment download route",
+    });
+  }
 });
 
 export type AttachmentArtifactWorkProductMetadata = z.infer<typeof attachmentArtifactWorkProductMetadataSchema>;
@@ -74,13 +81,13 @@ export const createIssueWorkProductSchema = z.object({
   projectId: z.string().uuid().optional().nullable(),
   executionWorkspaceId: z.string().uuid().optional().nullable(),
   runtimeServiceId: z.string().uuid().optional().nullable(),
-  type: requestWorkProductTypeSchema,
+  type: issueWorkProductTypeSchema,
   provider: z.string().min(1),
   externalId: z.string().optional().nullable(),
   title: z.string().min(1),
   url: z.string().url().optional().nullable(),
-  status: requestWorkProductStatusSchema.default("active"),
-  reviewState: requestWorkProductReviewStateSchema.optional().default("none"),
+  status: issueWorkProductStatusSchema.default("active"),
+  reviewState: issueWorkProductReviewStateSchema.optional().default("none"),
   isPrimary: z.boolean().optional().default(false),
   healthStatus: z.enum(["unknown", "healthy", "unhealthy"]).optional().default("unknown"),
   summary: z.string().optional().nullable(),
@@ -88,16 +95,17 @@ export const createIssueWorkProductSchema = z.object({
   createdByRunId: z.string().uuid().optional().nullable(),
 });
 
-export type CreateRequestWorkProduct = z.infer<typeof createRequestWorkProductSchema>;
+export type CreateIssueWorkProduct = z.infer<typeof createIssueWorkProductSchema>;
 
-export const updateRequestWorkProductSchema = createRequestWorkProductSchema.partial();
+export const updateIssueWorkProductSchema = createIssueWorkProductSchema.partial();
 
-export type UpdateRequestWorkProduct = z.infer<typeof updateRequestWorkProductSchema>;
+export type UpdateIssueWorkProduct = z.infer<typeof updateIssueWorkProductSchema>;
 
-export const issueWorkProductTypeSchema = requestWorkProductTypeSchema;
-export const issueWorkProductStatusSchema = requestWorkProductStatusSchema;
-export const issueWorkProductReviewStateSchema = requestWorkProductReviewStateSchema;
-export const createIssueWorkProductSchema = createRequestWorkProductSchema;
-export type CreateIssueWorkProduct = CreateRequestWorkProduct;
-export const updateIssueWorkProductSchema = updateRequestWorkProductSchema;
-export type UpdateIssueWorkProduct = UpdateRequestWorkProduct;
+/** Ciutatis civic aliases for work products */
+export const createRequestWorkProductSchema = createIssueWorkProductSchema;
+export const updateRequestWorkProductSchema = updateIssueWorkProductSchema;
+export const requestWorkProductTypeSchema = issueWorkProductTypeSchema;
+export const requestWorkProductStatusSchema = issueWorkProductStatusSchema;
+export const requestWorkProductReviewStateSchema = issueWorkProductReviewStateSchema;
+export type CreateRequestWorkProduct = CreateIssueWorkProduct;
+export type UpdateRequestWorkProduct = UpdateIssueWorkProduct;

@@ -23,6 +23,12 @@ const copy = {
     openExplorer: "Open in the civic map",
     claim: "Claim this place",
     claimHint: "This territory hasn't been claimed yet. Be the first to bring it to Ciutatis.",
+    unavailableEyebrow: "Argentina",
+    unavailableTitle: "Civic map of Argentina",
+    unavailableBody:
+      "Browse provinces, municipios and localities on the civic map. Search places, open public surfaces, and claim territories that aren't on Ciutatis yet.",
+    unavailableRetry: "Try again",
+    unavailableStats: "24 provinces · 529 departamentos · 2,082 municipios · 4,037 localities",
   },
   es: {
     home: "Inicio",
@@ -30,19 +36,27 @@ const copy = {
     openExplorer: "Abrir en el mapa cívico",
     claim: "Reclamar este lugar",
     claimHint: "Este territorio aún no fue reclamado. Sé el primero en traerlo a Ciutatis.",
+    unavailableEyebrow: "Argentina",
+    unavailableTitle: "Mapa cívico de Argentina",
+    unavailableBody:
+      "Explorá provincias, municipios y localidades en el mapa cívico. Buscá lugares, abrí superficies públicas y reclamá territorios que todavía no están en Ciutatis.",
+    unavailableRetry: "Reintentar",
+    unavailableStats: "24 provincias · 529 departamentos · 2.082 municipios · 4.037 localidades",
   },
 };
 
 // Region-path dispatcher: canonical geo entities render here; claimed entities
 // and paths outside the geo index fall through to the legacy RegionPage.
 export default function GeoRegionRouter({ locale, pathPrefix }: { locale: Locale; pathPrefix: string }) {
-  const [state, setState] = useState<"loading" | "geo" | "legacy">("loading");
+  const [state, setState] = useState<"loading" | "geo" | "legacy" | "unavailable">("loading");
   const [detail, setDetail] = useState<GeoEntityDetail | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setState("loading");
     setDetail(null);
+
     fetchGeoByPath(pathPrefix).then((d) => {
       if (cancelled) return;
       // Id-based paths resolve to the entity's canonical path (claimed
@@ -52,13 +66,26 @@ export default function GeoRegionRouter({ locale, pathPrefix }: { locale: Locale
         window.location.replace(d.pathPrefix);
         return;
       }
-      setDetail(d);
-      setState(d && !d.claimed ? "geo" : "legacy");
+      if (d && !d.claimed) {
+        setDetail(d);
+        setState("geo");
+        return;
+      }
+      if (d?.claimed) {
+        setDetail(d);
+        setState("legacy");
+        return;
+      }
+      // No geo payload (API down, empty local DB, or HTML catch-all). Country
+      // hub keeps a crawlable static page; other paths use RegionPage.
+      setDetail(null);
+      setState(pathPrefix === "/ar" ? "unavailable" : "legacy");
     });
+
     return () => {
       cancelled = true;
     };
-  }, [pathPrefix]);
+  }, [pathPrefix, reloadKey]);
 
   if (state === "loading") {
     return (
@@ -67,10 +94,41 @@ export default function GeoRegionRouter({ locale, pathPrefix }: { locale: Locale
       </div>
     );
   }
+  if (state === "unavailable") {
+    return <ArgentinaHubFallback locale={locale} onRetry={() => setReloadKey((n) => n + 1)} />;
+  }
   if (state === "geo" && detail) {
     return <GeoEntityPage locale={locale} detail={detail} />;
   }
   return <RegionPage locale={locale} pathPrefix={pathPrefix} geoDetail={detail} />;
+}
+
+function ArgentinaHubFallback({ locale, onRetry }: { locale: Locale; onRetry: () => void }) {
+  const t = copy[locale];
+  return (
+    <section className="mx-auto flex max-w-3xl flex-col items-center space-y-8 text-center">
+      <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-strong)] bg-white/50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-strong)] backdrop-blur-md">
+        <MapPin className="h-3.5 w-3.5 text-[var(--accent)]" />
+        {t.unavailableEyebrow}
+      </div>
+      <h1 className="text-4xl font-normal leading-tight text-[var(--ink)] sm:text-5xl md:text-6xl font-serif">
+        {t.unavailableTitle}
+      </h1>
+      <p className="max-w-2xl text-lg leading-relaxed text-[var(--muted-strong)] font-serif">{t.unavailableBody}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">{t.unavailableStats}</p>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <a className="hero-button-solid" href={routePath(locale, "explore")}>
+          <Globe2 className="h-4 w-4" />
+          {t.openExplorer}
+          <ArrowRight className="h-4 w-4" />
+        </a>
+        <button type="button" className="ghost-button" onClick={onRetry}>
+          {t.unavailableRetry}
+        </button>
+      </div>
+      <CivicMap className="h-[360px] w-full" center={[-38.4161, -63.6167]} zoom={4} markers={[]} boundary={null} />
+    </section>
+  );
 }
 
 function GeoEntityPage({ locale, detail }: { locale: Locale; detail: GeoEntityDetail }) {

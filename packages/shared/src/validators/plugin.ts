@@ -12,8 +12,19 @@ import {
   PLUGIN_LAUNCHER_BOUNDS,
   PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS,
   PLUGIN_STATE_SCOPE_KINDS,
+  PLUGIN_DATABASE_CORE_READ_TABLES,
+  PLUGIN_API_ROUTE_AUTH_MODES,
+  PLUGIN_API_ROUTE_CHECKOUT_POLICIES,
+  PLUGIN_API_ROUTE_METHODS,
   ISSUE_PRIORITIES,
+  ROUTINE_CATCH_UP_POLICIES,
+  ROUTINE_CONCURRENCY_POLICIES,
+  ROUTINE_STATUSES,
+  ROUTINE_TRIGGER_KINDS,
+  ROUTINE_TRIGGER_SIGNING_MODES,
+  ISSUE_SURFACE_VISIBILITIES,
 } from "../constants.js";
+import { routineVariableSchema } from "./routine.js";
 import { externalObjectProviderKeySchema, externalObjectTypeSchema } from "./external-object.js";
 
 // ---------------------------------------------------------------------------
@@ -91,32 +102,6 @@ export const pluginWebhookDeclarationSchema = z.object({
 });
 
 export type PluginWebhookDeclarationInput = z.infer<typeof pluginWebhookDeclarationSchema>;
-
-const pluginApiRouteCompanyResolutionSchema = z.discriminatedUnion("from", [
-  z.object({
-    from: z.literal("query"),
-    key: z.string().min(1),
-  }),
-  z.object({
-    from: z.literal("issue"),
-    param: z.string().min(1),
-  }),
-]);
-
-export const pluginApiRouteDeclarationSchema = z.object({
-  routeKey: z.string().min(1),
-  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
-  path: z.string().min(1).refine(
-    (path) => path.startsWith("/") && !/^\/api(?:\/|$)/i.test(path) && !path.includes(".."),
-    "path must stay inside the plugin api namespace",
-  ),
-  auth: z.enum(["board", "agent", "any"]),
-  capability: z.enum(PLUGIN_CAPABILITIES),
-  checkoutPolicy: z.enum(["none", "required-for-agent-in-progress", "always-for-agent"]).optional(),
-  companyResolution: pluginApiRouteCompanyResolutionSchema.optional(),
-});
-
-export type PluginApiRouteDeclarationInput = z.infer<typeof pluginApiRouteDeclarationSchema>;
 
 /**
  * Validates a {@link PluginToolDeclaration} — an agent tool contributed by the
@@ -234,12 +219,43 @@ export type PluginManagedProjectDeclarationInput = z.infer<typeof pluginManagedP
 
 const pluginManagedResourceRefSchema = z.object({
   pluginKey: z.string().min(1).max(100).optional(),
-  resourceKind: z.enum(["agent", "project"]),
   resourceKind: z.enum(["agent", "project", "routine", "skill"]),
   resourceKey: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
     message: "resourceKey must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, colons, underscores, or hyphens",
   }),
 });
+
+export const pluginManagedRoutineDeclarationSchema = z.object({
+  routineKey: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
+    message: "routineKey must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, colons, underscores, or hyphens",
+  }),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(10_000).nullable().optional(),
+  assigneeRef: pluginManagedResourceRefSchema.extend({ resourceKind: z.literal("agent") }).nullable().optional(),
+  projectRef: pluginManagedResourceRefSchema.extend({ resourceKind: z.literal("project") }).nullable().optional(),
+  goalId: z.string().uuid().nullable().optional(),
+  status: z.enum(ROUTINE_STATUSES).optional(),
+  priority: z.enum(ISSUE_PRIORITIES).optional(),
+  concurrencyPolicy: z.enum(ROUTINE_CONCURRENCY_POLICIES).optional(),
+  catchUpPolicy: z.enum(ROUTINE_CATCH_UP_POLICIES).optional(),
+  variables: z.array(routineVariableSchema).optional(),
+  triggers: z.array(z.object({
+    kind: z.enum(ROUTINE_TRIGGER_KINDS),
+    label: z.string().trim().max(120).nullable().optional(),
+    enabled: z.boolean().optional(),
+    cronExpression: z.string().trim().min(1).optional().nullable(),
+    timezone: z.string().trim().min(1).optional().nullable(),
+    signingMode: z.enum(ROUTINE_TRIGGER_SIGNING_MODES).optional().nullable(),
+    replayWindowSec: z.number().int().min(30).max(86_400).optional().nullable(),
+  })).max(20).optional(),
+  issueTemplate: z.object({
+    surfaceVisibility: z.enum(ISSUE_SURFACE_VISIBILITIES).optional(),
+    originId: z.string().trim().max(255).nullable().optional(),
+    billingCode: z.string().trim().max(200).nullable().optional(),
+  }).optional(),
+});
+
+export type PluginManagedRoutineDeclarationInput = z.infer<typeof pluginManagedRoutineDeclarationSchema>;
 
 const pluginLocalFolderRelativePathSchema = z.string().min(1).max(500).refine(
   (value) =>
@@ -352,16 +368,16 @@ export const pluginUiSlotDeclarationSchema = z.object({
       path: ["entityTypes"],
     });
   }
-  if (value.routePath && value.type !== "page") {
+  if (value.routePath && value.type !== "page" && value.type !== "routeSidebar" && value.type !== "companySettingsPage") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "routePath is only supported for page slots",
-  if (value.routePath && value.type !== "page" && value.type !== "routeSidebar" && value.type !== "companySettingsPage") {
       message: "routePath is only supported for page, routeSidebar, and companySettingsPage slots",
       path: ["routePath"],
     });
   }
   if (value.type === "routeSidebar" && !value.routePath) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
       message: "routeSidebar slots require routePath",
       path: ["routePath"],
     });
@@ -650,7 +666,7 @@ export type PluginObjectReferenceProviderDeclarationInput = z.infer<
 // ---------------------------------------------------------------------------
 
 /**
- * Zod schema for {@link CiutatisPluginManifestV1} — the complete runtime
+ * Zod schema for {@link PaperclipPluginManifestV1} — the complete runtime
  * validator for plugin manifests read at install time.
  *
  * Field-level constraints (see PLUGIN_SPEC.md §10.1 for the normative rules):
@@ -659,13 +675,13 @@ export type PluginObjectReferenceProviderDeclarationInput = z.infer<
  * |--------------------------|------------|----------------------------------------------|
  * | `id`                     | string     | `^[a-z0-9][a-z0-9._-]*$`                    |
  * | `apiVersion`             | literal 1  | must equal `PLUGIN_API_VERSION`              |
- * | `version`                | string     | semver (`\d+.\d+.\d+`)                    |
+ * | `version`                | string     | semver (`\d+\.\d+\.\d+`)                    |
  * | `displayName`            | string     | 1–100 chars                                  |
  * | `description`            | string     | 1–500 chars                                  |
  * | `author`                 | string     | 1–200 chars                                  |
  * | `categories`             | enum[]     | at least one; values from PLUGIN_CATEGORIES  |
  * | `minimumHostVersion`     | string?    | semver lower bound if present, no leading `v`|
- * | `minimumCiutatisVersion`| string?    | legacy alias of `minimumHostVersion`         |
+ * | `minimumPaperclipVersion`| string?    | legacy alias of `minimumHostVersion`         |
  * | `capabilities`           | enum[]     | at least one; values from PLUGIN_CAPABILITIES|
  * | `entrypoints.worker`     | string     | min 1 char                                   |
  * | `entrypoints.ui`         | string?    | required when `ui.slots` is declared         |
@@ -673,13 +689,17 @@ export type PluginObjectReferenceProviderDeclarationInput = z.infer<
  * Cross-field rules enforced via `superRefine`:
  * - `entrypoints.ui` required when `ui.slots` declared
  * - `agent.tools.register` capability required when `tools` declared
+ * - `environment.drivers.register` capability required when `environmentDrivers` declared
+ * - `jobs.schedule` capability required when `jobs` declared
+ * - `webhooks.receive` capability required when `webhooks` declared
  * - duplicate `jobs[].jobKey` values are rejected
  * - duplicate `webhooks[].endpointKey` values are rejected
  * - duplicate `tools[].name` values are rejected
+ * - duplicate `environmentDrivers[].driverKey` values are rejected
  * - duplicate `ui.slots[].id` values are rejected
  *
  * @see PLUGIN_SPEC.md §10.1 — Manifest shape
- * @see {@link CiutatisPluginManifestV1} — the inferred TypeScript type
+ * @see {@link PaperclipPluginManifestV1} — the inferred TypeScript type
  */
 export const pluginManifestV1Schema = z.object({
   id: z.string().min(1).regex(
@@ -699,9 +719,9 @@ export const pluginManifestV1Schema = z.object({
     /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
     "minimumHostVersion must follow semver (e.g. 1.0.0)",
   ).optional(),
-  minimumCiutatisVersion: z.string().regex(
+  minimumPaperclipVersion: z.string().regex(
     /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
-    "minimumCiutatisVersion must follow semver (e.g. 1.0.0)",
+    "minimumPaperclipVersion must follow semver (e.g. 1.0.0)",
   ).optional(),
   capabilities: z.array(z.enum(PLUGIN_CAPABILITIES)).min(1),
   entrypoints: z.object({
@@ -711,19 +731,15 @@ export const pluginManifestV1Schema = z.object({
   instanceConfigSchema: jsonSchemaSchema.optional(),
   jobs: z.array(pluginJobDeclarationSchema).optional(),
   webhooks: z.array(pluginWebhookDeclarationSchema).optional(),
-  apiRoutes: z.array(pluginApiRouteDeclarationSchema).optional(),
   tools: z.array(pluginToolDeclarationSchema).optional(),
+  database: pluginDatabaseDeclarationSchema.optional(),
+  apiRoutes: z.array(pluginApiRouteDeclarationSchema).optional(),
+  environmentDrivers: z.array(pluginEnvironmentDriverDeclarationSchema).optional(),
   agents: z.array(pluginManagedAgentDeclarationSchema).optional(),
   projects: z.array(pluginManagedProjectDeclarationSchema).optional(),
-  localFolders: z.array(pluginLocalFolderDeclarationSchema).optional(),
-  environmentDrivers: z.array(pluginEnvironmentDriverDeclarationSchema).optional(),
-  database: z.object({
-    namespaceSlug: z.string().min(1).max(100).optional(),
-    migrationsDir: z.string().min(1),
-    coreReadTables: z.array(z.string().min(1)).optional(),
-  }).optional(),
   routines: z.array(pluginManagedRoutineDeclarationSchema).optional(),
   skills: z.array(pluginManagedSkillDeclarationSchema).optional(),
+  localFolders: z.array(pluginLocalFolderDeclarationSchema).optional(),
   objectReferences: z.array(pluginObjectReferenceProviderDeclarationSchema).optional(),
   launchers: z.array(pluginLauncherDeclarationSchema).optional(),
   ui: z.object({
@@ -746,12 +762,12 @@ export const pluginManifestV1Schema = z.object({
 
   if (
     manifest.minimumHostVersion
-    && manifest.minimumCiutatisVersion
-    && manifest.minimumHostVersion !== manifest.minimumCiutatisVersion
+    && manifest.minimumPaperclipVersion
+    && manifest.minimumHostVersion !== manifest.minimumPaperclipVersion
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "minimumHostVersion and minimumCiutatisVersion must match when both are declared",
+      message: "minimumHostVersion and minimumPaperclipVersion must match when both are declared",
       path: ["minimumHostVersion"],
     });
   }
@@ -865,8 +881,6 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
-  if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
-    if (!manifest.capabilities.includes("environment.drivers.register")) {
   if (manifest.objectReferences && manifest.objectReferences.length > 0) {
     for (const capability of ["external.objects.detect", "external.objects.read"] as const) {
       if (!manifest.capabilities.includes(capability)) {
@@ -912,108 +926,8 @@ export const pluginManifestV1Schema = z.object({
     if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (manifest.localFolders && manifest.localFolders.length > 0) {
-    if (!manifest.capabilities.includes("local.folders")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'local.folders' is required when localFolders are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (manifest.agents && manifest.agents.length > 0) {
-    if (!manifest.capabilities.includes("agents.managed")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'agents.managed' is required when managed agents are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (manifest.projects && manifest.projects.length > 0) {
-    if (!manifest.capabilities.includes("projects.managed")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'projects.managed' is required when managed projects are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (manifest.database) {
-    if (!manifest.capabilities.includes("database.namespace.write")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'database.namespace.write' is required when database is declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (
-    manifest.minimumHostVersion
-    && manifest.minimumCiutatisVersion
-    && manifest.minimumHostVersion !== manifest.minimumCiutatisVersion
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "minimumHostVersion and minimumCiutatisVersion must match when both are declared",
-      path: ["minimumHostVersion"],
-    });
-  }
-
-  // ── Capability ↔ feature declaration consistency ───────────────────────
-  // The host enforces capabilities at install and runtime. A plugin must
-  // declare every capability it needs up-front; silently having more features
-  // than capabilities would cause runtime rejections.
-
-  // tools require agent.tools.register (PLUGIN_SPEC.md §11)
-  if (manifest.tools && manifest.tools.length > 0) {
-    if (!manifest.capabilities.includes("agent.tools.register")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'agent.tools.register' is required when tools are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  // jobs require jobs.schedule (PLUGIN_SPEC.md §17)
-  if (manifest.jobs && manifest.jobs.length > 0) {
-    if (!manifest.capabilities.includes("jobs.schedule")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'jobs.schedule' is required when jobs are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  // webhooks require webhooks.receive (PLUGIN_SPEC.md §18)
-  if (manifest.webhooks && manifest.webhooks.length > 0) {
-    if (!manifest.capabilities.includes("webhooks.receive")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'webhooks.receive' is required when webhooks are declared",
-        path: ["capabilities"],
-      });
-    }
-  }
-
-  if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
-    if (!manifest.capabilities.includes("environment.drivers.register")) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
-        path: ["capabilities"],
+        message: `Duplicate database coreReadTables: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["database", "coreReadTables"],
       });
     }
   }
@@ -1048,6 +962,27 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  if (manifest.apiRoutes) {
+    const routeKeys = manifest.apiRoutes.map((route) => route.routeKey);
+    const duplicateKeys = routeKeys.filter((key, i) => routeKeys.indexOf(key) !== i);
+    if (duplicateKeys.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate api route keys: ${[...new Set(duplicateKeys)].join(", ")}`,
+        path: ["apiRoutes"],
+      });
+    }
+    const routeSignatures = manifest.apiRoutes.map((route) => `${route.method} ${route.path}`);
+    const duplicateRoutes = routeSignatures.filter((sig, i) => routeSignatures.indexOf(sig) !== i);
+    if (duplicateRoutes.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate api routes: ${[...new Set(duplicateRoutes)].join(", ")}`,
+        path: ["apiRoutes"],
+      });
+    }
+  }
+
   // tool names must be unique within the plugin (namespaced at runtime)
   if (manifest.tools) {
     const toolNames = manifest.tools.map((t) => t.name);
@@ -1061,8 +996,9 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  // environment driver keys must be unique within the plugin
   if (manifest.environmentDrivers) {
-    const driverKeys = manifest.environmentDrivers.map((driver) => driver.driverKey);
+    const driverKeys = manifest.environmentDrivers.map((d) => d.driverKey);
     const duplicates = driverKeys.filter((key, i) => driverKeys.indexOf(key) !== i);
     if (duplicates.length > 0) {
       ctx.addIssue({

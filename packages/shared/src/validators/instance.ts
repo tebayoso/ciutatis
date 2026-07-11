@@ -1,7 +1,20 @@
 import { z } from "zod";
-import { TENANT_INSTANCE_STATUSES } from "../constants.js";
+import { DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE } from "../types/feedback.js";
+import {
+  DAILY_RETENTION_PRESETS,
+  WEEKLY_RETENTION_PRESETS,
+  MONTHLY_RETENTION_PRESETS,
+  DEFAULT_BACKUP_RETENTION,
+  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+} from "../types/instance.js";
+import { feedbackDataSharingPreferenceSchema } from "./feedback.js";
+import {
+  TENANT_ROUTING_MODES,
+  TENANT_INSTANCE_STATUSES,
+} from "../constants.js";
 
-export const TENANT_DEFAULT_ROUTING_MODES = ["path", "subdomain", "custom_domain"] as const;
 function presetSchema<T extends readonly number[]>(presets: T, label: string) {
   return z.number().refine(
     (v): v is T[number] => (presets as readonly number[]).includes(v),
@@ -47,7 +60,6 @@ export const instanceExperimentalSettingsSchema = z.object({
   enableServerInfoDebugView: z.boolean().default(false),
   autoRestartDevServerWhenIdle: z.boolean().default(false),
   enableIssueGraphLivenessAutoRecovery: z.boolean().default(false),
-  issueGraphLivenessAutoRecoveryLookbackHours: z.number().default(24),
   enableWorkspaceBranchReconcileForward: z.boolean().default(true),
   enableWorkspaceDirtyQuarantineRepair: z.boolean().default(true),
   enableWorktreeRunExecution: z.boolean().default(false),
@@ -73,11 +85,39 @@ export const patchInstanceSettingsSchema = z.object({
   defaultEnvironmentId: z.string().uuid().nullable().optional(),
 }).strict();
 
+export const issueGraphLivenessAutoRecoveryRequestSchema = z.object({
+  lookbackHours: z
+    .number()
+    .int()
+    .min(MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS)
+    .max(MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS)
+    .optional(),
+}).strict();
+
+export type InstanceGeneralSettings = z.infer<typeof instanceGeneralSettingsSchema>;
+export type PatchInstanceGeneralSettings = z.infer<typeof patchInstanceGeneralSettingsSchema>;
+export type InstanceExperimentalSettings = z.infer<typeof instanceExperimentalSettingsSchema>;
+export type PatchInstanceExperimentalSettings = z.infer<typeof patchInstanceExperimentalSettingsSchema>;
+export type PatchInstanceSettings = z.infer<typeof patchInstanceSettingsSchema>;
+export type IssueGraphLivenessAutoRecoveryRequest = z.infer<
+  typeof issueGraphLivenessAutoRecoveryRequestSchema
+>;
+
+export const instanceSettingsSchema = z.object({
+  id: z.string().uuid(),
+  defaultEnvironmentId: z.string().uuid().nullable(),
+  general: instanceGeneralSettingsSchema,
+  experimental: instanceExperimentalSettingsSchema,
+  createdAt: z.union([z.date(), z.string().datetime()]),
+  updatedAt: z.union([z.date(), z.string().datetime()]),
+}).strict();
+
+// --- Ciutatis tenant / Cloudflare provisioning validators ---
 export const tenantProvisioningSettingsSchema = z.object({
   baseDomain: z.string().trim().min(1).default("ciutatis.com"),
   pathTemplate: z.string().trim().min(1).default("/{countryCode}/{jurisdictionType}/{routeSegment}"),
   workerNameTemplate: z.string().trim().min(1).default("ciutatis-{countryCode}-{jurisdictionType}-{routeSegment}"),
-  defaultRoutingMode: z.enum(TENANT_DEFAULT_ROUTING_MODES).default("path"),
+  defaultRoutingMode: z.enum(TENANT_ROUTING_MODES).default("path"),
 }).strict();
 
 export const patchTenantProvisioningSettingsSchema = tenantProvisioningSettingsSchema.partial();
@@ -122,23 +162,12 @@ export const cloudflareProvisioningValidationResultSchema = z.object({
 
 export const tenantInstanceStatusSchema = z.enum(TENANT_INSTANCE_STATUSES);
 
-export type InstanceExperimentalSettings = z.infer<typeof instanceExperimentalSettingsSchema>;
-export type PatchInstanceExperimentalSettings = z.infer<typeof patchInstanceExperimentalSettingsSchema>;
 export type TenantProvisioningSettings = z.infer<typeof tenantProvisioningSettingsSchema>;
-export type PatchTenantProvisioningSettings = z.infer<typeof patchTenantProvisioningSettingsSchema>;
-export type CloudflareProvisioningSettings = z.infer<typeof cloudflareProvisioningSettingsSchema>;
-export type PatchCloudflareProvisioningSettings = z.infer<typeof patchCloudflareProvisioningSettingsSchema>;
-export type CloudflareProvisioningValidationResult = z.infer<typeof cloudflareProvisioningValidationResultSchema>;
-export type PatchInstanceSettings = z.infer<typeof patchInstanceSettingsSchema>;
-export type IssueGraphLivenessAutoRecoveryRequest = z.infer<
-  typeof issueGraphLivenessAutoRecoveryRequestSchema
->;
 
-export const instanceSettingsSchema = z.object({
-  id: z.string().uuid(),
-  defaultEnvironmentId: z.string().uuid().nullable(),
-  general: instanceGeneralSettingsSchema,
-  experimental: instanceExperimentalSettingsSchema,
-  createdAt: z.union([z.date(), z.string().datetime()]),
-  updatedAt: z.union([z.date(), z.string().datetime()]),
-}).strict();
+export type PatchTenantProvisioningSettings = z.infer<typeof patchTenantProvisioningSettingsSchema>;
+
+export type CloudflareProvisioningSettings = z.infer<typeof cloudflareProvisioningSettingsSchema>;
+
+export type PatchCloudflareProvisioningSettings = z.infer<typeof patchCloudflareProvisioningSettingsSchema>;
+
+export type CloudflareProvisioningValidationResult = z.infer<typeof cloudflareProvisioningValidationResultSchema>;

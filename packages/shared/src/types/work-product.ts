@@ -1,4 +1,4 @@
-export type RequestWorkProductType =
+export type IssueWorkProductType =
   | "preview_url"
   | "runtime_service"
   | "pull_request"
@@ -7,14 +7,14 @@ export type RequestWorkProductType =
   | "artifact"
   | "document";
 
-export type RequestWorkProductProvider =
+export type IssueWorkProductProvider =
   | "paperclip"
   | "github"
   | "vercel"
   | "s3"
   | "custom";
 
-export type RequestWorkProductStatus =
+export type IssueWorkProductStatus =
   | "active"
   | "ready_for_review"
   | "approved"
@@ -25,26 +25,26 @@ export type RequestWorkProductStatus =
   | "archived"
   | "draft";
 
-export type RequestWorkProductReviewState =
+export type IssueWorkProductReviewState =
   | "none"
   | "needs_board_review"
   | "approved"
   | "changes_requested";
 
-export interface RequestWorkProduct {
+export interface IssueWorkProduct {
   id: string;
   companyId: string;
   projectId: string | null;
   issueId: string;
   executionWorkspaceId: string | null;
   runtimeServiceId: string | null;
-  type: RequestWorkProductType;
-  provider: RequestWorkProductProvider | string;
+  type: IssueWorkProductType;
+  provider: IssueWorkProductProvider | string;
   externalId: string | null;
   title: string;
   url: string | null;
-  status: RequestWorkProductStatus | string;
-  reviewState: RequestWorkProductReviewState;
+  status: IssueWorkProductStatus | string;
+  reviewState: IssueWorkProductReviewState;
   isPrimary: boolean;
   healthStatus: "unknown" | "healthy" | "unhealthy";
   summary: string | null;
@@ -55,11 +55,6 @@ export interface RequestWorkProduct {
   updatedAt: Date;
 }
 
-export type IssueWorkProductType = RequestWorkProductType;
-export type IssueWorkProductProvider = RequestWorkProductProvider;
-export type IssueWorkProductStatus = RequestWorkProductStatus;
-export type IssueWorkProductReviewState = RequestWorkProductReviewState;
-export type IssueWorkProduct = RequestWorkProduct;
 export interface AttachmentArtifactWorkProductMetadata {
   attachmentId: string;
   contentType: string;
@@ -69,3 +64,10 @@ export interface AttachmentArtifactWorkProductMetadata {
   downloadPath: string;
   originalFilename?: string | null;
 }
+
+/** Ciutatis civic aliases */
+export type RequestWorkProduct = IssueWorkProduct;
+export type RequestWorkProductType = IssueWorkProductType;
+export type RequestWorkProductProvider = IssueWorkProductProvider;
+export type RequestWorkProductStatus = IssueWorkProductStatus;
+export type RequestWorkProductReviewState = IssueWorkProductReviewState;

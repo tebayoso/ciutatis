@@ -48,6 +48,11 @@ Current public-site note:
 
 - the live bilingual public site on `ciutatis.com` is served from the `landing/` Next.js app via the edge dispatcher
 - `pnpm dev:landing` runs the standalone landing workspace and is the current production source for `ciutatis.com`
+- core public pages: home, GovOps, Scrutiny, Explore, Portal, Collaborate, Argentina (`/ar`), Account
+- former marketing URLs (`/features`, `/how-it-works`, `/for-governments`, `/for-citizens` + ES) permanently redirect into those core pages
+- topbar uses Product / Public dropdown groups defined in `apps/landing/lib/routes.ts`
+- local landing proxies `/api/*` to `API_INTERNAL_BASE` (default `https://admin.ciutatis.com`; set `API_INTERNAL_BASE=http://localhost:3100` when running the local API)
+- Sentry: public site reports to org `thcargentina` project `ciutatis-public` via `@sentry/nextjs` (see `apps/landing/.env.example`)
 
 Default ports:
 

@@ -1,4 +1,3 @@
-export type { Institution, Institution as Company } from "./institution.js";
 import type { CompanyStatus, PauseReason } from "../constants.js";
 
 export interface Company {

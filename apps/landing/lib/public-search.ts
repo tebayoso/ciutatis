@@ -168,9 +168,18 @@ export async function searchExplorer(query: string): Promise<ExplorerResults> {
 // backfill, so a follow-up boundary lookup has osm ids to work with.
 export async function fetchGeoByPath(path: string): Promise<GeoEntityDetail | null> {
   try {
-    const response = await fetch(`/api/public/geo/by-path?path=${encodeURIComponent(path)}`);
+    const response = await fetch(`/api/public/geo/by-path?path=${encodeURIComponent(path)}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
     if (!response.ok) return null;
-    return (await response.json()) as GeoEntityDetail;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) return null;
+    const data = (await response.json()) as Partial<GeoEntityDetail> | null;
+    if (!data || typeof data !== "object" || typeof data.id !== "string" || typeof data.pathPrefix !== "string") {
+      return null;
+    }
+    return data as GeoEntityDetail;
   } catch {
     return null;
   }
@@ -185,8 +194,13 @@ export async function fetchGeoChildren(
     if (options?.level) params.set("level", options.level);
     if (options?.offset) params.set("offset", String(options.offset));
     if (options?.max) params.set("max", String(options.max));
-    const response = await fetch(`/api/public/geo/children?${params.toString()}`);
+    const response = await fetch(`/api/public/geo/children?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
     if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) return null;
     return (await response.json()) as GeoChildrenPage;
   } catch {
     return null;

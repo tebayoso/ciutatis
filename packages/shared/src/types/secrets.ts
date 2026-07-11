@@ -74,8 +74,6 @@ export interface CompanySecret {
   updatedAt: Date;
 }
 
-// New canonical alias
-export type InstitutionSecret = CompanySecret;
 export interface UserSecretDefinition {
   id: string;
   companyId: string;
@@ -98,6 +96,8 @@ export interface UserSecretDefinition {
 }
 
 export interface UserSecretDeclaration {
+  id: string;
+  companyId: string;
   userSecretDefinitionId: string;
   targetType: SecretBindingTargetType;
   targetId: string;
@@ -107,12 +107,16 @@ export interface UserSecretDeclaration {
   required: boolean;
   allowMissingOverride: boolean;
   label: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface UserSecretCoverageSummary {
   definitionId: string;
   configuredCount: number;
   missingCount: number;
   inactiveCount: number;
+}
 
 export interface SecretProviderDescriptor {
   id: SecretProvider;
@@ -338,3 +342,6 @@ export interface RemoteSecretImportResult {
   errorCount: number;
   results: RemoteSecretImportRowResult[];
 }
+
+/** Ciutatis civic alias */
+export type InstitutionSecret = CompanySecret;

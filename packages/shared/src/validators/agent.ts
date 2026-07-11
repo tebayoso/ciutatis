@@ -1,10 +1,11 @@
 import { z } from "zod";
 import {
-  AGENT_ADAPTER_TYPES,
   AGENT_ICON_NAMES,
   AGENT_ROLES,
   AGENT_STATUSES,
+  INBOX_MINE_ISSUE_STATUS_FILTER,
 } from "../constants.js";
+import { agentAdapterTypeSchema } from "../adapter-type.js";
 import { envConfigSchema } from "./secret.js";
 import { trustAuthorizationPolicySchema, trustPresetSchema } from "./trust-policy.js";
 import { agentDesiredSkillSelectionSchema } from "./adapter-skills.js";
@@ -16,7 +17,6 @@ export const agentPermissionsSchema = z.object({
   authorizationPolicy: trustAuthorizationPolicySchema.optional(),
 }).catchall(z.unknown());
 
-const adapterConfigSchema = z.record(z.unknown()).superRefine((value, ctx) => {
 export const agentInstructionsBundleModeSchema = z.enum(["managed", "external"]);
 
 export const updateAgentInstructionsBundleSchema = z.object({
@@ -31,6 +31,8 @@ export type UpdateAgentInstructionsBundle = z.infer<typeof updateAgentInstructio
 export const upsertAgentInstructionsFileSchema = z.object({
   path: z.string().trim().min(1),
   content: z.string(),
+  clearLegacyPromptTemplate: z.boolean().optional().default(false),
+});
 
 export type UpsertAgentInstructionsFile = z.infer<typeof upsertAgentInstructionsFileSchema>;
 
@@ -73,7 +75,6 @@ export const createAgentSchema = z.object({
   icon: z.enum(AGENT_ICON_NAMES).optional().nullable(),
   reportsTo: z.string().uuid().optional().nullable(),
   capabilities: z.string().optional().nullable(),
-  adapterType: z.enum(AGENT_ADAPTER_TYPES).optional().default("process"),
   desiredSkills: z.array(agentDesiredSkillSelectionSchema).optional(),
   adapterType: agentAdapterTypeSchema,
   adapterConfig: adapterConfigSchema.optional().default({}),
@@ -117,6 +118,7 @@ export const updateAgentSchema = createAgentSchema
   .partial()
   .extend({
     permissions: z.never().optional(),
+    replaceAdapterConfig: z.boolean().optional(),
     status: z.enum(AGENT_STATUSES).optional(),
     spentMonthlyCents: z.number().int().nonnegative().optional(),
   });
@@ -179,6 +181,13 @@ export const createAgentKeySchema = z.object({
 });
 
 export type CreateAgentKey = z.infer<typeof createAgentKeySchema>;
+
+export const agentMineInboxQuerySchema = z.object({
+  userId: z.string().trim().min(1),
+  status: z.string().trim().min(1).optional().default(INBOX_MINE_ISSUE_STATUS_FILTER),
+});
+
+export type AgentMineInboxQuery = z.infer<typeof agentMineInboxQuerySchema>;
 
 export const wakeAgentSchema = z.object({
   source: z.enum(["timer", "assignment", "on_demand", "automation"]).optional().default("on_demand"),

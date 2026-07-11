@@ -3,6 +3,7 @@ import type {
   AgentStatus,
   HeartbeatInvocationSource,
   HeartbeatRunStatus,
+  RunLivenessState,
   WakeupTriggerDetail,
   WakeupRequestStatus,
 } from "../constants.js";
@@ -90,11 +91,27 @@ export interface HeartbeatRun {
   stderrExcerpt: string | null;
   errorCode: string | null;
   externalRunId: string | null;
+  processPid: number | null;
+  processGroupId?: number | null;
+  processStartedAt: Date | null;
+  lastOutputAt: Date | null;
+  lastOutputSeq: number;
+  lastOutputStream: "stdout" | "stderr" | null;
+  lastOutputBytes: number | null;
+  retryOfRunId: string | null;
+  processLossRetryCount: number;
+  scheduledRetryAt?: Date | null;
+  scheduledRetryAttempt?: number;
+  scheduledRetryReason?: string | null;
+  retryExhaustedReason?: string | null;
+  livenessState: RunLivenessState | null;
+  livenessReason: string | null;
+  continuationAttempt: number;
+  lastUsefulActionAt: Date | null;
+  nextAction: string | null;
   contextSnapshot: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
   outputSilence?: HeartbeatRunOutputSilence;
   /**
    * Ephemeral, process-local current status message for an active run. Resolved
@@ -107,6 +124,7 @@ export interface HeartbeatRun {
   currentToolName?: string | null;
   lastAssistantSnippet?: string | null;
   lastEventAt?: Date | string | null;
+}
 
 /**
  * Typed phase labels emitted by the sandbox-managed runtime as it progresses
@@ -142,6 +160,7 @@ export interface HeartbeatRunOutputSilence {
   evaluationIssueId: string | null;
   evaluationIssueIdentifier: string | null;
   evaluationIssueAssigneeAgentId: string | null;
+}
 
 export interface AgentWakeupSkipped {
   status: "skipped";
@@ -151,6 +170,7 @@ export interface AgentWakeupSkipped {
   executionRunId: string | null;
   executionAgentId: string | null;
   executionAgentName: string | null;
+}
 
 export type AgentWakeupResponse = HeartbeatRun | AgentWakeupSkipped;
 
@@ -212,7 +232,7 @@ export interface AgentWakeupRequest {
   payload: Record<string, unknown> | null;
   status: WakeupRequestStatus;
   coalescedCount: number;
-  requestedByActorType: "user" | "agent" | "system" | "plugin" | null;
+  requestedByActorType: "user" | "agent" | "system" | null;
   requestedByActorId: string | null;
   idempotencyKey: string | null;
   runId: string | null;

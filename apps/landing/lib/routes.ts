@@ -10,10 +10,6 @@ export type PublicRoute =
   | "explore"
   | "portal"
   | "collaborate"
-  | "features"
-  | "how-it-works"
-  | "for-governments"
-  | "for-citizens"
   | "argentina"
   | "account"
   | "region";
@@ -25,37 +21,27 @@ type RouteDef = {
   // (with /en/* kept as aliases), Spanish paths carry /es.
   en: string;
   es: string;
-  // Shown in the top navigation (order in this table is nav order).
-  nav: boolean;
   // Marketing/content page: in the sitemap and indexable. App/utility pages
   // (e.g. account) are excluded from the sitemap and get robots noindex.
   indexable: boolean;
 };
 
 const ROUTES: Record<Exclude<PublicRoute, "region">, RouteDef> = {
-  home: { en: "/en", es: "/es", nav: false, indexable: true },
-  govops: { en: "/govops", es: "/es/govops", nav: true, indexable: true },
-  scrutiny: { en: "/scrutiny", es: "/es/escrutinio", nav: true, indexable: true },
-  explore: { en: "/explore", es: "/es/explorar", nav: true, indexable: true },
-  portal: { en: "/portal", es: "/es/portal", nav: true, indexable: true },
-  collaborate: { en: "/collaborate", es: "/es/colaborar", nav: true, indexable: true },
-  features: { en: "/features", es: "/es/funcionalidades", nav: true, indexable: true },
-  "how-it-works": { en: "/how-it-works", es: "/es/como-funciona", nav: false, indexable: true },
-  "for-governments": { en: "/for-governments", es: "/es/para-gobiernos", nav: false, indexable: true },
-  "for-citizens": { en: "/for-citizens", es: "/es/para-ciudadanos", nav: false, indexable: true },
+  home: { en: "/en", es: "/es", indexable: true },
+  govops: { en: "/govops", es: "/es/govops", indexable: true },
+  scrutiny: { en: "/scrutiny", es: "/es/escrutinio", indexable: true },
+  explore: { en: "/explore", es: "/es/explorar", indexable: true },
+  portal: { en: "/portal", es: "/es/portal", indexable: true },
+  collaborate: { en: "/collaborate", es: "/es/colaborar", indexable: true },
   // Country hub for the Argentine geo index; one canonical URL for both locales.
-  argentina: { en: "/ar", es: "/ar", nav: true, indexable: true },
-  account: { en: "/account", es: "/es/cuenta", nav: false, indexable: false },
+  argentina: { en: "/ar", es: "/ar", indexable: true },
+  account: { en: "/account", es: "/es/cuenta", indexable: false },
 };
 
 export const CONTENT_ROUTES = Object.keys(ROUTES) as Array<Exclude<PublicRoute, "region">>;
 
 // Derived views of the registry (kept as named exports for existing callers).
 export const ROUTE_PATHS: Record<Exclude<PublicRoute, "region">, { en: string; es: string }> = ROUTES;
-
-export const NAV_ROUTES = CONTENT_ROUTES.filter(
-  (route): route is Exclude<PublicRoute, "region" | "home"> => ROUTES[route].nav,
-);
 
 export function isIndexableRoute(route: Exclude<PublicRoute, "region">): boolean {
   return ROUTES[route].indexable;
@@ -64,6 +50,107 @@ export function isIndexableRoute(route: Exclude<PublicRoute, "region">): boolean
 export function routePath(locale: Locale, route: Exclude<PublicRoute, "region">): string {
   return ROUTES[route][locale];
 }
+
+/** Section anchors on consolidated pages (used by nav dropdowns + deep links). */
+export type SectionAnchor =
+  | { route: "govops"; hash: "how-it-works" | "features" | "for-governments" }
+  | { route: "home"; hash: "for-citizens" };
+
+export function sectionHref(locale: Locale, section: SectionAnchor): string {
+  return `${routePath(locale, section.route)}#${section.hash}`;
+}
+
+export type NavLabelKey =
+  | "govops"
+  | "scrutiny"
+  | "explore"
+  | "portal"
+  | "collaborate"
+  | "features"
+  | "how-it-works"
+  | "for-governments"
+  | "for-citizens"
+  | "argentina";
+
+export type NavItem =
+  | { kind: "link"; route: Exclude<PublicRoute, "region" | "home" | "account">; labelKey: NavLabelKey }
+  | { kind: "section"; section: SectionAnchor; labelKey: NavLabelKey };
+
+export type NavGroup = {
+  id: "product" | "public";
+  labelKey: "product" | "public";
+  items: NavItem[];
+};
+
+/** Concise topbar: two dropdowns + Argentina. Order is intentional. */
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    id: "product",
+    labelKey: "product",
+    items: [
+      { kind: "link", route: "govops", labelKey: "govops" },
+      { kind: "section", section: { route: "govops", hash: "how-it-works" }, labelKey: "how-it-works" },
+      { kind: "section", section: { route: "govops", hash: "features" }, labelKey: "features" },
+      { kind: "section", section: { route: "govops", hash: "for-governments" }, labelKey: "for-governments" },
+    ],
+  },
+  {
+    id: "public",
+    labelKey: "public",
+    items: [
+      { kind: "link", route: "scrutiny", labelKey: "scrutiny" },
+      { kind: "link", route: "explore", labelKey: "explore" },
+      { kind: "link", route: "portal", labelKey: "portal" },
+      { kind: "link", route: "collaborate", labelKey: "collaborate" },
+      { kind: "section", section: { route: "home", hash: "for-citizens" }, labelKey: "for-citizens" },
+    ],
+  },
+];
+
+export const NAV_TOP_LINKS: Array<Exclude<PublicRoute, "region" | "home" | "account">> = ["argentina"];
+
+/**
+ * Former marketing URLs permanently redirected into core pages.
+ * Kept here so next.config, docs, and resolveRoute stay aligned.
+ * Destination is the consolidated page (no hash — HTTP redirects cannot rely on fragments).
+ */
+export const LEGACY_REDIRECTS: Array<{
+  sources: string[];
+  destination: string;
+}> = [
+  {
+    sources: ["/features", "/en/features"],
+    destination: "/govops",
+  },
+  {
+    sources: ["/es/funcionalidades"],
+    destination: "/es/govops",
+  },
+  {
+    sources: ["/how-it-works", "/en/how-it-works"],
+    destination: "/govops",
+  },
+  {
+    sources: ["/es/como-funciona"],
+    destination: "/es/govops",
+  },
+  {
+    sources: ["/for-governments", "/en/for-governments"],
+    destination: "/govops",
+  },
+  {
+    sources: ["/es/para-gobiernos"],
+    destination: "/es/govops",
+  },
+  {
+    sources: ["/for-citizens", "/en/for-citizens"],
+    destination: "/",
+  },
+  {
+    sources: ["/es/para-ciudadanos"],
+    destination: "/es",
+  },
+];
 
 // Every localized path plus /en/* aliases — used by page.tsx to prerender all
 // content pages without hand-listing slugs.
@@ -121,4 +208,21 @@ export function alternatePath(locale: Locale, route: PublicRoute): string {
   const other: Locale = locale === "en" ? "es" : "en";
   if (route === "region") return "/"; // region pages localize via their own path
   return routePath(other, route);
+}
+
+export function navItemHref(locale: Locale, item: NavItem): string {
+  if (item.kind === "link") return routePath(locale, item.route);
+  return sectionHref(locale, item.section);
+}
+
+export function isNavItemActive(route: PublicRoute, item: NavItem, hash?: string): boolean {
+  if (item.kind === "link") return route === item.route;
+  if (route !== item.section.route) return false;
+  // Section items only highlight when the URL hash matches (avoids marking
+  // "Public" active on every home visit via #for-citizens).
+  return Boolean(hash && hash === item.section.hash);
+}
+
+export function isNavGroupActive(route: PublicRoute, group: NavGroup): boolean {
+  return group.items.some((item) => item.kind === "link" && item.route === route);
 }

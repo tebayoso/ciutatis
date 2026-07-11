@@ -414,3 +414,6 @@ export interface CiutatisPlugin {
 export function definePlugin(definition: PluginDefinition): CiutatisPlugin {
   return Object.freeze({ definition });
 }
+
+/** Upstream Paperclip alias — keep plugin-sdk APIs merge-compatible with Paperclip plugins. */
+export type PaperclipPlugin = CiutatisPlugin;

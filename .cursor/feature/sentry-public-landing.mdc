@@ -1,0 +1,29 @@
+# Sentry on the public landing app
+
+## Project
+
+- Org: `thcargentina` (https://thcargentina.sentry.io)
+- Project slug: `ciutatus-public`
+- Platform: Next.js (`javascript-nextjs`)
+- Team: `ciutatis`
+- DSN configured in `apps/landing/.env.local` (and fallback in SDK init)
+
+## Verification (2026-07-11)
+
+- SDK captures + `/monitoring` tunnel posts succeed from the browser.
+- Ingest returns **429** `organization:error_usage_exceeded` for thcargentina — events are dropped until org error quota is raised or the billing period resets.
+- After quota clears, re-test via `/sentry-example-page`.
+
+## What is instrumented
+
+- Client: `instrumentation-client.ts` — errors, tracing (100%), session replay (100%), logs, feedback widget
+- Server: `sentry.server.config.ts` + `instrumentation.ts` `onRequestError`
+- Edge: `sentry.edge.config.ts`
+- App Router: `app/global-error.tsx`, `app/error.tsx`
+- Tunnel: `/monitoring` (ad-blocker bypass)
+- Source maps: `withSentryConfig` + `SENTRY_AUTH_TOKEN`
+- Verify: `/sentry-example-page` (noindex)
+
+## Env
+
+See `apps/landing/.env.example`.

@@ -1,0 +1,13 @@
+# Spec: plugin extension fork-compat
+
+## Expected
+
+1. `@paperclipai/plugin-sdk` compiles against `@paperclipai/shared` without missing PluginManaged*/IssueThread*/PluginDatabase* exports.
+2. `definePlugin()` return type is available as both `CiutatisPlugin` and `PaperclipPlugin`.
+3. `@ciutatis/plugin-ciutatis-compat` builds `dist/manifest.js`, `dist/worker.js`, and `dist/ui/`.
+4. Fork-compat shims (`telemetryEventSchema`, `trackAgentFirstHeartbeat`, `extractSkillMentionIds`, `CIUTATIS_DISABLED_UPSTREAM_FEATURES`, `CIUTATIS_SDK_ALIASES`) export from `@paperclipai/shared` and `@ciutatis/plugin-ciutatis-compat/compat`.
+
+## Edge cases
+
+- Civic types (Institution/Request/Objective, tenant Cloudflare provisioning) must not duplicate upstream Company/Issue exports in barrels.
+- Disabled runtime features keep types for manifests but must not reintroduce routes via the compat plugin.

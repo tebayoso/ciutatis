@@ -1,5 +1,6 @@
 import type {
   AgentAdapterType,
+  ModelProfileKey,
   PauseReason,
   AgentRole,
   AgentStatus,
@@ -91,7 +92,8 @@ export interface Agent {
   capabilities: string | null;
   adapterType: AgentAdapterType;
   adapterConfig: Record<string, unknown>;
-  runtimeConfig: Record<string, unknown>;
+  runtimeConfig: AgentRuntimeConfig;
+  defaultEnvironmentId?: string | null;
   budgetMonthlyCents: number;
   spentMonthlyCents: number;
   pauseReason: PauseReason | null;

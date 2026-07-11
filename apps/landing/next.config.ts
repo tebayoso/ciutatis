@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
+import { LEGACY_REDIRECTS } from "./lib/routes";
+
+// Public API origin for local `next dev`. Production apex routes /api via the
+// dispatcher; landing-only local runs need this rewrite or /api/* falls through
+// the catch-all page and returns HTML (breaking /ar and other public surfaces).
+const API_INTERNAL_BASE = (process.env.API_INTERNAL_BASE || "https://admin.ciutatis.com").replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -8,9 +15,21 @@ const nextConfig: NextConfig = {
   // separately as routes migrate to native SSR.
   typescript: { ignoreBuildErrors: true },
   async redirects() {
+    const legacy = LEGACY_REDIRECTS.flatMap(({ sources, destination }) =>
+      sources.map((source) => ({ source, destination, permanent: true })),
+    );
     return [
       { source: "/", has: [{ type: "host", value: "admin.ciutatis.com" }], destination: "/admin", permanent: false },
       { source: "/:path((?!admin|api|_next)[^.]*)", has: [{ type: "host", value: "admin.ciutatis.com" }], destination: "/admin/:path", permanent: false },
+      ...legacy,
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${API_INTERNAL_BASE}/api/:path*`,
+      },
     ];
   },
   // The admin SPA consumes workspace packages from source (exports -> src),
@@ -26,7 +45,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG ?? "thcargentina",
+  project: process.env.SENTRY_PROJECT ?? "ciutatus-public",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  // Proxy events through Next to reduce ad-blocker drops on the public site.
+  tunnelRoute: "/monitoring",
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});
 
 // Cloudflare Workers (OpenNext) dev integration. Enables `getCloudflareContext()`
 // and worker bindings during `next dev`. No-op outside the Cloudflare dev flow.

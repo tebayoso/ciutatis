@@ -7,11 +7,10 @@ import {
   BarChart3,
   Building2,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   FileSignature,
   FileText,
-  Gauge,
-  GitBranch,
   Globe2,
   Landmark,
   Lock,
@@ -22,15 +21,20 @@ import {
   ShieldCheck,
   UploadCloud,
   UserCircle,
-  Users,
 } from "lucide-react";
 import GeoRegionRouter from "./geo/GeoEntityPage";
 import {
-  NAV_ROUTES,
+  NAV_GROUPS,
+  NAV_TOP_LINKS,
   alternatePath,
+  isNavGroupActive,
+  isNavItemActive,
+  navItemHref,
   resolveRoute,
   routePath,
+  sectionHref,
   type Locale,
+  type NavGroup,
   type PublicRoute,
   type RouteState,
 } from "../lib/routes";
@@ -52,11 +56,13 @@ const adminShellUrl = process.env.NEXT_PUBLIC_ADMIN_SHELL_URL ?? "https://admin.
 const copy = {
   en: {
     nav: {
+      product: "Product",
+      public: "Public",
       govops: "GovOps",
-      scrutiny: "Public Scrutiny",
+      scrutiny: "Scrutiny",
       explore: "Explore",
       argentina: "Argentina",
-      portal: "Public Portal",
+      portal: "Portal",
       collaborate: "Collaborate",
       features: "Features",
       "how-it-works": "How it works",
@@ -69,6 +75,8 @@ const copy = {
       signIn: "Sign in",
       operatorSignIn: "Operator sign in",
       langSwitch: "ES",
+      menu: "Menu",
+      close: "Close",
     },
     home: {
       eyebrow: "Open source GovOps",
@@ -376,11 +384,13 @@ const copy = {
   },
   es: {
     nav: {
+      product: "Producto",
+      public: "Público",
       govops: "GovOps",
-      scrutiny: "Escrutinio Público",
+      scrutiny: "Escrutinio",
       explore: "Explorá",
       argentina: "Argentina",
-      portal: "Portal Público",
+      portal: "Portal",
       collaborate: "Colaborá",
       features: "Funcionalidades",
       "how-it-works": "Cómo funciona",
@@ -393,6 +403,8 @@ const copy = {
       signIn: "Ingresar",
       operatorSignIn: "Ingreso de operadores",
       langSwitch: "EN",
+      menu: "Menú",
+      close: "Cerrar",
     },
     home: {
       eyebrow: "GovOps de código abierto",
@@ -707,6 +719,16 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
     setRouteState(resolveRoute(window.location.pathname));
   }, []);
 
+  // Honor #section deep links after navigation / client hydrate (SEO-friendly anchors).
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [route]);
+
   const altPath = alternatePath(locale, route);
 
   return (
@@ -721,10 +743,6 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
         {route === "explore" ? <ExplorePage locale={locale} /> : null}
         {route === "portal" ? <PortalPage locale={locale} /> : null}
         {route === "collaborate" ? <CollaboratePage locale={locale} /> : null}
-        {route === "features" ? <FeaturesPage locale={locale} /> : null}
-        {route === "how-it-works" ? <HowItWorksPage locale={locale} /> : null}
-        {route === "for-governments" ? <ForGovernmentsPage locale={locale} /> : null}
-        {route === "for-citizens" ? <ForCitizensPage locale={locale} /> : null}
         {route === "account" ? <AccountPage locale={locale} /> : null}
         {route === "region" && regionPath ? <GeoRegionRouter locale={locale} pathPrefix={regionPath} /> : null}
         {route === "argentina" ? <GeoRegionRouter locale={locale} pathPrefix="/ar" /> : null}
@@ -736,57 +754,211 @@ export default function PublicApp({ initialRouteState }: { initialRouteState: Ro
 
 function Header({ locale, route, alternatePath }: { locale: Locale; route: PublicRoute; alternatePath: string }) {
   const t = copy[locale];
-  const links = NAV_ROUTES.map((r) => ({ route: r, label: t.nav[r] }));
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!navRef.current?.contains(event.target as Node)) setOpenGroup(null);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenGroup(null);
+        setMobileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   return (
-    <header className="mx-auto flex w-full max-w-7xl flex-col gap-4 border-b border-[var(--border)] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-12 lg:py-8">
-      <a href={routePath(locale, "home")} className="flex items-center gap-3 text-sm uppercase tracking-[0.2em] text-[var(--ink)] font-serif">
-        <Landmark className="h-5 w-5 text-[var(--accent)]" />
-        <span className="font-semibold">Ciutatis</span>
-      </a>
-      <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-6">
-        <nav className="flex flex-wrap items-center gap-4 text-sm text-[var(--muted-strong)]">
-          {links.map((link) => (
-            <a key={link.route} href={routePath(locale, link.route)} className={route === link.route ? "font-semibold text-[var(--ink)]" : "transition-colors hover:text-[var(--ink)]"}>
-              {link.label}
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--page)]/95 backdrop-blur-sm">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-12 lg:py-4">
+        <a href={routePath(locale, "home")} className="flex shrink-0 items-center gap-2.5 text-sm uppercase tracking-[0.2em] text-[var(--ink)] font-serif">
+          <Landmark className="h-5 w-5 text-[var(--accent)]" />
+          <span className="font-semibold">Ciutatis</span>
+        </a>
+
+        <nav ref={navRef} className="hidden items-center gap-1 md:flex" aria-label="Primary">
+          {NAV_GROUPS.map((group) => (
+            <NavDropdown
+              key={group.id}
+              group={group}
+              locale={locale}
+              route={route}
+              open={openGroup === group.id}
+              onOpenChange={(next) => setOpenGroup(next ? group.id : null)}
+              labels={t.nav}
+            />
+          ))}
+          {NAV_TOP_LINKS.map((r) => (
+            <a
+              key={r}
+              href={routePath(locale, r)}
+              className={`rounded px-3 py-2 text-sm transition-colors ${
+                route === r ? "font-semibold text-[var(--ink)]" : "text-[var(--muted-strong)] hover:text-[var(--ink)]"
+              }`}
+            >
+              {t.nav[r]}
             </a>
           ))}
         </nav>
-        <a href={alternatePath} className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)]">
-          {t.nav.langSwitch}
-        </a>
-        <a className="hidden text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)] sm:block" href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
-          {t.nav.github}
-        </a>
-        <a className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={routePath(locale, "account")}>
-          <UserCircle className="h-4 w-4" />
-          {t.nav.account}
-        </a>
+
+        <div className="flex items-center gap-3 sm:gap-4">
+          <a href={alternatePath} className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)]">
+            {t.nav.langSwitch}
+          </a>
+          <a className="hidden text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--ink)] lg:block" href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer">
+            {t.nav.github}
+          </a>
+          <a className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--ink)] transition-colors hover:text-[var(--accent)]" href={routePath(locale, "account")}>
+            <UserCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.nav.account}</span>
+          </a>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded border border-[var(--border-strong)] px-2.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-[var(--muted-strong)] md:hidden"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            onClick={() => setMobileOpen((v) => !v)}
+          >
+            {mobileOpen ? t.nav.close : t.nav.menu}
+          </button>
+        </div>
       </div>
+
+      {mobileOpen ? (
+        <div id="mobile-nav" className="border-t border-[var(--border)] bg-[var(--page)] md:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.id} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">{t.nav[group.labelKey]}</p>
+                <div className="flex flex-col gap-1">
+                  {group.items.map((item) => {
+                    const href = navItemHref(locale, item);
+                    const label = t.nav[item.labelKey];
+                    return (
+                      <a
+                        key={href + item.labelKey}
+                        href={href}
+                        className={`rounded px-2 py-2 text-sm ${isNavItemActive(route, item) ? "font-semibold text-[var(--ink)]" : "text-[var(--muted-strong)]"}`}
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {label}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {NAV_TOP_LINKS.map((r) => (
+              <a key={r} href={routePath(locale, r)} className="text-sm font-medium text-[var(--ink)]" onClick={() => setMobileOpen(false)}>
+                {t.nav[r]}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </header>
+  );
+}
+
+function NavDropdown({
+  group,
+  locale,
+  route,
+  open,
+  onOpenChange,
+  labels,
+}: {
+  group: NavGroup;
+  locale: Locale;
+  route: PublicRoute;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  labels: (typeof copy)["en"]["nav"];
+}) {
+  const active = isNavGroupActive(route, group);
+  const panelId = `nav-${group.id}`;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1 rounded px-3 py-2 text-sm transition-colors ${
+          active ? "font-semibold text-[var(--ink)]" : "text-[var(--muted-strong)] hover:text-[var(--ink)]"
+        }`}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={panelId}
+        onClick={() => onOpenChange(!open)}
+        onMouseEnter={() => onOpenChange(true)}
+      >
+        {labels[group.labelKey]}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <div
+        id={panelId}
+        role="menu"
+        aria-hidden={!open}
+        className={`absolute left-0 top-full z-50 mt-1 min-w-[13.5rem] rounded border border-[var(--border)] bg-white py-1.5 shadow-sm ${
+          open ? "" : "invisible pointer-events-none"
+        }`}
+        onMouseLeave={() => onOpenChange(false)}
+      >
+        {group.items.map((item) => {
+          const href = navItemHref(locale, item);
+          const label = labels[item.labelKey];
+          return (
+            <a
+              key={href + item.labelKey}
+              role="menuitem"
+              href={href}
+              tabIndex={open ? 0 : -1}
+              className={`block px-3.5 py-2 text-sm transition-colors hover:bg-[var(--panel-strong)] ${
+                isNavItemActive(route, item) ? "font-semibold text-[var(--ink)]" : "text-[var(--muted-strong)]"
+              }`}
+              onClick={() => onOpenChange(false)}
+            >
+              {label}
+            </a>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 function SiteFooter({ locale }: { locale: Locale }) {
   const t = copy[locale];
-  const groups: Array<Exclude<PublicRoute, "region" | "home">> = [
-    "features",
-    "how-it-works",
-    "for-governments",
-    "for-citizens",
+  const core: Array<Exclude<PublicRoute, "region" | "home" | "account">> = [
     "govops",
     "scrutiny",
+    "explore",
     "portal",
+    "collaborate",
+    "argentina",
   ];
   return (
     <footer className="w-full border-t border-[var(--border)]">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-12">
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-[var(--muted-strong)]">
-          {groups.map((r) => (
+        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-[var(--muted-strong)]" aria-label="Footer">
+          {core.map((r) => (
             <a key={r} href={routePath(locale, r)} className="transition-colors hover:text-[var(--ink)]">
               {t.nav[r]}
             </a>
           ))}
+          <a href={sectionHref(locale, { route: "govops", hash: "features" })} className="transition-colors hover:text-[var(--ink)]">
+            {t.nav.features}
+          </a>
+          <a href={sectionHref(locale, { route: "govops", hash: "how-it-works" })} className="transition-colors hover:text-[var(--ink)]">
+            {t.nav["how-it-works"]}
+          </a>
           <a href="https://github.com/tebayoso/ciutatis" target="_blank" rel="noreferrer" className="transition-colors hover:text-[var(--ink)]">
             {t.nav.github}
           </a>
@@ -813,7 +985,7 @@ function HomePage({ locale }: { locale: Locale }) {
         subtitle={t.home.subtitle}
         icon={<Scale className="h-3.5 w-3.5 text-[var(--accent)]" />}
         primary={{ href: routePath(locale, "govops"), label: t.home.ctaPrimary }}
-        secondary={{ href: routePath(locale, "how-it-works"), label: t.home.ctaSecondary }}
+        secondary={{ href: sectionHref(locale, { route: "govops", hash: "how-it-works" }), label: t.home.ctaSecondary }}
       />
       <Divider />
       <PublicSurfaces locale={locale} />
@@ -825,9 +997,10 @@ function HomePage({ locale }: { locale: Locale }) {
 
 function PublicSurfaces({ locale }: { locale: Locale }) {
   const t = copy[locale].distinction;
+  const citizens = copy[locale].forCitizens;
   return (
-    <section className="space-y-10">
-      <SectionIntro eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} />
+    <section id="for-citizens" className="scroll-mt-24 space-y-10">
+      <SectionIntro eyebrow={citizens.eyebrow} title={citizens.title} subtitle={citizens.subtitle} />
       <div className="grid gap-6 lg:grid-cols-3">
         <article className="service-card group flex flex-col">
           <p className="mb-4 inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
@@ -889,7 +1062,17 @@ function GovOpsPage({ locale, compact = false }: { locale: Locale; compact?: boo
           </article>
         ))}
       </div>
-      {!compact ? <Principles locale={locale} /> : null}
+      {!compact ? (
+        <>
+          <Principles locale={locale} />
+          <Divider />
+          <HowItWorksSection locale={locale} />
+          <Divider />
+          <FeaturesSection locale={locale} />
+          <Divider />
+          <ForGovernmentsSection locale={locale} />
+        </>
+      ) : null}
     </section>
   );
 }
@@ -1535,22 +1718,22 @@ function CollaborateResultView({
   );
 }
 
-function FeaturesPage({ locale }: { locale: Locale }) {
+function FeaturesSection({ locale }: { locale: Locale }) {
   const t = copy[locale].features;
   return (
-    <section className="space-y-16">
-      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<Gauge className="h-3.5 w-3.5 text-[var(--accent)]" />} />
+    <section id="features" className="scroll-mt-24 space-y-10" aria-labelledby="features-heading">
+      <SectionIntro eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} titleId="features-heading" />
       <div className="space-y-14">
         {t.groups.map((group) => (
           <div key={group.tag} className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_2fr] lg:items-start">
-            <div className="lg:sticky lg:top-12">
-              <h2 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">{group.tag}</h2>
+            <div className="lg:sticky lg:top-24">
+              <h3 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">{group.tag}</h3>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {group.items.map((item) => (
                 <article key={item.title} className="principle-card">
                   <CheckCircle2 className="mb-4 h-5 w-5 text-[var(--accent)]" />
-                  <h3 className="text-base font-medium text-[var(--ink)] font-serif">{item.title}</h3>
+                  <h4 className="text-base font-medium text-[var(--ink)] font-serif">{item.title}</h4>
                   <p className="mt-3 text-sm leading-relaxed text-[var(--muted-strong)]">{item.body}</p>
                 </article>
               ))}
@@ -1562,11 +1745,11 @@ function FeaturesPage({ locale }: { locale: Locale }) {
   );
 }
 
-function HowItWorksPage({ locale }: { locale: Locale }) {
+function HowItWorksSection({ locale }: { locale: Locale }) {
   const t = copy[locale].howItWorks;
   return (
-    <section className="space-y-16">
-      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<GitBranch className="h-3.5 w-3.5 text-[var(--accent)]" />} />
+    <section id="how-it-works" className="scroll-mt-24 space-y-10" aria-labelledby="how-it-works-heading">
+      <SectionIntro eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} titleId="how-it-works-heading" />
       <ol className="mx-auto w-full max-w-3xl space-y-6">
         {t.steps.map((step) => (
           <li key={step.eyebrow} className="service-card flex gap-5">
@@ -1582,12 +1765,12 @@ function HowItWorksPage({ locale }: { locale: Locale }) {
   );
 }
 
-function ForGovernmentsPage({ locale }: { locale: Locale }) {
+function ForGovernmentsSection({ locale }: { locale: Locale }) {
   const t = copy[locale].forGovernments;
   const icons = [Building2, ShieldCheck, Lock, Globe2];
   return (
-    <section className="space-y-16">
-      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<ShieldCheck className="h-3.5 w-3.5 text-[var(--accent)]" />} />
+    <section id="for-governments" className="scroll-mt-24 space-y-10" aria-labelledby="for-governments-heading">
+      <SectionIntro eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} titleId="for-governments-heading" />
       <div className="grid gap-8 sm:grid-cols-2">
         {t.points.map((point, index) => {
           const Icon = icons[index] ?? CheckCircle2;
@@ -1601,34 +1784,10 @@ function ForGovernmentsPage({ locale }: { locale: Locale }) {
         })}
       </div>
       <div className="flex justify-center">
-        <a className="hero-button-solid" href={routePath(locale, "how-it-works")}>
+        <a className="hero-button-solid" href={sectionHref(locale, { route: "govops", hash: "how-it-works" })}>
           {t.cta}
           <ArrowRight className="h-4 w-4" />
         </a>
-      </div>
-    </section>
-  );
-}
-
-function ForCitizensPage({ locale }: { locale: Locale }) {
-  const t = copy[locale].forCitizens;
-  return (
-    <section className="space-y-12">
-      <Hero eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} icon={<Users className="h-3.5 w-3.5 text-[var(--accent)]" />} />
-      <div className="grid gap-6 lg:grid-cols-3">
-        {t.paths.map((path) => (
-          <article key={path.to} className="service-card flex flex-col">
-            <p className="mb-4 inline-flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-              {path.to === "scrutiny" ? <BarChart3 className="h-4 w-4" /> : path.to === "collaborate" ? <UploadCloud className="h-4 w-4" /> : <Landmark className="h-4 w-4" />} {path.tag}
-            </p>
-            <h3 className="text-2xl font-medium text-[var(--ink)] font-serif">{path.title}</h3>
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted-strong)]">{path.body}</p>
-            <a className={`${path.to === "portal" ? "hero-button-solid" : "hero-button"} mt-6 w-fit`} href={routePath(locale, path.to)}>
-              {path.cta}
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </article>
-        ))}
       </div>
     </section>
   );
@@ -2034,11 +2193,23 @@ function Hero({ eyebrow, title, subtitle, icon, primary, secondary }: { eyebrow:
   );
 }
 
-function SectionIntro({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle: string }) {
+function SectionIntro({
+  eyebrow,
+  title,
+  subtitle,
+  titleId,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  titleId?: string;
+}) {
   return (
     <div className="max-w-3xl space-y-4">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">{eyebrow}</p>
-      <h2 className="text-3xl font-normal tracking-tight text-[var(--ink)] md:text-4xl font-serif">{title}</h2>
+      <h2 id={titleId} className="text-3xl font-normal tracking-tight text-[var(--ink)] md:text-4xl font-serif">
+        {title}
+      </h2>
       <p className="max-w-2xl text-base leading-relaxed text-[var(--muted-strong)] font-serif">{subtitle}</p>
     </div>
   );
@@ -2048,7 +2219,7 @@ function Principles({ locale }: { locale: Locale }) {
   const t = copy[locale].principles;
   return (
     <section className="grid grid-cols-1 gap-12 border-t border-[var(--border)] pt-16 lg:grid-cols-[1fr_2fr] lg:items-start">
-      <div className="lg:sticky lg:top-12">
+      <div className="lg:sticky lg:top-24">
         <h2 className="text-2xl font-normal tracking-tight text-[var(--ink)] font-serif">{t.eyebrow}</h2>
       </div>
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

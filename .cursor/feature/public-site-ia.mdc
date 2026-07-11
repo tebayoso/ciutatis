@@ -1,0 +1,36 @@
+# Public site IA consolidation
+
+## Summary
+
+Public marketing pages were consolidated into a smaller core set with a concise
+dropdown topbar. Former standalone marketing URLs permanently redirect (301)
+into the consolidated pages so crawlers keep equity and avoid soft-404s.
+
+## Core indexable pages
+
+- `/` home (includes `#for-citizens`)
+- `/govops` (includes `#how-it-works`, `#features`, `#for-governments`)
+- `/scrutiny`, `/explore`, `/portal`, `/collaborate`
+- `/ar` + region geo pages
+- `/account` (noindex utility)
+
+## Nav
+
+Topbar groups from `apps/landing/lib/routes.ts` → `NAV_GROUPS`:
+
+- **Product**: GovOps, How it works, Features, For governments
+- **Public**: Scrutiny, Explore, Portal, Collaborate, For citizens
+- **Argentina** top-level link
+
+## SEO sync points
+
+When changing public routes, update:
+
+1. `apps/landing/lib/routes.ts` (paths, nav, `LEGACY_REDIRECTS`)
+2. `apps/landing/lib/site-meta.ts` (`ROUTE_META`)
+3. `apps/landing/app/PublicApp.tsx` (copy + sections)
+4. Sitemap/robots stay derived from the registry
+
+## Legacy redirects
+
+Defined in `LEGACY_REDIRECTS` and applied by `apps/landing/next.config.ts`.

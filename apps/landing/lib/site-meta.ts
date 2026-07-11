@@ -13,24 +13,24 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
     en: {
       title: "Open source GovOps platform for public institutions",
       description:
-        "Ciutatis is the open source, AI-powered GovOps platform: run institutional operations, govern AI execution with approvals and budgets, and keep a public layer for citizens to explore data and work with their government.",
+        "Ciutatis is the open source, AI-powered GovOps platform: run institutional operations, govern AI execution with approvals and budgets, and keep a public layer for citizens to explore data, contribute documents, and work with their government.",
     },
     es: {
       title: "Plataforma GovOps de código abierto para instituciones públicas",
       description:
-        "Ciutatis es la plataforma GovOps de código abierto impulsada por IA: operá instituciones, goberná la ejecución con aprobaciones y presupuestos, y ofrecé una capa pública para explorar datos y trabajar con el gobierno.",
+        "Ciutatis es la plataforma GovOps de código abierto impulsada por IA: operá instituciones, goberná la ejecución con aprobaciones y presupuestos, y ofrecé una capa pública para explorar datos, aportar documentos y trabajar con el gobierno.",
     },
   },
   govops: {
     en: {
-      title: "GovOps — run public institutions with operational clarity",
+      title: "GovOps — operate, govern, and automate public institutions",
       description:
-        "Bring departments, objectives, AI agents, budgets, approvals, and audit logs into one governable operating layer for public institutions.",
+        "Ciutatis GovOps: institutional work control, approvals and budgets, governed AI agents, operating principles, feature inventory, and how the model works end to end for public institutions.",
     },
     es: {
-      title: "GovOps — operá instituciones públicas con claridad",
+      title: "GovOps — operá, goberná y automatizá instituciones públicas",
       description:
-        "Reuní departamentos, objetivos, agentes de IA, presupuestos, aprobaciones y auditoría en una sola capa operativa gobernable para instituciones públicas.",
+        "GovOps de Ciutatis: control del trabajo institucional, aprobaciones y presupuestos, agentes de IA gobernados, principios operativos, funcionalidades y cómo funciona el modelo de extremo a extremo.",
     },
   },
   scrutiny: {
@@ -79,54 +79,6 @@ export const ROUTE_META: Record<Exclude<PublicRoute, "region">, Record<Locale, M
       title: "Colaborá — aportá documentos públicos",
       description:
         "Subí un documento público del gobierno y Ciutatis verifica si ya lo tenemos; los nuevos se analizan y procesan — extrayendo organismos, montos, fechas y ordenanzas en datos buscables y verificables.",
-    },
-  },
-  features: {
-    en: {
-      title: "Features — what Ciutatis does",
-      description:
-        "Institutional work control, governed AI execution, budget hard-stops, operator approvals, audit trails, and a public scrutiny + portal layer — in one open source platform.",
-    },
-    es: {
-      title: "Funcionalidades — qué hace Ciutatis",
-      description:
-        "Control del trabajo institucional, ejecución de IA gobernada, topes de presupuesto, aprobaciones de operador, auditoría y una capa pública de escrutinio y portal — en una plataforma de código abierto.",
-    },
-  },
-  "how-it-works": {
-    en: {
-      title: "How it works — the Ciutatis operating model",
-      description:
-        "How institutions, departments, objectives, AI agents, approvals, and the public layers fit together to keep civic work accountable end to end.",
-    },
-    es: {
-      title: "Cómo funciona — el modelo operativo de Ciutatis",
-      description:
-        "Cómo encajan instituciones, departamentos, objetivos, agentes de IA, aprobaciones y las capas públicas para mantener el trabajo cívico responsable de extremo a extremo.",
-    },
-  },
-  "for-governments": {
-    en: {
-      title: "For governments — operate with accountability",
-      description:
-        "For public institutions and operators: coordinate departments and objectives, use AI as an accountable channel, enforce budgets and approvals, and publish a trustworthy public layer.",
-    },
-    es: {
-      title: "Para gobiernos — operá con rendición de cuentas",
-      description:
-        "Para instituciones públicas y operadores: coordiná áreas y objetivos, usá IA como canal responsable, aplicá presupuestos y aprobaciones, y publicá una capa pública confiable.",
-    },
-  },
-  "for-citizens": {
-    en: {
-      title: "For citizens — explore data and work with your government",
-      description:
-        "For citizens and watchdogs: explore public government data through Public Scrutiny, and submit, track, and follow up on requests through the Public Portal.",
-    },
-    es: {
-      title: "Para ciudadanos — explorá datos y trabajá con tu gobierno",
-      description:
-        "Para ciudadanos y observadores: explorá datos públicos en Escrutinio Público, y enviá, seguí y dale continuidad a pedidos desde el Portal Público.",
     },
   },
   argentina: {

@@ -1,0 +1,38 @@
+# Feature: plugin-ciutatis-compat
+
+## Purpose
+
+Extract Ciutatis fork-specific Paperclip deviations into an installable plugin so upstream plugin extensions stay merge-safe.
+
+## Package
+
+- Name: `@ciutatis/plugin-ciutatis-compat`
+- Path: `packages/plugins/plugin-ciutatis-compat`
+- Plugin id: `ciutatis.fork-compat`
+
+## What it surfaces
+
+- Civic aliases: company→institution, issue→request, goal→objective
+- SDK aliases: PaperclipPlugin↔CiutatisPlugin, PaperclipPluginManifestV1↔CiutatisPluginManifestV1
+- Deferred upstream features catalog (routines runtime, telemetry, board-auth CLI, company-skills library)
+
+## Host wiring
+
+- Thin stubs: `packages/shared/src/fork-compat/upstream-stubs.ts`
+- Civic barrel: `packages/shared/src/civic-exports.ts` re-exported from shared `index.ts`
+- Upstream shared index restored for full plugin type surface
+
+## Build / install
+
+```sh
+pnpm --filter @paperclipai/shared build
+pnpm --filter @paperclipai/plugin-sdk build
+pnpm --filter @ciutatis/plugin-ciutatis-compat build
+pnpm paperclipai plugin install ./packages/plugins/plugin-ciutatis-compat
+```
+
+## Verification (2026-07-11)
+
+- `@paperclipai/shared` typecheck: pass
+- `@paperclipai/plugin-sdk` typecheck: pass
+- `@ciutatis/plugin-ciutatis-compat` typecheck + build: pass

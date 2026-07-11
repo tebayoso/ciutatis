@@ -1,13 +1,3 @@
-export {
-  createInstitutionSchema,
-  createInstitutionSchema as createCompanySchema,
-  updateInstitutionSchema,
-  updateInstitutionSchema as updateCompanySchema,
-  type CreateInstitution,
-  type CreateInstitution as CreateCompany,
-  type UpdateInstitution,
-  type UpdateInstitution as UpdateCompany,
-} from "./institution.js";
 import { z } from "zod";
 import {
   COMPANY_STATUSES,
@@ -54,6 +44,8 @@ export const updateCompanyBrandingSchema = z
   .object({
     name: z.string().min(1).optional(),
     description: z.string().nullable().optional(),
+    brandColor: brandColorSchema,
+    logoAssetId: logoAssetIdSchema,
   })
   .strict()
   .refine(

@@ -1,4 +1,4 @@
-import type { TenantInstance } from "./tenant-instance.js";
+import type { FeedbackDataSharingPreference } from "./feedback.js";
 
 export const DAILY_RETENTION_PRESETS = [3, 7, 14] as const;
 export const WEEKLY_RETENTION_PRESETS = [1, 2, 4] as const;
@@ -42,15 +42,91 @@ export interface InstanceGeneralSettings {
    * Kubernetes sandbox provider and denies local/ssh execution.
    */
   executionMode?: InstanceExecutionMode;
-
-export interface InstanceExperimentalSettings {
-  enableIsolatedWorkspaces: boolean;
-  enableEnvironments?: boolean;
-  enableIssueGraphLivenessAutoRecovery?: boolean;
-  issueGraphLivenessAutoRecoveryLookbackHours?: number;
-  autoRestartDevServerWhenIdle?: boolean;
 }
 
+export interface InstanceExperimentalSettings {
+  enableEnvironments: boolean;
+  enableIsolatedWorkspaces: boolean;
+  enableStreamlinedLeftNavigation: boolean;
+  enablePipelines: boolean;
+  enableCases: boolean;
+  enableConferenceRoomChat: boolean;
+  enableTaskWatchdogs: boolean;
+  enableIssuePlanDecompositions: boolean;
+  enableExperimentalFileViewer: boolean;
+  enableCloudSync: boolean;
+  enableExternalObjects: boolean;
+  enableBuiltInAgents: boolean;
+  enableDecisions: boolean;
+  enableGoalsSidebarLink: boolean;
+  enableServerInfoDebugView: boolean;
+  autoRestartDevServerWhenIdle: boolean;
+  enableIssueGraphLivenessAutoRecovery: boolean;
+  enableWorkspaceBranchReconcileForward: boolean;
+  enableWorkspaceDirtyQuarantineRepair: boolean;
+  /**
+   * Worktree preview instances (`PAPERCLIP_IN_WORKTREE=true`) suppress the
+   * heartbeat run engine by default so previews never self-execute tasks. When
+   * this is enabled the worktree-instance scheduling suppression is lifted so
+   * runs actually execute inside the preview. Ignored outside a worktree.
+   */
+  enableWorktreeRunExecution: boolean;
+  /**
+   * Server-managed cutoff recorded when worktree run execution is enabled in
+   * this instance. Client PATCH payloads must not control this value.
+   */
+  worktreeRunExecutionActivatedAt: string | null;
+  /**
+   * Server-managed instance id captured with the cutoff so copied settings rows
+   * from another instance fail closed.
+   */
+  worktreeRunExecutionActivationInstanceId: string | null;
+  issueGraphLivenessAutoRecoveryLookbackHours: number;
+}
+
+export interface InstanceSettings {
+  id: string;
+  defaultEnvironmentId: string | null;
+  general: InstanceGeneralSettings;
+  experimental: InstanceExperimentalSettings;
+  createdAt: Date;
+  updatedAt: Date;
+  tenantProvisioning?: TenantProvisioningSettings;
+  cloudflareProvisioning?: CloudflareProvisioningSettings;
+}
+
+export interface IssueGraphLivenessAutoRecoveryPreviewItem {
+  issueId: string;
+  identifier: string | null;
+  title: string;
+  state: string;
+  severity: string;
+  reason: string;
+  recoveryIssueId: string;
+  recoveryIdentifier: string | null;
+  recoveryTitle: string | null;
+  recommendedOwnerAgentId: string | null;
+  incidentKey: string;
+  latestDependencyUpdatedAt: string;
+  dependencyPath: Array<{
+    issueId: string;
+    identifier: string | null;
+    title: string;
+    status: string;
+  }>;
+}
+
+export interface IssueGraphLivenessAutoRecoveryPreview {
+  lookbackHours: number;
+  cutoff: string;
+  generatedAt: string;
+  findings: number;
+  recoverableFindings: number;
+  skippedOutsideLookback: number;
+  items: IssueGraphLivenessAutoRecoveryPreviewItem[];
+}
+
+// --- Ciutatis tenant / Cloudflare provisioning types ---
 export interface TenantProvisioningSettings {
   baseDomain: string;
   pathTemplate: string;
@@ -127,61 +203,4 @@ export interface InstanceAdminOverview {
     errorMessage: string | null;
     createdAt: Date;
   }>;
-}
-
-export interface InstanceGeneralSettings {
-  instanceName: string;
-  contactEmail: string | null;
-  timezone: string;
-  locale: string;
-  backupRetention?: number;
-  censorUsernameInLogs?: boolean;
-  autoRestartDevServerWhenIdle?: boolean;
-  enableStreamlinedLeftNavigation: boolean;
-  enablePipelines: boolean;
-  enableCases: boolean;
-  enableConferenceRoomChat: boolean;
-  enableTaskWatchdogs: boolean;
-  enableIssuePlanDecompositions: boolean;
-  enableExperimentalFileViewer: boolean;
-  enableCloudSync: boolean;
-  enableExternalObjects: boolean;
-  enableBuiltInAgents: boolean;
-  enableDecisions: boolean;
-  enableGoalsSidebarLink: boolean;
-  enableServerInfoDebugView: boolean;
-  autoRestartDevServerWhenIdle: boolean;
-  enableIssueGraphLivenessAutoRecovery: boolean;
-  enableWorkspaceBranchReconcileForward: boolean;
-  enableWorkspaceDirtyQuarantineRepair: boolean;
-  /**
-   * Worktree preview instances (`PAPERCLIP_IN_WORKTREE=true`) suppress the
-   * heartbeat run engine by default so previews never self-execute tasks. When
-   * this is enabled the worktree-instance scheduling suppression is lifted so
-   * runs actually execute inside the preview. Ignored outside a worktree.
-   */
-  enableWorktreeRunExecution: boolean;
-  /**
-   * Server-managed cutoff recorded when worktree run execution is enabled in
-   * this instance. Client PATCH payloads must not control this value.
-   */
-  worktreeRunExecutionActivatedAt: string | null;
-  /**
-   * Server-managed instance id captured with the cutoff so copied settings rows
-   * from another instance fail closed.
-   */
-  worktreeRunExecutionActivationInstanceId: string | null;
-  issueGraphLivenessAutoRecoveryLookbackHours: number;
-}
-
-export interface InstanceSettings {
-  id: string;
-  defaultEnvironmentId: string | null;
-  general: InstanceGeneralSettings;
-  experimental: InstanceExperimentalSettings;
-  tenants?: TenantInstance[];
-  tenantProvisioning?: TenantProvisioningSettings;
-  cloudflareProvisioning?: CloudflareProvisioningSettings;
-  createdAt: Date;
-  updatedAt: Date;
 }

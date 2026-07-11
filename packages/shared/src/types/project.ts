@@ -1,5 +1,3 @@
-import type { PauseReason, ProjectStatus } from "../constants.js";
-import type { ProjectExecutionWorkspacePolicy, WorkspaceRuntimeService } from "./workspace-runtime.js";
 import type { BudgetWindowKind, PauseReason, ProjectStatus } from "../constants.js";
 import type {
   ProjectExecutionWorkspacePolicy,
@@ -44,8 +42,8 @@ export interface ProjectWorkspace {
   remoteWorkspaceRef: string | null;
   sharedWorkspaceKey: string | null;
   metadata: Record<string, unknown> | null;
+  runtimeConfig: ProjectWorkspaceRuntimeConfig | null;
   isPrimary: boolean;
-  runtimeConfig: Record<string, unknown> | null;
   runtimeServices?: WorkspaceRuntimeService[];
   createdAt: Date;
   updatedAt: Date;

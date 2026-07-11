@@ -1,0 +1,34 @@
+# Project notes (Ciutatis)
+
+## Public site Sentry (2026-07-11)
+
+Landing app wired with `@sentry/nextjs` for org `thcargentina`, project
+`ciutatis-public`. Project creation is blocked for members — an Owner must
+create it, then set `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` in
+`apps/landing/.env.local`. See `.cursor/feature/sentry-public-landing.mdc`.
+
+## Public site IA (2026-07-11)
+
+Marketing pages consolidated to core routes with Product/Public nav dropdowns.
+Legacy `/features`, `/how-it-works`, `/for-governments`, `/for-citizens` (and ES
+equivalents) 301 into `/govops` or `/`. See `.cursor/feature/public-site-ia.mdc`.
+
+Local landing proxies `/api/*` via `API_INTERNAL_BASE` (default
+`https://admin.ciutatis.com`) so `/ar` and other public surfaces get real geo
+JSON instead of the catch-all HTML page. Override to `http://localhost:3100`
+when running the local API.
+
+## Upstream merge branch (`merge/upstream-master-2026-07-11`)
+
+- Merged `upstream/master` conservatively; `main` left untouched.
+- Plugin extension breakage after merge came from hunk-union corruption in `@paperclipai/shared` (validators/types mashed with civic aliases).
+
+## Plugin fork-compat extraction (2026-07-11)
+
+Custom Ciutatis fixes that previously lived as inline stubs in shared are now:
+
+1. **Host shims** — `packages/shared/src/fork-compat/upstream-stubs.ts` (+ `civic-exports.ts` layered on upstream `index.ts`)
+2. **Installable plugin** — `packages/plugins/plugin-ciutatis-compat` (`@ciutatis/plugin-ciutatis-compat`, id `ciutatis.fork-compat`)
+3. **SDK alias** — `PaperclipPlugin` → `CiutatisPlugin` in `packages/plugins/sdk/src/define-plugin.ts`
+
+Plugin extension validators/types (`validators/plugin.ts`, `types/plugin.ts`, managed resource types) are restored from upstream so `@paperclipai/plugin-sdk` typechecks.

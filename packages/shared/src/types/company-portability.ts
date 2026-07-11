@@ -1,37 +1,4 @@
-export type {
-  InstitutionPortabilityInclude,
-  InstitutionPortabilitySecretRequirement,
-  InstitutionPortabilityInstitutionManifestEntry,
-  InstitutionPortabilityAgentManifestEntry,
-  InstitutionPortabilityManifest,
-  InstitutionPortabilityExportResult,
-  InstitutionPortabilitySource,
-  InstitutionPortabilityImportTarget,
-  InstitutionPortabilityAgentSelection,
-  InstitutionPortabilityCollisionStrategy,
-  InstitutionPortabilityPreviewRequest,
-  InstitutionPortabilityPreviewAgentPlan,
-  InstitutionPortabilityPreviewResult,
-  InstitutionPortabilityImportRequest,
-  InstitutionPortabilityImportResult,
-  InstitutionPortabilityExportRequest,
-  InstitutionPortabilityInclude as CompanyPortabilityInclude,
-  InstitutionPortabilitySecretRequirement as CompanyPortabilitySecretRequirement,
-  InstitutionPortabilityInstitutionManifestEntry as CompanyPortabilityCompanyManifestEntry,
-  InstitutionPortabilityAgentManifestEntry as CompanyPortabilityAgentManifestEntry,
-  InstitutionPortabilityManifest as CompanyPortabilityManifest,
-  InstitutionPortabilityExportResult as CompanyPortabilityExportResult,
-  InstitutionPortabilitySource as CompanyPortabilitySource,
-  InstitutionPortabilityImportTarget as CompanyPortabilityImportTarget,
-  InstitutionPortabilityAgentSelection as CompanyPortabilityAgentSelection,
-  InstitutionPortabilityCollisionStrategy as CompanyPortabilityCollisionStrategy,
-  InstitutionPortabilityPreviewRequest as CompanyPortabilityPreviewRequest,
-  InstitutionPortabilityPreviewAgentPlan as CompanyPortabilityPreviewAgentPlan,
-  InstitutionPortabilityPreviewResult as CompanyPortabilityPreviewResult,
-  InstitutionPortabilityImportRequest as CompanyPortabilityImportRequest,
-  InstitutionPortabilityImportResult as CompanyPortabilityImportResult,
-  InstitutionPortabilityExportRequest as CompanyPortabilityExportRequest,
-} from "./institution-portability.js";
+import type { InstitutionPortabilitySecretRequirement } from "./institution-portability.js";
 import type { AgentEnvConfig } from "./secrets.js";
 import type { RoutineVariable } from "./routine.js";
 import type { IssueCommentAuthorType, PermissionKey } from "../constants.js";
@@ -373,3 +340,6 @@ export interface CompanyPortabilityExportRequest {
   expandReferencedSkills?: boolean;
   sidebarOrder?: Partial<CompanyPortabilitySidebarOrder>;
 }
+
+/** Ciutatis civic alias kept for fork API surface */
+export type CompanyPortabilitySecretRequirement = InstitutionPortabilitySecretRequirement;

@@ -1,272 +1,235 @@
-import { z } from "zod";
-
-export const ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY = "";
-export const MODEL_PROFILE_KEYS: string[] = [];
-
-export function isEnvironmentDriverSupportedForAdapter(): boolean {
-  return false;
-}
-
-export type ModelProfileKey = string;
-export type IssueExecutionMonitorClearReason = string;
-// Upstream-only: issue execution monitoring policy (feature removed from Ciutatis)
-export interface IssueExecutionMonitorPolicy {
-  timeoutAt?: string | null;
-  maxAttempts?: number | null;
-  recoveryPolicy?: IssueExecutionMonitorRecoveryPolicy | null;
-  serviceName?: string | null;
-}
-export type IssueExecutionMonitorRecoveryPolicy = string;
-
-export type CompanyPortabilityEnvInput = Record<string, unknown>;
-export type CompanyPortabilityFileEntry = Record<string, unknown>;
-export type CompanyPortabilityExportPreviewResult = Record<string, unknown>;
-export type CompanyPortabilityIssueCommentManifestEntry = Record<string, unknown>;
-export type CompanyPortabilityProjectManifestEntry = Record<string, unknown>;
-export type CompanyPortabilityProjectWorkspaceManifestEntry = Record<string, unknown>;
-export type CompanyPortabilityIssueRoutineManifestEntry = Record<string, unknown>;
-export type CompanyPortabilityIssueRoutineTriggerManifestEntry = Record<string, unknown>;
-export type CompanyPortabilityIssueManifestEntry = Record<string, unknown>;
-export type CompanyPortabilitySidebarOrder = Record<string, unknown>;
-export type CompanySkill = Record<string, unknown>;
-export type RoutineVariable = {
-  name: string;
-  label?: string | null;
-  type?: string;
-  defaultValue?: unknown;
-  required?: boolean;
-  options?: unknown[];
-};
-export interface RoutineListItem {
-  id: string;
-  companyId: string;
-  projectId: string | null;
-  goalId: string | null;
-  parentIssueId: string | null;
-  title: string;
-  description: string | null;
-  assigneeAgentId: string | null;
-  priority: string;
-  status: string;
-  concurrencyPolicy: string;
-  catchUpPolicy: string;
-  variables: Array<{ name: string; [key: string]: unknown }>;
-  latestRevisionId: string | null;
-  latestRevisionNumber: number | null;
-  createdByAgentId: string | null;
-  createdByUserId: string | null;
-  updatedByAgentId: string | null;
-  updatedByUserId: string | null;
-  lastTriggeredAt: Date | string | null;
-  lastEnqueuedAt: Date | string | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  triggers: unknown[];
-  lastRun: unknown | null;
-  activeIssue: unknown | null;
-}
-export type Routine = Omit<RoutineListItem, "triggers" | "lastRun" | "activeIssue"> & {
-  triggers?: unknown[];
-  lastRun?: unknown | null;
-  activeIssue?: unknown | null;
-};
-export interface RoutineRevisionSnapshotTriggerV1 {
-  id?: string;
-  kind?: string;
-  enabled?: boolean;
-  [key: string]: unknown;
-}
-export interface RoutineRevisionSnapshotV1 {
-  version: 1;
-  routine: Partial<Routine>;
-  triggers: RoutineRevisionSnapshotTriggerV1[];
-}
-export interface RoutineRevision {
-  id: string;
-  companyId: string;
-  routineId: string;
-  revisionNumber: number;
-  title: string;
-  description: string | null;
-  snapshot: RoutineRevisionSnapshotV1 | Record<string, unknown>;
-  changeSummary: string | null;
-  restoredFromRevisionId: string | null;
-  createdByAgentId: string | null;
-  createdByUserId: string | null;
-  createdByRunId: string | null;
-  createdAt: Date | string;
-}
-
-export const ROUTINE_CATCH_UP_POLICIES: string[] = [];
-export const ROUTINE_CONCURRENCY_POLICIES: string[] = [];
-export const ROUTINE_STATUSES: string[] = [];
-export const ROUTINE_TRIGGER_KINDS: string[] = [];
-export const ROUTINE_TRIGGER_SIGNING_MODES: string[] = [];
-export const WORKSPACE_BRANCH_ROUTINE_VARIABLE = "workspaceBranch";
-
-export function extractRoutineVariableNames(values: Array<string | null | undefined>): string[] {
-  const names = new Set<string>();
-  const variablePattern = /\{\{\s*([a-zA-Z_][\w.-]*)\s*\}\}/g;
-  for (const value of values) {
-    if (!value) continue;
-    for (const match of value.matchAll(variablePattern)) {
-      const name = match[1];
-      if (name) names.add(name);
-    }
-  }
-  return [...names];
-}
-
-// Upstream-only environment constants (not used in Ciutatis V1)
-export const ENVIRONMENT_DRIVERS = ["local", "ssh", "sandbox", "plugin"] as const;
-export const ENVIRONMENT_LEASE_CLEANUP_STATUSES = ["success", "failed"] as const;
-export const ENVIRONMENT_LEASE_POLICIES = ["ephemeral", "reuse_by_environment", "retain_on_failure", "retain"] as const;
-export const ENVIRONMENT_LEASE_STATUSES = ["active", "pending", "ready", "error", "released", "failed", "expired", "retained"] as const;
-export const ENVIRONMENT_STATUSES = ["active", "inactive", "error", "archived"] as const;
-
-// Upstream-only types for environment system
-export type EnvironmentDriver = typeof ENVIRONMENT_DRIVERS[number];
-export type LocalEnvironmentConfig = Record<string, unknown>;
-export type PluginEnvironmentConfig = Record<string, unknown>;
-export type PluginSandboxEnvironmentConfig = Record<string, unknown>;
-export type SshEnvironmentConfig = Record<string, unknown>;
-export type CreateEnvironment = Record<string, unknown>;
-export type UpdateEnvironment = Record<string, unknown>;
-export type EnvironmentLeaseCleanupStatus = typeof ENVIRONMENT_LEASE_CLEANUP_STATUSES[number];
-export type EnvironmentLeasePolicy = typeof ENVIRONMENT_LEASE_POLICIES[number];
-
-// Upstream-only execution workspace types
-export type ExecutionWorkspaceSummary = Record<string, unknown>;
-export interface ExecutionWorkspaceCloseAction {
-  kind: string;
-  label: string;
-  description: string;
-  command: string | null;
-}
-export type ExecutionWorkspaceCloseGitReadiness = Record<string, unknown>;
-export type ExecutionWorkspaceCloseReadiness = Record<string, unknown>;
-
-// Upstream-only document types
-export function isSystemIssueDocumentKey(_key?: string): boolean {
-  return false;
-}
+export { agentAdapterTypeSchema, optionalAgentAdapterTypeSchema } from "./adapter-type.js";
+export {
+  getAgentOrgChainHealth,
+  getAgentWorkEligibility,
+  isAgentAssignableToWork,
+  isAgentInvokable,
+  isAgentStatusAssignableToWork,
+  isAgentStatusInvokable,
+  type AgentEligibilityAgent,
+  type AgentEligibilityLifecycleReason,
+  type AgentInvalidOrgChainAncestor,
+  type AgentOrgChainEntry,
+  type AgentOrgChainHealth,
+  type AgentOrgChainInvalidReason,
+  type AgentWorkEligibility,
+} from "./agent-eligibility.js";
+export {
+  computePipelineHealth,
+  groupWarningsByStage,
+  isPipelineTerminalStageKind,
+  type PipelineHealthAgentRef,
+  type PipelineHealthFailedAutomationInput,
+  type PipelineHealthInput,
+  type PipelineHealthPipelineRef,
+  type PipelineHealthReport,
+  type PipelineHealthStageInput,
+  type PipelineHealthStageRef,
+  type PipelineHealthWarning,
+  type PipelineHealthWarningCode,
+} from "./pipeline-health.js";
+export {
+  caseTypeMatchesPipeline,
+  deriveCaseType,
+  type CaseTypePipelineRef,
+} from "./pipeline-case-type.js";
+export {
+  deriveResponsibleUser,
+  deriveOriginatingActor,
+  type ResponsibleUserAttribution,
+  type ResponsibleUserSource,
+  type OriginatingActor,
+} from "./issue-attribution.js";
+export {
+  RESPONSIBLE_USER_DENIAL_CODES,
+  describeResponsibleUserDenial,
+  isResponsibleUserDenialCode,
+  responsibleUserLabel,
+  type ResponsibleUserDenialCode,
+  type ResponsibleUserDenialCopy,
+  type ResponsibleUserDenialTone,
+} from "./responsible-user-denial.js";
+export type {
+  AttentionDecisionVerb,
+  AttentionDetailImage,
+  AttentionFeed,
+  AttentionItem,
+  AttentionItemDetail,
+  AttentionItemDismissal,
+  AttentionProjectRef,
+  AttentionSeverity,
+  AttentionSourceKind,
+  AttentionSubject,
+  AttentionSubjectKind,
+  AttentionWorkspaceRef,
+} from "./types/attention.js";
 
 export type {
-  UserProfileDailyPoint,
-  UserProfileIdentity,
-  UserProfileIssueSummary,
-  UserProfileResponse,
-  UserProfileWindowStats,
-} from "./types/user-profile.js";
-export type {
-  CompanySearchHighlight,
-  CompanySearchIssueSummary,
-  CompanySearchResponse,
-  CompanySearchResult,
-  CompanySearchResultType,
-  CompanySearchScope,
-  CompanySearchSnippet,
-} from "./types/search.js";
+  PipelineAutomationRetryBlocker,
+  PipelineAutomationRetryCleanupOptions,
+  PipelineAutomationRetryEffectCounts,
+  PipelineAutomationRetryPlan,
+  PipelineAutomationRetryRequest,
+  PipelineAutomationRetryRoutineRef,
+  PipelineAutomationRetryScope,
+  PipelineAutomationRetryStageRef,
+  PipelineCaseAttachmentOutputItem,
+  PipelineCaseConversationSource,
+  PipelineCaseConversationSourceKind,
+  PipelineCaseConversationSourceLinkRole,
+  PipelineCaseConversationSourceReason,
+  PipelineCaseDocumentOutputItem,
+  PipelineCaseDocumentPayload,
+  PipelineCaseDocumentRevision,
+  PipelineCaseLiveness,
+  PipelineCaseLivenessState,
+  PipelineCaseOutputContextSummary,
+  PipelineCaseOutputContextSummaryItem,
+  PipelineCaseOutputItem,
+  PipelineCaseOutputItemBase,
+  PipelineCaseOutputKind,
+  PipelineCaseOutputSource,
+  PipelineCaseOutputSourceRole,
+  PipelineCaseOutputsResponse,
+  PipelineCaseWorkProductOutputItem,
+  PipelineStageAutomation,
+} from "./types/pipeline.js";
 export {
-  COMPANY_SEARCH_SCOPES,
-} from "./types/search.js";
+  analyzeFrontmatterBlock,
+  asBoolean,
+  asString,
+  asStringArray,
+  detectFrontmatterRoundTripIssues,
+  getSkillFrontmatterUnknownKeys,
+  isPlainRecord as isFrontmatterPlainRecord,
+  joinFrontmatterBlock,
+  parseFrontmatterFields,
+  parseFrontmatterMarkdown,
+  skillFrontmatterKnownKeys,
+  skillFrontmatterSchema,
+  splitFrontmatterBlock,
+  stringifyFrontmatter,
+  type FrontmatterAnalysis,
+  type FrontmatterBlock,
+  type FrontmatterRoundTripIssue,
+  type FrontmatterRoundTripIssueKind,
+  type MarkdownDoc,
+} from "./frontmatter.js";
 export {
-  COMPANY_SEARCH_DEFAULT_LIMIT,
-  COMPANY_SEARCH_MAX_LIMIT,
-  COMPANY_SEARCH_MAX_OFFSET,
-  COMPANY_SEARCH_MAX_QUERY_LENGTH,
-  COMPANY_SEARCH_MAX_TOKENS,
-  companySearchQuerySchema,
-  type CompanySearchQuery,
-} from "./validators/search.js";
-
-// Upstream-only issue reference types
-export type IssueReferenceSourceKind = "title" | "description" | "document" | "comment";
-
-export interface IssueReferenceSource {
-  kind: IssueReferenceSourceKind;
-  sourceRecordId: string | null;
-  label: string;
-  matchedText: string | null;
-}
-
-export interface IssueRelatedWorkItem {
-  issue: IssueRelationIssueSummary;
-  mentionCount: number;
-  sources: IssueReferenceSource[];
-}
-
-export interface IssueRelatedWorkSummary {
-  outbound: IssueRelatedWorkItem[];
-  inbound: IssueRelatedWorkItem[];
-}
-export { extractIssueReferenceMatches, type IssueReferenceMatch } from "./issue-references.js";
-
-// Upstream-only instance settings constants
-export const DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE = "";
-export const DEFAULT_BACKUP_RETENTION = 0;
-export type PatchInstanceGeneralSettings = Record<string, unknown>;
-export const instanceGeneralSettingsSchema = z.object({}).passthrough();
-
-export const telemetryEventSchema = z.object({}).passthrough();
-
+  TRUST_PRESETS,
+  DEFAULT_TRUST_PRESET,
+  LOW_TRUST_REVIEW_PRESET,
+  LOW_TRUST_REVIEW_PRESET_VERSION,
+  LOW_TRUST_REVIEW_RAW_OUTPUT_DISPOSITION,
+  LOW_TRUST_TOOL_CLASSES,
+  type TrustPreset,
+  type LowTrustToolClass,
+  type LowTrustOutputPromotionTarget,
+  type LowTrustBoundary,
+  type LowTrustReviewPresetPolicy,
+  type TrustAuthorizationPolicy,
+  type SourceTrustArtifactKind,
+  type SourceTrustDisposition,
+  type SourceTrustPromotionSource,
+  type SourceTrustMetadata,
+} from "./trust-policy.js";
 export {
-  PUBLIC_PORTAL_LOCALES,
-  PUBLIC_SUBMISSION_MODES,
-  PUBLIC_REQUEST_CATEGORIES,
-  PUBLIC_REQUEST_STATUSES,
-  PUBLIC_REQUEST_UPDATE_KINDS,
-  slugifyPublicText,
-  buildInstitutionPortalSlug,
-  redactPublicText,
-  buildPublicSummary,
-  derivePublicRequestStatus,
-  createPublicRequestId,
-  type PublicPortalLocale,
-  type PublicSubmissionMode,
-  type PublicRequestCategory,
-  type PublicRequestStatus,
-  type PublicRequestUpdateKind,
-} from "./public-portal.js";
-
-export {
-  INSTITUTION_STATUSES,
-  type InstitutionStatus,
   COMPANY_STATUSES,
-  type CompanyStatus,
+  DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES,
+  MAX_COMPANY_ATTACHMENT_MAX_BYTES,
   DEPLOYMENT_MODES,
   DEPLOYMENT_EXPOSURES,
+  BIND_MODES,
   AUTH_BASE_URL_MODES,
-  TENANT_ROUTING_MODES,
-  TENANT_INSTANCE_STATUSES,
-  TENANT_BOOTSTRAP_STATUSES,
-  TENANT_PROVISIONING_JOB_KINDS,
-  TENANT_PROVISIONING_JOB_STATUSES,
-  TENANT_PROVISIONING_JOB_TRIGGERS,
-  TENANT_PROVISIONING_STEPS,
   AGENT_STATUSES,
   AGENT_ADAPTER_TYPES,
   AGENT_ROLES,
   AGENT_ROLE_LABELS,
+  AGENT_DEFAULT_MAX_CONCURRENT_RUNS,
+  WORKSPACE_BRANCH_ROUTINE_VARIABLE,
+  ADAPTER_AGNOSTIC_KEYS,
+  MODEL_PROFILE_KEYS,
   AGENT_ICON_NAMES,
-  REQUEST_STATUSES,
-  type RequestStatus,
-  REQUEST_PRIORITIES,
-  type RequestPriority,
+  PROJECT_ICON_NAMES,
   ISSUE_STATUSES,
+  INBOX_MINE_ISSUE_STATUSES,
+  INBOX_MINE_ISSUE_STATUS_FILTER,
   ISSUE_PRIORITIES,
-  OBJECTIVE_LEVELS,
-  type ObjectiveLevel,
-  OBJECTIVE_STATUSES,
-  type ObjectiveStatus,
+  ISSUE_WORK_MODES,
+  ISSUE_HARNESS_KINDS,
+  MAX_ISSUE_REQUEST_DEPTH,
+  ISSUE_COMMENT_AUTHOR_TYPES,
+  ISSUE_COMMENT_METADATA_ROW_TYPES,
+  ISSUE_COMMENT_PRESENTATION_KINDS,
+  ISSUE_COMMENT_PRESENTATION_TONES,
+  clampIssueRequestDepth,
+  ISSUE_THREAD_INTERACTION_KINDS,
+  ISSUE_THREAD_INTERACTION_STATUSES,
+  ISSUE_THREAD_INTERACTION_CONTINUATION_POLICIES,
+  ISSUE_ORIGIN_KINDS,
+  TASK_WATCHDOG_PRODUCT_BUG_ORIGIN_KIND,
+  ISSUE_WATCHDOG_DISCOVERY_KINDS,
+  ISSUE_SURFACE_VISIBILITIES,
+  ISSUE_RECOVERY_ACTION_KINDS,
+  ISSUE_RECOVERY_ACTION_STATUSES,
+  ISSUE_RECOVERY_ACTION_OWNER_TYPES,
+  ISSUE_RECOVERY_ACTION_OUTCOMES,
+  pluginOperationIssueOriginKind,
+  isPluginOperationIssueOriginKind,
+  ISSUE_RELATION_TYPES,
+  ISSUE_TREE_CONTROL_MODES,
+  ISSUE_TREE_HOLD_RELEASE_POLICY_STRATEGIES,
+  ISSUE_TREE_HOLD_STATUSES,
+  ISSUE_CONTINUATION_SUMMARY_DOCUMENT_KEY,
+  PIPELINE_CASE_BODY_DOCUMENT_KEY,
+  SYSTEM_ISSUE_DOCUMENT_KEYS,
+  isSystemIssueDocumentKey,
+  ISSUE_REFERENCE_SOURCE_KINDS,
+  DOCUMENT_ANNOTATION_THREAD_STATUSES,
+  DOCUMENT_ANNOTATION_ANCHOR_STATES,
+  DOCUMENT_ANNOTATION_ANCHOR_CONFIDENCES,
+  EXTERNAL_OBJECT_STATUS_CATEGORIES,
+  EXTERNAL_OBJECT_STATUS_TONES,
+  EXTERNAL_OBJECT_LIVENESS_STATES,
+  EXTERNAL_OBJECT_MENTION_SOURCE_KINDS,
+  EXTERNAL_OBJECT_MENTION_CONFIDENCES,
+  ISSUE_EXECUTION_POLICY_MODES,
+  ISSUE_EXECUTION_STAGE_TYPES,
+  ISSUE_MONITOR_SCHEDULED_BY,
+  ISSUE_EXECUTION_MONITOR_KINDS,
+  ISSUE_EXECUTION_MONITOR_RECOVERY_POLICIES,
+  ISSUE_EXECUTION_STATE_STATUSES,
+  ISSUE_EXECUTION_MONITOR_STATE_STATUSES,
+  ISSUE_EXECUTION_MONITOR_CLEAR_REASONS,
+  ISSUE_EXECUTION_DECISION_OUTCOMES,
   GOAL_LEVELS,
   GOAL_STATUSES,
   PROJECT_STATUSES,
+  ENVIRONMENT_DRIVERS,
+  ENVIRONMENT_STATUSES,
+  ENVIRONMENT_LEASE_STATUSES,
+  ENVIRONMENT_LEASE_POLICIES,
+  ENVIRONMENT_LEASE_CLEANUP_STATUSES,
+  ENVIRONMENT_CUSTOM_IMAGE_TEMPLATE_KINDS,
+  ENVIRONMENT_CUSTOM_IMAGE_TEMPLATE_STATUSES,
+  ENVIRONMENT_CUSTOM_IMAGE_SETUP_SESSION_STATUSES,
+  ENVIRONMENT_CUSTOM_IMAGE_SETUP_CONNECTION_TYPES,
+  ROUTINE_STATUSES,
+  ROUTINE_CONCURRENCY_POLICIES,
+  ROUTINE_CATCH_UP_POLICIES,
+  ROUTINE_TRIGGER_KINDS,
+  ROUTINE_TRIGGER_SIGNING_MODES,
+  ROUTINE_VARIABLE_TYPES,
+  ROUTINE_RUN_STATUSES,
+  ROUTINE_RUN_SOURCES,
   PAUSE_REASONS,
   PROJECT_COLORS,
   APPROVAL_TYPES,
   APPROVAL_STATUSES,
   SECRET_PROVIDERS,
+  SECRET_PROVIDER_CONFIG_STATUSES,
+  SECRET_PROVIDER_CONFIG_HEALTH_STATUSES,
+  SECRET_SCOPES,
   STORAGE_PROVIDERS,
   BILLING_TYPES,
   FINANCE_EVENT_KINDS,
@@ -280,11 +243,15 @@ export {
   BUDGET_INCIDENT_RESOLUTION_ACTIONS,
   HEARTBEAT_INVOCATION_SOURCES,
   HEARTBEAT_RUN_STATUSES,
+  RUN_LIVENESS_STATES,
   WAKEUP_TRIGGER_DETAILS,
   WAKEUP_REQUEST_STATUSES,
   LIVE_EVENT_TYPES,
   PRINCIPAL_TYPES,
   MEMBERSHIP_STATUSES,
+  COMPANY_MEMBERSHIP_ROLES,
+  HUMAN_COMPANY_MEMBERSHIP_ROLES,
+  HUMAN_COMPANY_MEMBERSHIP_ROLE_LABELS,
   INSTANCE_USER_ROLES,
   INVITE_TYPES,
   INVITE_JOIN_TYPES,
@@ -297,6 +264,7 @@ export {
   PLUGIN_CAPABILITIES,
   PLUGIN_UI_SLOT_TYPES,
   PLUGIN_UI_SLOT_ENTITY_TYPES,
+  PLUGIN_RESERVED_COMPANY_SETTINGS_ROUTE_SEGMENTS,
   PLUGIN_LAUNCHER_PLACEMENT_ZONES,
   PLUGIN_LAUNCHER_ACTIONS,
   PLUGIN_LAUNCHER_BOUNDS,
@@ -306,31 +274,103 @@ export {
   PLUGIN_JOB_RUN_STATUSES,
   PLUGIN_JOB_RUN_TRIGGERS,
   PLUGIN_WEBHOOK_DELIVERY_STATUSES,
+  PLUGIN_DATABASE_NAMESPACE_MODES,
+  PLUGIN_DATABASE_NAMESPACE_STATUSES,
+  PLUGIN_DATABASE_MIGRATION_STATUSES,
+  PLUGIN_DATABASE_CORE_READ_TABLES,
+  PLUGIN_API_ROUTE_METHODS,
+  PLUGIN_API_ROUTE_AUTH_MODES,
+  PLUGIN_API_ROUTE_CHECKOUT_POLICIES,
+  WORKSPACE_OVERVIEW_DEFAULT_LIMIT,
+  WORKSPACE_OVERVIEW_MAX_LIMIT,
+  WORKSPACE_OVERVIEW_LINKED_ISSUE_LIMIT,
+  PIPELINE_AUTOMATION_DEFAULT_TITLE_TEMPLATE,
   PLUGIN_EVENT_TYPES,
   PLUGIN_BRIDGE_ERROR_CODES,
+  type CompanyStatus,
   type DeploymentMode,
   type DeploymentExposure,
+  type BindMode,
   type AuthBaseUrlMode,
-  type TenantRoutingMode,
-  type TenantInstanceStatus,
-  type TenantBootstrapStatus,
-  type TenantProvisioningJobKind,
-  type TenantProvisioningJobStatus,
-  type TenantProvisioningJobTrigger,
-  type TenantProvisioningStep,
   type AgentStatus,
   type AgentAdapterType,
   type AgentRole,
+  type AdapterAgnosticKey,
+  type ModelProfileKey,
   type AgentIconName,
+  type ProjectIconName,
   type IssueStatus,
   type IssuePriority,
+  type IssueWorkMode,
+  type IssueHarnessKind,
+  type IssueCommentAuthorType,
+  type IssueCommentMetadataRowType,
+  type IssueCommentPresentationKind,
+  type IssueCommentPresentationTone,
+  type IssueThreadInteractionKind,
+  type IssueThreadInteractionStatus,
+  type IssueThreadInteractionContinuationPolicy,
+  REQUEST_CHECKBOX_CONFIRMATION_OPTION_LIMIT,
+  REQUEST_ITEM_VERDICTS_ITEM_LIMIT,
+  type BuiltInIssueOriginKind,
+  type PluginIssueOriginKind,
+  type IssueOriginKind,
+  type IssueWatchdogDiscoveryKind,
+  type IssueSurfaceVisibility,
+  type IssueRecoveryActionKind,
+  type IssueRecoveryActionStatus,
+  type IssueRecoveryActionOwnerType,
+  type IssueRecoveryActionOutcome,
+  type IssueRelationType,
+  type IssueTreeControlMode,
+  type IssueTreeHoldReleasePolicyStrategy,
+  type IssueTreeHoldStatus,
+  type SystemIssueDocumentKey,
+  type IssueReferenceSourceKind,
+  type DocumentAnnotationThreadStatus,
+  type DocumentAnnotationAnchorState,
+  type DocumentAnnotationAnchorConfidence,
+  type ExternalObjectStatusCategory,
+  type ExternalObjectStatusTone,
+  type ExternalObjectLivenessState,
+  type ExternalObjectMentionSourceKind,
+  type ExternalObjectMentionConfidence,
+  type IssueExecutionPolicyMode,
+  type IssueExecutionStageType,
+  type IssueMonitorScheduledBy,
+  type IssueExecutionMonitorKind,
+  type IssueExecutionMonitorRecoveryPolicy,
+  type IssueExecutionStateStatus,
+  type IssueExecutionMonitorStateStatus,
+  type IssueExecutionMonitorClearReason,
+  type IssueExecutionDecisionOutcome,
   type GoalLevel,
   type GoalStatus,
   type ProjectStatus,
+  type EnvironmentDriver,
+  type EnvironmentStatus,
+  type EnvironmentLeaseStatus,
+  type EnvironmentLeasePolicy,
+  type EnvironmentLeaseCleanupStatus,
+  type EnvironmentCustomImageTemplateKind,
+  type EnvironmentCustomImageTemplateStatus,
+  type EnvironmentCustomImageSetupSessionStatus,
+  type EnvironmentCustomImageSetupConnectionType,
+  type RoutineStatus,
+  type RoutineConcurrencyPolicy,
+  type RoutineCatchUpPolicy,
+  type RoutineTriggerKind,
+  type RoutineTriggerSigningMode,
+  type RoutineVariableType,
+  type RoutineRunStatus,
+  type RoutineRunSource,
   type PauseReason,
   type ApprovalType,
   type ApprovalStatus,
   type SecretProvider,
+  type SecretProviderConfigStatus,
+  type SecretProviderConfigHealthStatus,
+  type SecretScope,
   type StorageProvider,
   type BillingType,
   type FinanceEventKind,
@@ -344,11 +384,14 @@ export {
   type BudgetIncidentResolutionAction,
   type HeartbeatInvocationSource,
   type HeartbeatRunStatus,
+  type RunLivenessState,
   type WakeupTriggerDetail,
   type WakeupRequestStatus,
   type LiveEventType,
   type PrincipalType,
   type MembershipStatus,
+  type CompanyMembershipRole,
+  type HumanCompanyMembershipRole,
   type InstanceUserRole,
   type InviteType,
   type InviteJoinType,
@@ -360,6 +403,7 @@ export {
   type PluginCapability,
   type PluginUiSlotType,
   type PluginUiSlotEntityType,
+  type PluginReservedCompanySettingsRouteSegment,
   type PluginLauncherPlacementZone,
   type PluginLauncherAction,
   type PluginLauncherBounds,
@@ -369,38 +413,178 @@ export {
   type PluginJobRunStatus,
   type PluginJobRunTrigger,
   type PluginWebhookDeliveryStatus,
+  type PluginDatabaseNamespaceMode,
+  type PluginDatabaseNamespaceStatus,
+  type PluginDatabaseMigrationStatus,
+  type PluginDatabaseCoreReadTable,
+  type PluginApiRouteMethod,
+  type PluginApiRouteAuthMode,
+  type PluginApiRouteCheckoutPolicy,
   type PluginEventType,
   type PluginBridgeErrorCode,
 } from "./constants.js";
 
+export {
+  ALL_INTERFACES_BIND_HOST,
+  LOOPBACK_BIND_HOST,
+  inferBindModeFromHost,
+  isAllInterfacesHost,
+  isLoopbackHost,
+  resolveRuntimeBind,
+  validateConfiguredBindMode,
+} from "./network-bind.js";
+
+export {
+  REDACTED_ENVIRONMENT_CUSTOM_IMAGE_VALUE,
+  redactEnvironmentCustomImageSetupSession,
+  redactEnvironmentCustomImageTemplate,
+  redactEnvironmentCustomImageValue,
+  type EnvironmentCustomImageSetupSessionRedactionInput,
+  type EnvironmentCustomImageTemplateRedactionInput,
+} from "./environment-custom-images.js";
+
 export type {
-  Institution,
   Company,
-  PublicContactSubmission,
-  PublicContactLocale,
-  PublicInstitutionSummary,
-  PublicPlaceSummary,
-  PublicGeoEntity,
-  PublicGeoEntityDetail,
-  PublicGeoChildrenPage,
-  PublicSearchResult,
-  PublicRequestSummary,
-  PublicRequestUpdate,
-  PublicRequestDetail,
-  PublicRequestCreateInput,
-  PublicRequestCreateResult,
-  PublicRequestCommentInput,
-  TenantInstance,
-  TenantProvisioningJobSummary,
+  Environment,
+  EnvironmentDeleteBlastRadius,
+  EnvironmentDeleteBlockedReason,
+  EnvironmentLease,
+  EnvironmentProbeResult,
+  FakeSandboxEnvironmentConfig,
+  LocalEnvironmentConfig,
+  PluginSandboxEnvironmentConfig,
+  PluginEnvironmentConfig,
+  SandboxEnvironmentConfig,
+  SandboxEnvironmentProvider,
+  SshEnvironmentConfig,
+  FeedbackVote,
+  FeedbackDataSharingPreference,
+  FeedbackTargetType,
+  FeedbackVoteValue,
+  FeedbackTrace,
+  FeedbackTraceStatus,
+  FeedbackTraceTargetSummary,
+  FeedbackTraceBundleCaptureStatus,
+  FeedbackTraceBundleFile,
+  FeedbackTraceBundle,
+  CompanySkillSourceType,
+  CompanySkillTrustLevel,
+  CompanySkillCompatibility,
+  CompanySkillSourceBadge,
+  CompanySkillSharingScope,
+  CompanySkillListSort,
+  CompanySkillListInclude,
+  CompanySkillLastEditor,
+  CompanySkillFileInventoryEntry,
+  CompanySkillVersionFileInventoryEntry,
+  CompanySkill,
+  CompanySkillListItem,
+  CompanySkillUsageAgent,
+  CompanySkillDetail,
+  CompanySkillListQuery,
+  CompanySkillCategoryCount,
+  CompanySkillVersion,
+  CompanySkillVersionCreateRequest,
+  CompanySkillStarResult,
+  CompanySkillComment,
+  CompanySkillCommentCreateRequest,
+  CompanySkillCommentUpdateRequest,
+  CompanySkillForkRequest,
+  CompanySkillOriginalSummary,
+  CompanySkillForkSummary,
+  CompanySkillForkReassignment,
+  CompanySkillForkResult,
+  CompanySkillForkPrecheckResult,
+  CompanySkillUpdateRequest,
+  CompanySkillUpdateStatus,
+  CompanySkillAuditSeverity,
+  CompanySkillAuditVerdict,
+  CompanySkillUpdateHoldReason,
+  CompanySkillAuditFinding,
+  CompanySkillAuditResult,
+  CompanySkillInstallUpdateRequest,
+  CompanySkillResetRequest,
+  CompanySkillImportRequest,
+  CompanySkillImportResult,
+  CompanySkillProjectScanRequest,
+  CompanySkillProjectScanSkipped,
+  CompanySkillProjectScanConflict,
+  CompanySkillProjectScanResult,
+  CompanySkillCreateRequest,
+  CompanySkillFileDetail,
+  CompanySkillFileUpdateRequest,
+  CompanySkillFileDeleteRequest,
+  CompanySkillFileDeleteResult,
+  CompanySkillTestRunStatus,
+  CompanySkillTestInput,
+  CompanySkillTestInputCreateRequest,
+  CompanySkillTestInputUpdateRequest,
+  CompanySkillTestRunTemplate,
+  CompanySkillTestRunTemplateCreateRequest,
+  CompanySkillTestRunTemplateUpdateRequest,
+  CompanySkillTestRunTemplateSnapshot,
+  CompanySkillTestRunCostSummary,
+  CompanySkillTestRun,
+  CompanySkillTestRunCreateRequest,
+  CompanySkillTestRunListQuery,
+  CompanySkillTestRunHarnessContentUnavailableReason,
+  CompanySkillTestRunHarnessContent,
+  CompanySkillTestRunDetail,
+  CatalogSkillKind,
+  CatalogSkillFileKind,
+  CatalogSkillFile,
+  CatalogSkillGitHubSource,
+  CatalogSkillSource,
+  CatalogSkill,
+  CatalogSkillListQuery,
+  CatalogSkillFileDetail,
+  CompanySkillInstallCatalogRequest,
+  CompanySkillInstallCatalogResult,
+  CatalogTeamKind,
+  CatalogTeamTrustLevel,
+  CatalogTeamCompatibility,
+  CatalogTeamFileKind,
+  CatalogTeamSkillRequirementType,
+  CatalogTeamSkillRequirement,
+  CatalogTeamEnvInputSummary,
+  CatalogTeamSourceRef,
+  CatalogTeamFile,
+  CatalogTeam,
+  CatalogManifest,
+  CatalogTeamListQuery,
+  CatalogTeamFileDetail,
+  CatalogTeamSourcePolicy,
+  CatalogTeamImportOptions,
+  CatalogTeamInstallOptions,
+  CatalogTeamSkillPreparationAction,
+  CatalogTeamSkillPreparation,
+  CatalogTeamImportPreviewResult,
+  CatalogTeamInstallResult,
+  InstalledCatalogTeam,
+  AgentSkillSyncMode,
+  AgentSkillState,
+  AgentSkillOrigin,
+  AgentDesiredSkillEntry,
+  AgentSkillEntry,
+  AgentSkillSnapshot,
+  AgentSkillSyncRequest,
+  InstanceExecutionMode,
   InstanceExperimentalSettings,
-  InstanceSettings,
   InstanceGeneralSettings,
-  CloudflareProvisioningSettings,
-  CloudflareProvisioningValidationResult,
-  InstanceAdminOverview,
-  TenantProvisioningJob,
+  InstanceSettings,
+  IssueGraphLivenessAutoRecoveryPreview,
+  IssueGraphLivenessAutoRecoveryPreviewItem,
+  BackupRetentionPolicy,
   Agent,
+  AgentAccessState,
+  AgentChainOfCommandEntry,
+  AgentDetail,
+  ClearAgentErrorResponse,
   AgentPermissions,
+  AgentInstructionsBundleMode,
+  AgentInstructionsFileSummary,
+  AgentInstructionsFileDetail,
+  AgentInstructionsBundle,
   AgentKeyCreated,
   AgentConfigRevision,
   AdapterEnvironmentCheckLevel,
@@ -409,15 +593,67 @@ export type {
   AdapterEnvironmentTestResult,
   AssetImage,
   Project,
+  ProjectBudgetSummary,
   ProjectCodebase,
   ProjectCodebaseOrigin,
   ProjectGoalRef,
+  ProjectManagedByPlugin,
   ProjectWorkspace,
+  CompanySearchCountType,
+  CompanySearchFilterOptionCounts,
+  CompanySearchHighlight,
+  CompanySearchArtifactSummary,
+  CompanySearchIssueFilterKey,
+  CompanySearchIssueSummary,
+  CompanySearchResponse,
+  CompanySearchResult,
+  CompanySearchResultType,
+  CompanySearchScope,
+  CompanySearchSnippet,
+  CompanySearchSort,
+  CompanySearchUpdatedWithinOption,
+  CompanySearchZeroResults,
+  CompanySearchZeroResultsLoosenSuggestion,
   ExecutionWorkspace,
+  ExecutionWorkspaceSummary,
+  ExecutionWorkspaceConfig,
+  ExecutionWorkspaceCloseAction,
+  ExecutionWorkspaceCloseActionKind,
+  ExecutionWorkspaceCloseGitReadiness,
+  ExecutionWorkspaceCloseLinkedIssue,
+  ExecutionWorkspaceCloseReadiness,
+  ExecutionWorkspaceCloseReadinessState,
+  WorkspaceOverviewItem,
+  WorkspaceOverviewLinkedIssue,
+  WorkspaceOverviewPrimaryService,
+  WorkspaceOverviewResponse,
+  ProjectWorkspaceRuntimeConfig,
+  WorkspaceCommandDefinition,
+  WorkspaceCommandKind,
+  WorkspaceRuntimeControlTarget,
   WorkspaceRuntimeService,
+  WorkspaceRuntimeServiceStateMap,
   WorkspaceOperation,
   WorkspaceOperationPhase,
   WorkspaceOperationStatus,
+  WorkspaceFileContent,
+  WorkspaceFileContentEncoding,
+  WorkspaceFileListDirectoryItem,
+  WorkspaceFileListFileItem,
+  WorkspaceFileListItem,
+  WorkspaceFileListMode,
+  WorkspaceFileListResponse,
+  WorkspaceFilePreviewKind,
+  WorkspaceFileRef,
+  WorkspaceFileResourceKind,
+  WorkspaceFileSelector,
+  WorkspaceFileWorkspaceKind,
+  ResolvedWorkspaceResource,
+  WorkspaceRuntimeDesiredState,
+  WorkspaceRealizationRecord,
+  WorkspaceRealizationRequest,
+  WorkspaceRealizationSyncStrategy,
+  WorkspaceRealizationTransport,
   ExecutionWorkspaceStrategyType,
   ExecutionWorkspaceMode,
   ExecutionWorkspaceProviderType,
@@ -425,34 +661,167 @@ export type {
   ExecutionWorkspaceStrategy,
   ProjectExecutionWorkspacePolicy,
   ProjectExecutionWorkspaceDefaultMode,
-  RequestWorkProduct,
-  RequestWorkProductType,
-  RequestWorkProductProvider,
-  RequestWorkProductStatus,
-  RequestWorkProductReviewState,
+  IssueExecutionWorkspaceSettings,
   IssueWorkProduct,
   IssueWorkProductType,
   IssueWorkProductProvider,
   IssueWorkProductStatus,
   IssueWorkProductReviewState,
-  Request,
-  RequestAssigneeAdapterOverrides,
-  RequestComment,
-  RequestDocument,
-  RequestDocumentSummary,
-  RequestAttachment,
-  RequestLabel,
+  CompanyArtifact,
+  CompanyArtifactAgentSummary,
+  CompanyArtifactGroup,
+  CompanyArtifactGroupBy,
+  CompanyArtifactIssueSummary,
+  CompanyArtifactMediaKind,
+  CompanyArtifactProjectSummary,
+  CompanyArtifactSource,
+  CompanyArtifactsResponse,
+  CreateDocumentAnnotationCommentRequest,
+  CreateDocumentAnnotationThreadRequest,
+  DocumentAnnotationAnchorRemapSnapshot,
+  DocumentAnnotationAnchorSelector,
+  DocumentAnnotationAnchorSnapshot,
+  DocumentAnnotationComment,
+  DocumentAnnotationTextPositionSelector,
+  DocumentAnnotationTextQuoteSelector,
+  DocumentAnnotationThread,
+  DocumentAnnotationThreadWithComments,
+  PlanReviewContext,
+  PlanReviewContextAuthor,
+  PlanReviewContextComment,
+  PlanReviewContextThread,
+  PlanReviewInteractionContext,
+  PlanReviewInteractionResultContext,
+  PlanReviewInteractionTargetContext,
+  DocumentTextPosition,
+  DocumentTextProjection,
+  DocumentTextRange,
+  UpdateDocumentAnnotationThreadRequest,
+  AttachmentArtifactWorkProductMetadata,
+  ExternalObject,
+  ExternalObjectMention,
+  ExternalObjectMentionGroup,
+  ExternalObjectSummary,
+  ExternalObjectSummaryItem,
+  CompactIssue,
   Issue,
   IssueAssigneeAdapterOverrides,
+  IssueBlockerDiagnosticFlag,
+  IssueBlockerDiagnosticIssueSummary,
+  IssueBlockerDiagnosticNode,
+  IssueBlockerDiagnosticsReadiness,
+  IssueBlockerDiagnosticsResponse,
+  IssueWakeDiagnosticActivityRecord,
+  IssueWakeDiagnosticEvent,
+  IssueWakeDiagnosticWakeFailureClass,
+  IssueWakeDiagnosticWakeRequest,
+  IssueWakeDiagnosticsResponse,
+  IssueSubtreeDiagnosticNode,
+  IssueSubtreeDiagnosticEdge,
+  IssueSubtreeDiagnosticsResponse,
+  IssueBlockerAttention,
+  IssueBlockerAttentionReason,
+  IssueBlockerAttentionState,
+  IssueInboxAttentionKind,
+  IssueBlockedInboxAction,
+  IssueBlockedInboxAttention,
+  IssueBlockedInboxIssueRef,
+  IssueBlockedInboxOwner,
+  IssueBlockedInboxOwnerType,
+  IssueBlockedInboxReason,
+  IssueBlockedInboxSeverity,
+  IssueBlockedInboxState,
+  IssueProductivityReview,
+  IssueProductivityReviewTrigger,
+  IssueRecoveryAction,
+  IssueWatchdog,
+  IssueWatchdogStatus,
+  IssueWatchdogSummary,
+  SuccessfulRunHandoffState,
+  SuccessfulRunHandoffStateKind,
+  IssueScheduledRetry,
+  IssueScheduledRetryStatus,
+  IssueRetryNowOutcome,
+  IssueRetryNowResponse,
+  IssueReferenceSource,
+  IssueRelatedWorkItem,
+  IssueRelatedWorkSummary,
+  IssueExecutionMonitorPolicy,
+  IssueExecutionMonitorState,
+  IssueRelation,
+  IssueRelationIssueSummary,
+  IssueExecutionPolicy,
+  IssueExecutionState,
+  IssueExecutionStage,
+  IssueExecutionStageParticipant,
+  IssueExecutionStagePrincipal,
+  IssueExecutionDecision,
   IssueComment,
+  IssueCommentDerivedAuthorSource,
+  IssueCommentMetadata,
+  IssueCommentMetadataSection,
+  IssueCommentMetadataRow,
+  IssueCommentMetadataTextRow,
+  IssueCommentMetadataCodeRow,
+  IssueCommentMetadataKeyValueRow,
+  IssueCommentMetadataIssueLinkRow,
+  IssueCommentMetadataAgentLinkRow,
+  IssueCommentMetadataRunLinkRow,
+  IssueCommentPresentation,
+  IssueThreadInteractionActorFields,
+  SuggestedTaskDraft,
+  SuggestTasksPayload,
+  SuggestTasksResultCreatedTask,
+  SuggestTasksResult,
+  AskUserQuestionsQuestionOption,
+  AskUserQuestionsQuestion,
+  AskUserQuestionsPayload,
+  AskUserQuestionsAnswer,
+  AskUserQuestionsResult,
+  RequestConfirmationIssueDocumentTarget,
+  RequestConfirmationCustomTarget,
+  RequestConfirmationTarget,
+  RequestConfirmationPayload,
+  RequestConfirmationResult,
+  RequestCheckboxConfirmationOption,
+  RequestCheckboxConfirmationPayload,
+  RequestCheckboxConfirmationResult,
+  RequestItemVerdictValue,
+  RequestItemVerdictsItem,
+  RequestItemVerdictsPayload,
+  RequestItemVerdictsResultItem,
+  RequestItemVerdictsResult,
+  AcceptedPlanDecompositionStatus,
+  AcceptedPlanDecompositionChild,
+  AcceptedPlanDecomposition,
+  AcceptedPlanDecompositionResult,
+  AcceptedPlanDecompositionChildIssue,
+  AcceptedPlanDecompositionSummary,
+  IssueThreadInteractionBase,
+  SuggestTasksInteraction,
+  AskUserQuestionsInteraction,
+  RequestConfirmationInteraction,
+  RequestCheckboxConfirmationInteraction,
+  RequestItemVerdictsInteraction,
+  IssueThreadInteraction,
+  IssueThreadInteractionPayload,
+  IssueThreadInteractionResult,
   IssueDocument,
   IssueDocumentSummary,
-  IssueAttachment,
-  IssueLabel,
   DocumentRevision,
   DocumentFormat,
   LegacyPlanDocument,
-  Objective,
+  IssueAttachment,
+  IssueLabel,
+  IssueTreeControlPreview,
+  IssueTreeHold,
+  IssueTreeHoldMember,
+  IssueTreeHoldReleasePolicy,
+  IssueTreePreviewAgent,
+  IssueTreePreviewIssue,
+  IssueTreePreviewRun,
+  IssueTreePreviewTotals,
+  IssueTreePreviewWarning,
   Goal,
   Approval,
   ApprovalComment,
@@ -464,6 +833,7 @@ export type {
   BudgetIncidentResolutionInput,
   CostEvent,
   CostSummary,
+  IssueCostSummary,
   CostByAgent,
   CostByProviderModel,
   CostByBiller,
@@ -474,65 +844,159 @@ export type {
   FinanceSummary,
   FinanceByBiller,
   FinanceByKind,
+  AgentWakeupResponse,
+  AgentWakeupSkipped,
+  GitWorktreeBranchAncestryVerdict,
+  GitWorktreeBranchIncoherenceEvidence,
+  GitWorktreeInProgressOperation,
   HeartbeatRun,
   HeartbeatRunEvent,
+  HeartbeatRunStatusPhase,
   AgentRuntimeState,
   AgentTaskSession,
   AgentWakeupRequest,
   InstanceSchedulerHeartbeatAgent,
   LiveEvent,
-  DashboardSummary,
   DashboardRunActivityDay,
+  DashboardSummary,
+  TimelineActorType,
+  TimelineEventKind,
+  TimelineEdgeKind,
+  WorkTimelineActor,
+  WorkTimelineSpan,
+  WorkTimelineEvent,
+  WorkTimelineEdge,
+  WorkTimelineResult,
   ActivityEvent,
+  UserProfileActivitySummary,
+  UserProfileAgentUsage,
+  UserProfileDailyPoint,
+  UserProfileIdentity,
+  UserProfileIssueSummary,
+  UserProfileProviderUsage,
+  UserProfileResponse,
+  UserProfileWindowStats,
   SidebarBadges,
-  InstitutionMembership,
+  SidebarOrderPreference,
+  InboxDismissal,
+  InboxDismissalKind,
+  AccessUserProfile,
+  CompanyMemberRecord,
+  CompanyMembersResponse,
   CompanyMembership,
+  CompanyInviteListResponse,
+  CompanyInviteRecord,
   PrincipalPermissionGrant,
   Invite,
   JoinRequest,
+  JoinRequestInviteSummary,
+  JoinRequestRecord,
   InstanceUserRoleGrant,
-  InstitutionPortabilityInclude,
-  InstitutionPortabilitySecretRequirement,
-  InstitutionPortabilityInstitutionManifestEntry,
-  InstitutionPortabilityAgentManifestEntry,
-  InstitutionPortabilityManifest,
-  InstitutionPortabilityExportResult,
-  InstitutionPortabilitySource,
-  InstitutionPortabilityImportTarget,
-  InstitutionPortabilityAgentSelection,
-  InstitutionPortabilityCollisionStrategy,
-  InstitutionPortabilityPreviewRequest,
-  InstitutionPortabilityPreviewAgentPlan,
-  InstitutionPortabilityPreviewResult,
-  InstitutionPortabilityImportRequest,
-  InstitutionPortabilityImportResult,
-  InstitutionPortabilityExportRequest,
+  AdminUserDirectoryEntry,
+  UserCompanyAccessEntry,
+  UserCompanyAccessResponse,
   CompanyPortabilityInclude,
-  CompanyPortabilitySecretRequirement,
+  CompanyPortabilityEnvInput,
+  CompanyPortabilityFileEntry,
   CompanyPortabilityCompanyManifestEntry,
+  CompanyPortabilitySidebarOrder,
   CompanyPortabilityAgentManifestEntry,
+  CompanyPortabilitySkillManifestEntry,
+  CompanyPortabilityProjectManifestEntry,
+  CompanyPortabilityProjectWorkspaceManifestEntry,
+  CompanyPortabilityIssueRoutineTriggerManifestEntry,
+  CompanyPortabilityIssueRoutineManifestEntry,
+  CompanyPortabilityIssueCommentManifestEntry,
+  CompanyPortabilityIssueManifestEntry,
   CompanyPortabilityManifest,
   CompanyPortabilityExportResult,
+  CompanyPortabilityExportPreviewFile,
+  CompanyPortabilityExportPreviewResult,
   CompanyPortabilitySource,
   CompanyPortabilityImportTarget,
   CompanyPortabilityAgentSelection,
   CompanyPortabilityCollisionStrategy,
   CompanyPortabilityPreviewRequest,
   CompanyPortabilityPreviewAgentPlan,
+  CompanyPortabilityPreviewProjectPlan,
+  CompanyPortabilityPreviewIssuePlan,
   CompanyPortabilityPreviewResult,
+  CompanyPortabilityAdapterOverride,
   CompanyPortabilityImportRequest,
   CompanyPortabilityImportResult,
   CompanyPortabilityExportRequest,
   EnvBinding,
+  EnvPlainBinding,
+  EnvSecretRefBinding,
+  EnvUserSecretRefBinding,
   AgentEnvConfig,
-  InstitutionSecret,
   CompanySecret,
+  UserSecretDefinition,
+  UserSecretDeclaration,
+  UserSecretCoverageSummary,
+  CompanySecretProviderConfig,
+  SecretProviderConfigPayload,
+  SecretProviderConfigHealthDetails,
+  SecretProviderConfigHealthResponse,
+  SecretProviderConfigDiscoveryCandidate,
+  SecretProviderConfigDiscoveryPreviewResult,
+  SecretProviderConfigDiscoverySample,
+  SecretProviderConfigDiscoverySignal,
+  CompanySecretBinding,
+  CompanySecretBindingTarget,
+  CompanySecretUsageBinding,
+  CompanySecretVersion,
+  SecretAccessEvent,
+  RemoteSecretImportCandidate,
+  RemoteSecretImportCandidateStatus,
+  RemoteSecretImportConflict,
+  RemoteSecretImportPreviewResult,
+  RemoteSecretImportResult,
+  RemoteSecretImportRowResult,
+  RemoteSecretImportRowStatus,
+  SecretAccessOutcome,
+  SecretBindingTargetType,
+  SecretManagedMode,
   SecretProviderDescriptor,
+  SecretStatus,
+  SecretVersionSelector,
+  SecretVersionStatus,
+  Routine,
+  RoutineEnvConfig,
+  RoutineManagedByPlugin,
+  RoutineDescriptionDocument,
+  RoutineVariable,
+  RoutineVariableDefaultValue,
+  RoutineRevisionSnapshotRoutineV1,
+  RoutineRevisionSnapshotTriggerV1,
+  RoutineRevisionSnapshotV1,
+  RoutineRevisionSnapshot,
+  RoutineRevision,
+  RoutineTrigger,
+  RoutineRun,
+  RoutineTriggerSecretMaterial,
+  RoutineDetail,
+  RoutineRunSummary,
+  RoutineExecutionIssueOrigin,
+  RoutineListItem,
   JsonSchema,
   PluginJobDeclaration,
   PluginWebhookDeclaration,
   PluginToolDeclaration,
+  PluginEnvironmentDriverDeclaration,
+  PluginEnvironmentTemplateConfigBinding,
+  PluginManagedAgentDeclaration,
+  PluginManagedProjectDeclaration,
+  PluginManagedRoutineDeclaration,
+  PluginManagedSkillDeclaration,
+  PluginManagedSkillFileDeclaration,
   PluginLocalFolderDeclaration,
+  PluginManagedAgentResolution,
+  PluginManagedProjectResolution,
+  PluginManagedRoutineResolution,
+  PluginManagedSkillResolution,
+  PluginManagedResourceKind,
+  PluginManagedResourceRef,
   PluginUiSlotDeclaration,
   PluginLauncherActionDeclaration,
   PluginLauncherRenderDeclaration,
@@ -540,14 +1004,18 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
-  PluginApiRouteMethod,
-  PluginApiRouteAuthMode,
-  PluginApiRouteCheckoutPolicy,
+  PluginDatabaseDeclaration,
   PluginApiRouteCompanyResolution,
   PluginApiRouteDeclaration,
+  PluginObjectReferenceRefreshPolicy,
+  PluginObjectReferenceProviderDeclaration,
+  PaperclipPluginManifestV1,
   PluginRecord,
+  PluginDatabaseNamespaceRecord,
+  PluginMigrationRecord,
   PluginStateRecord,
   PluginConfig,
+  PluginCompanySettings,
   PluginEntityRecord,
   PluginEntityQuery,
   PluginJobRecord,
@@ -555,65 +1023,212 @@ export type {
   PluginWebhookDeliveryRecord,
   QuotaWindow,
   ProviderQuotaResult,
-  SuccessfulRunHandoffState,
 } from "./types/index.js";
-
-import type { CiutatisPluginManifestV1 } from "./types/index.js";
-export type { CiutatisPluginManifestV1 };
-export type PaperclipPluginManifestV1 = CiutatisPluginManifestV1;
+export { COMPANY_SEARCH_SCOPES, COMPANY_SEARCH_SORTS, COMPANY_SEARCH_UPDATED_WITHIN_OPTIONS } from "./types/index.js";
+export {
+  ISSUE_REFERENCE_IDENTIFIER_RE,
+  buildIssueReferenceHref,
+  extractIssueReferenceIdentifiers,
+  extractIssueReferenceMatches,
+  findIssueReferenceMatches,
+  normalizeIssueIdentifier,
+  parseIssueReferenceHref,
+  type IssueReferenceMatch,
+} from "./issue-references.js";
 
 export {
+  anchorSnapshotToSelector,
+  createDocumentAnchorSelector,
+  normalizeAnchorText,
+  projectMarkdownToText,
+  remapDocumentAnchor,
+  resolveProjectionRange,
+  selectorToAnchorSnapshot,
+  verifyDocumentAnchorSelector,
+  type CreateDocumentAnchorSelectorOptions,
+  type RemapDocumentAnchorInput,
+  type RemapDocumentAnchorResult,
+  type VerifyDocumentAnchorSelectorInput,
+  type VerifyDocumentAnchorSelectorResult,
+} from "./document-anchors.js";
+
+export {
+  formatExternalObjectMentionSourceLabel,
+  type ExternalObjectCanonicalIdentity,
+  type ExternalObjectCanonicalUrl,
+  type ExternalObjectMentionSource,
+  type ExternalObjectUrlCanonicalizationOptions,
+  type ExternalObjectUrlMatch,
+} from "./external-objects.js";
+
+export {
+  sidebarOrderPreferenceSchema,
+  upsertSidebarOrderPreferenceSchema,
+  type UpsertSidebarOrderPreference,
+} from "./validators/sidebar-preferences.js";
+export {
+  resourceMembershipStateSchema,
+  updateResourceMembershipSchema,
+  type UpdateResourceMembership,
+} from "./validators/resource-memberships.js";
+export {
+  RESOURCE_MEMBERSHIP_STATES,
+  type ResourceMembershipResourceType,
+  type ResourceMembershipState,
+  type ResourceMemberships,
+  type ResourceMembershipUpdateResult,
+} from "./types/resource-memberships.js";
+
+export { workspaceRuntimeControlTargetSchema } from "./validators/execution-workspace.js";
+export {
+  findWorkspaceCommandDefinition,
+  listWorkspaceCommandDefinitions,
+  listWorkspaceServiceCommandDefinitions,
+  matchWorkspaceRuntimeServiceToCommand,
+  scoreWorkspaceRuntimeServiceMatch,
+} from "./workspace-commands.js";
+
+export {
+  DEFAULT_FEEDBACK_DATA_SHARING_PREFERENCE,
+  FEEDBACK_TARGET_TYPES,
+  FEEDBACK_DATA_SHARING_PREFERENCES,
+  FEEDBACK_TRACE_STATUSES,
+  FEEDBACK_VOTE_VALUES,
+  DEFAULT_FEEDBACK_DATA_SHARING_TERMS_VERSION,
+} from "./types/feedback.js";
+
+export {
+  DAILY_RETENTION_PRESETS,
+  WEEKLY_RETENTION_PRESETS,
+  MONTHLY_RETENTION_PRESETS,
+  DEFAULT_BACKUP_RETENTION,
+  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+} from "./types/instance.js";
+
+export type {
+  CloudUpstreamConnectStartResponse,
+  CloudUpstreamActivationDecision,
+  CloudUpstreamActivationEntityType,
+  CloudUpstreamConnection,
+  CloudUpstreamConflict,
+  CloudUpstreamPreview,
+  CloudUpstreamRun,
+  CloudUpstreamRunEvent,
+  CloudUpstreamsState,
+  CloudUpstreamStep,
+  CloudUpstreamSummaryCount,
+  CloudUpstreamTarget,
+  CloudUpstreamWarning,
+} from "./types/cloud-upstream.js";
+
+export type { ServerGitInfo, ServerGitLocalChanges, ServerInfoSnapshot } from "./types/server-info.js";
+
+export {
+  getClosedIsolatedExecutionWorkspaceMessage,
+  isClosedIsolatedExecutionWorkspace,
+} from "./execution-workspace-guards.js";
+
+export {
+  instanceSettingsSchema,
+  instanceGeneralSettingsSchema,
+  patchInstanceGeneralSettingsSchema,
+  type PatchInstanceGeneralSettings,
   instanceExperimentalSettingsSchema,
   patchInstanceExperimentalSettingsSchema,
-  tenantProvisioningSettingsSchema,
-  patchTenantProvisioningSettingsSchema,
-  cloudflareProvisioningSettingsSchema,
-  patchCloudflareProvisioningSettingsSchema,
-  cloudflareProvisioningValidationResultSchema,
-  tenantInstanceStatusSchema,
+  patchInstanceSettingsSchema,
+  issueGraphLivenessAutoRecoveryRequestSchema,
+  trustPresetSchema,
+  lowTrustBoundarySchema,
+  lowTrustReviewPresetPolicySchema,
+  trustAuthorizationPolicySchema,
   type PatchInstanceExperimentalSettings,
-  type TenantProvisioningSettings,
-  type PatchTenantProvisioningSettings,
-  type PatchCloudflareProvisioningSettings,
+  type PatchInstanceSettings,
+  type IssueGraphLivenessAutoRecoveryRequest,
+  type TrustPresetInput,
+  type LowTrustBoundaryInput,
+  type TrustAuthorizationPolicyInput,
 } from "./validators/index.js";
 
 export {
-  publicContactSubmissionSchema,
-  publicRequestCreateSchema,
-  publicRequestCommentSchema,
-  type PublicContactSubmissionInput,
-  type PublicRequestCreate,
-  type PublicRequestComment,
-  createInstitutionSchema,
-  updateInstitutionSchema,
-  type CreateInstitution,
-  type UpdateInstitution,
-  createTenantInstanceSchema,
-  updateTenantInstanceSchema,
-  tenantBootstrapStatusSchema,
-  tenantProvisioningJobSchema,
-  type CreateTenantInstance,
-  type TenantProvisioningJobInput,
-  type UpdateTenantInstance,
   createCompanySchema,
   updateCompanySchema,
+  updateCompanyBrandingSchema,
+  feedbackTargetTypeSchema,
+  feedbackTraceStatusSchema,
+  feedbackVoteValueSchema,
+  externalObjectStatusCategorySchema,
+  externalObjectStatusToneSchema,
+  externalObjectLivenessStateSchema,
+  externalObjectMentionSourceKindSchema,
+  externalObjectMentionConfidenceSchema,
+  externalObjectProviderKeySchema,
+  externalObjectTypeSchema,
+  externalObjectCanonicalIdentitySchema,
+  externalObjectMentionSourceSchema,
+  upsertIssueFeedbackVoteSchema,
   type CreateCompany,
   type UpdateCompany,
+  type UpdateCompanyBranding,
+  type UpsertIssueFeedbackVote,
+  type ExternalObjectCanonicalIdentityInput,
+  type ExternalObjectMentionSourceInput,
+  type ExternalObjectProviderKeyInput,
+  type ExternalObjectTypeInput,
+  environmentDriverSchema,
+  environmentStatusSchema,
+  environmentLeaseStatusSchema,
+  environmentLeaseCleanupStatusSchema,
+  createEnvironmentSchema,
+  updateEnvironmentSchema,
+  probeEnvironmentConfigSchema,
+  type CreateEnvironment,
+  type UpdateEnvironment,
+  type ProbeEnvironmentConfig,
+  agentSkillStateSchema,
+  agentSkillSyncModeSchema,
+  agentDesiredSkillEntrySchema,
+  agentDesiredSkillSelectionSchema,
+  agentSkillEntrySchema,
+  agentSkillSnapshotSchema,
+  agentSkillSyncSchema,
+  type AgentSkillSync,
   createAgentSchema,
+  builtInAgentEmptyMutationSchema,
+  builtInAgentProvisionSchema,
+  builtInAgentResetSchema,
   createAgentHireSchema,
   updateAgentSchema,
+  agentInstructionsBundleModeSchema,
+  updateAgentInstructionsBundleSchema,
+  upsertAgentInstructionsFileSchema,
   updateAgentInstructionsPathSchema,
+  agentApiKeyScopeSchema,
+  normalizeAgentApiKeyScope,
+  standardAgentKeyScopeSchema,
+  taskBridgeAgentKeyScopeSchema,
+  skillTestAgentKeyScopeSchema,
   createAgentKeySchema,
+  agentMineInboxQuerySchema,
   wakeAgentSchema,
   resetAgentSessionSchema,
   testAdapterEnvironmentSchema,
   agentPermissionsSchema,
   updateAgentPermissionsSchema,
   type CreateAgent,
+  type BuiltInAgentProvision,
+  type BuiltInAgentReset,
   type CreateAgentHire,
   type UpdateAgent,
+  type UpdateAgentInstructionsBundle,
+  type UpsertAgentInstructionsFile,
   type UpdateAgentInstructionsPath,
+  type AgentApiKeyScope,
+  type TaskBridgeAgentKeyScope,
+  type SkillTestAgentKeyScope,
   type CreateAgentKey,
+  type AgentMineInboxQuery,
   type WakeAgent,
   type ResetAgentSession,
   type TestAdapterEnvironment,
@@ -627,73 +1242,161 @@ export {
   type CreateProjectWorkspace,
   type UpdateProjectWorkspace,
   projectExecutionWorkspacePolicySchema,
-  createRequestSchema,
-  createRequestLabelSchema,
-  updateRequestSchema,
-  requestExecutionWorkspaceSettingsSchema,
-  requestAssigneeAdapterOverridesSchema,
-  checkoutRequestSchema,
-  addRequestCommentSchema,
-  linkRequestApprovalSchema,
-  createRequestAttachmentMetadataSchema,
-  REQUEST_DOCUMENT_FORMATS,
-  requestDocumentFormatSchema,
-  requestDocumentKeySchema,
-  upsertRequestDocumentSchema,
-  createRequestWorkProductSchema,
-  updateRequestWorkProductSchema,
-  requestWorkProductTypeSchema,
-  requestWorkProductStatusSchema,
-  requestWorkProductReviewStateSchema,
-  type CreateRequest,
-  type CreateRequestLabel,
-  type UpdateRequest,
-  type RequestExecutionWorkspaceSettings,
-  type CheckoutRequest,
-  type AddRequestComment,
-  type LinkRequestApproval,
-  type CreateRequestAttachmentMetadata,
-  type RequestDocumentFormat,
-  type UpsertRequestDocument,
-  type CreateRequestWorkProduct,
-  type UpdateRequestWorkProduct,
+  createDocumentAnnotationCommentSchema,
+  createDocumentAnnotationThreadSchema,
+  documentAnnotationAnchorConfidenceSchema,
+  documentAnnotationAnchorSelectorSchema,
+  documentAnnotationAnchorStateSchema,
+  documentAnnotationTextPositionSelectorSchema,
+  documentAnnotationTextQuoteSelectorSchema,
+  documentAnnotationThreadStatusSchema,
+  updateDocumentAnnotationThreadSchema,
+  type CreateDocumentAnnotationComment,
+  type CreateDocumentAnnotationThread,
+  type UpdateDocumentAnnotationThread,
+  companySearchQuerySchema,
+  COMPANY_SEARCH_DEFAULT_LIMIT,
+  COMPANY_SEARCH_MAX_LIMIT,
+  COMPANY_SEARCH_MAX_OFFSET,
+  COMPANY_SEARCH_MAX_QUERY_LENGTH,
+  COMPANY_SEARCH_MAX_TOKENS,
+  type CompanySearchQuery,
   createIssueSchema,
+  createIssueInputSchema,
+  createChildIssueSchema,
+  createAcceptedPlanDecompositionSchema,
+  resolveCreateIssueStatusDefault,
   createIssueLabelSchema,
+  upsertIssueWatchdogSchema,
+  issueBlockedInboxAttentionSchema,
+  issueBlockedInboxIssueRefSchema,
+  issueBlockedInboxReasonSchema,
+  issueBlockedInboxSeveritySchema,
+  issueBlockedInboxStateSchema,
   updateIssueSchema,
+  issueExecutionPolicySchema,
+  issueExecutionStateSchema,
+  resolveIssueRecoveryActionSchema,
+  issueReviewRequestSchema,
   issueExecutionWorkspaceSettingsSchema,
-  issueAssigneeAdapterOverridesSchema,
   checkoutIssueSchema,
+  issueCommentAuthorTypeSchema,
+  issueCommentPresentationSchema,
+  issueCommentMetadataRowSchema,
+  issueCommentMetadataSectionSchema,
+  issueCommentMetadataSchema,
   addIssueCommentSchema,
+  issueThreadInteractionStatusSchema,
+  issueThreadInteractionKindSchema,
+  issueThreadInteractionContinuationPolicySchema,
+  suggestedTaskDraftSchema,
+  suggestTasksPayloadSchema,
+  suggestTasksResultCreatedTaskSchema,
+  suggestTasksResultSchema,
+  askUserQuestionsQuestionOptionSchema,
+  askUserQuestionsQuestionSchema,
+  askUserQuestionsPayloadSchema,
+  askUserQuestionsAnswerSchema,
+  askUserQuestionsResultSchema,
+  requestConfirmationIssueDocumentTargetSchema,
+  requestConfirmationCustomTargetSchema,
+  requestConfirmationTargetSchema,
+  requestConfirmationPayloadSchema,
+  requestConfirmationResumeFailureSchema,
+  requestConfirmationResultSchema,
+  requestCheckboxConfirmationOptionSchema,
+  requestCheckboxConfirmationPayloadSchema,
+  requestCheckboxConfirmationResultSchema,
+  requestItemVerdictValueSchema,
+  requestItemVerdictsItemSchema,
+  requestItemVerdictsPayloadSchema,
+  requestItemVerdictsResultItemSchema,
+  requestItemVerdictsResultSchema,
+  createIssueThreadInteractionSchema,
+  acceptIssueThreadInteractionSchema,
+  rejectIssueThreadInteractionSchema,
+  cancelIssueThreadInteractionSchema,
+  respondIssueThreadInteractionSchema,
+  submitIssueThreadInteractionVerdictsSchema,
   linkIssueApprovalSchema,
   createIssueAttachmentMetadataSchema,
-  ISSUE_DOCUMENT_FORMATS,
-  issueDocumentFormatSchema,
-  issueDocumentKeySchema,
-  upsertIssueDocumentSchema,
   createIssueWorkProductSchema,
+  issueWorkProductMetadataSchema,
   updateIssueWorkProductSchema,
+  attachmentArtifactWorkProductMetadataSchema,
   issueWorkProductTypeSchema,
   issueWorkProductStatusSchema,
   issueWorkProductReviewStateSchema,
+  COMPANY_ARTIFACTS_DEFAULT_LIMIT,
+  COMPANY_ARTIFACTS_MAX_LIMIT,
+  COMPANY_ARTIFACTS_MAX_QUERY_LENGTH,
+  companyArtifactGroupBySchema,
+  companyArtifactGroupSchema,
+  companyArtifactMediaKindSchema,
+  companyArtifactSchema,
+  companyArtifactSourceSchema,
+  companyArtifactsQuerySchema,
+  companyArtifactsResponseSchema,
+  reconcileExecutionWorkspaceBranchSchema,
   updateExecutionWorkspaceSchema,
+  workspaceOverviewQuerySchema,
   executionWorkspaceStatusSchema,
+  executionWorkspaceCloseActionKindSchema,
+  executionWorkspaceCloseActionSchema,
+  executionWorkspaceCloseGitReadinessSchema,
+  executionWorkspaceCloseLinkedIssueSchema,
+  executionWorkspaceCloseReadinessSchema,
+  executionWorkspaceCloseReadinessStateSchema,
+  resolvedWorkspaceResourceSchema,
+  workspaceFileContentSchema,
+  workspaceFileListModeSchema,
+  workspaceFileListQuerySchema,
+  workspaceFilePreviewKindSchema,
+  workspaceFileRefSchema,
+  workspaceFileResourceKindSchema,
+  workspaceFileResourceQuerySchema,
+  workspaceFileSelectorSchema,
+  workspaceFileWorkspaceKindSchema,
+  issueDocumentFormatSchema,
+  issueDocumentKeySchema,
+  upsertIssueDocumentSchema,
+  restoreIssueDocumentRevisionSchema,
+  createIssueTreeHoldSchema,
+  issueTreeControlModeSchema,
+  issueTreeHoldReleasePolicySchema,
+  previewIssueTreeControlSchema,
+  releaseIssueTreeHoldSchema,
   type CreateIssue,
+  type CreateChildIssue,
+  type CreateAcceptedPlanDecomposition,
   type CreateIssueLabel,
   type UpdateIssue,
-  type IssueExecutionWorkspaceSettings,
+  type ResolveIssueRecoveryAction,
   type CheckoutIssue,
   type AddIssueComment,
+  type CreateIssueThreadInteraction,
+  type AcceptIssueThreadInteraction,
+  type RejectIssueThreadInteraction,
+  type CancelIssueThreadInteraction,
+  type RespondIssueThreadInteraction,
+  type SubmitIssueThreadInteractionVerdicts,
   type LinkIssueApproval,
   type CreateIssueAttachmentMetadata,
   type CreateIssueWorkProduct,
   type UpdateIssueWorkProduct,
+  type UpsertIssueWatchdog,
+  type CompanyArtifactsQuery,
+  type ReconcileExecutionWorkspaceBranch,
   type UpdateExecutionWorkspace,
+  type WorkspaceOverviewQuery,
+  type WorkspaceFileListQuery,
+  type WorkspaceFileResourceQuery,
   type IssueDocumentFormat,
   type UpsertIssueDocument,
-  createObjectiveSchema,
-  updateObjectiveSchema,
-  type CreateObjective,
-  type UpdateObjective,
+  type RestoreIssueDocumentRevision,
+  type CreateIssueTreeHold,
+  type PreviewIssueTreeControl,
+  type ReleaseIssueTreeHold,
   createGoalSchema,
   updateGoalSchema,
   type CreateGoal,
@@ -714,56 +1417,195 @@ export {
   type AddApprovalComment,
   envBindingPlainSchema,
   envBindingSecretRefSchema,
+  envBindingUserSecretRefSchema,
   envBindingSchema,
   envConfigSchema,
   createSecretSchema,
+  createUserSecretDefinitionSchema,
+  updateUserSecretDefinitionSchema,
+  createUserSecretValueSchema,
+  updateUserSecretValueSchema,
+  rotateUserSecretValueSchema,
+  createUserSecretDeclarationSchema,
+  createSecretProviderConfigSchema,
+  updateSecretProviderConfigSchema,
+  secretProviderConfigDiscoveryPreviewSchema,
+  remoteSecretImportPreviewSchema,
+  remoteSecretImportSchema,
+  remoteSecretImportSelectionSchema,
+  localEncryptedProviderConfigSchema,
+  awsSecretsManagerProviderConfigSchema,
+  gcpSecretManagerProviderConfigSchema,
+  vaultProviderConfigSchema,
+  secretProviderConfigPayloadSchema,
+  createSecretBindingSchema,
   rotateSecretSchema,
+  secretBindingTargetSchema,
   updateSecretSchema,
+  createRoutineSchema,
+  updateRoutineSchema,
+  createRoutineTriggerSchema,
+  updateRoutineTriggerSchema,
+  routineVariableSchema,
+  runRoutineSchema,
+  pipelineAutomationRetryCleanupOptionsSchema,
+  pipelineAutomationRetryRequestSchema,
+  pipelineAutomationRetryScopeSchema,
+  pipelineStageAutomationSchema,
+  pipelineStageApproverSchema,
+  pipelineStageConfigSchema,
+  pipelineStageKindSchema,
+  pipelineStageOnEnterSchema,
+  pipelineStageVariableSchema,
+  rotateRoutineTriggerSecretSchema,
+  routineRevisionSnapshotRoutineV1Schema,
+  routineRevisionSnapshotTriggerV1Schema,
+  routineRevisionSnapshotV1Schema,
+  routineRevisionSnapshotSchema,
   type CreateSecret,
+  type CreateSecretProviderConfig,
+  type UpdateSecretProviderConfig,
+  type SecretProviderConfigDiscoveryPreview,
+  type RemoteSecretImportPreview,
+  type RemoteSecretImport,
+  type RemoteSecretImportSelection,
   type RotateSecret,
   type UpdateSecret,
+  type CreateRoutine,
+  type UpdateRoutine,
+  type CreateRoutineTrigger,
+  type UpdateRoutineTrigger,
+  type RunRoutine,
+  type RotateRoutineTriggerSecret,
   createCostEventSchema,
   createFinanceEventSchema,
   updateBudgetSchema,
   createAssetImageMetadataSchema,
-  createInstitutionInviteSchema,
-  type CreateInstitutionInvite,
-  updateUserInstitutionAccessSchema,
-  type UpdateUserInstitutionAccess,
   createCompanyInviteSchema,
-  type CreateCompanyInvite,
-  updateUserCompanyAccessSchema,
-  type UpdateUserCompanyAccess,
   createOpenClawInvitePromptSchema,
   acceptInviteSchema,
+  listCompanyInvitesQuerySchema,
   listJoinRequestsQuerySchema,
   claimJoinRequestApiKeySchema,
+  boardCliAuthAccessLevelSchema,
+  createCliAuthChallengeSchema,
+  resolveCliAuthChallengeSchema,
+  createBoardApiKeySchema,
+  currentUserProfileSchema,
+  authSessionSchema,
+  updateCurrentUserProfileSchema,
+  updateCompanyMemberSchema,
+  updateCompanyMemberWithPermissionsSchema,
+  archiveCompanyMemberSchema,
   updateMemberPermissionsSchema,
+  searchAdminUsersQuerySchema,
+  updateUserCompanyAccessSchema,
   type CreateCostEvent,
   type CreateFinanceEvent,
   type UpdateBudget,
   type CreateAssetImageMetadata,
+  type CreateCompanyInvite,
   type CreateOpenClawInvitePrompt,
   type AcceptInvite,
+  type ListCompanyInvitesQuery,
   type ListJoinRequestsQuery,
   type ClaimJoinRequestApiKey,
+  type BoardCliAuthAccessLevel,
+  type CreateCliAuthChallenge,
+  type ResolveCliAuthChallenge,
+  type CreateBoardApiKey,
+  type CurrentUserProfile,
+  type AuthSession,
+  type UpdateCurrentUserProfile,
+  type UpdateCompanyMember,
+  type UpdateCompanyMemberWithPermissions,
+  type ArchiveCompanyMember,
   type UpdateMemberPermissions,
+  type SearchAdminUsersQuery,
+  type UpdateUserCompanyAccess,
+  companySkillSourceTypeSchema,
+  companySkillTrustLevelSchema,
+  companySkillCompatibilitySchema,
+  companySkillSourceBadgeSchema,
+  companySkillSharingScopeSchema,
+  companySkillListSortSchema,
+  companySkillFileInventoryEntrySchema,
+  companySkillVersionFileInventoryEntrySchema,
+  companySkillSchema,
+  companySkillListItemSchema,
+  companySkillUsageAgentSchema,
+  companySkillListQuerySchema,
+  companySkillCategoryCountSchema,
+  companySkillVersionSchema,
+  companySkillDetailSchema,
+  companySkillVersionCreateSchema,
+  companySkillStarResultSchema,
+  companySkillCommentSchema,
+  companySkillCommentCreateSchema,
+  companySkillCommentUpdateSchema,
+  companySkillForkSchema,
+  companySkillUpdateSchema,
+  companySkillUpdateStatusSchema,
+  companySkillAuditFindingSchema,
+  companySkillAuditResultSchema,
+  companySkillImportSchema,
+  companySkillProjectScanRequestSchema,
+  companySkillProjectScanSkippedSchema,
+  companySkillProjectScanConflictSchema,
+  companySkillProjectScanResultSchema,
+  companySkillCreateSchema,
+  companySkillFileDetailSchema,
+  companySkillFileUpdateSchema,
+  companySkillFileDeleteSchema,
+  companySkillTestRunStatusSchema,
+  companySkillTestInputSchema,
+  companySkillTestInputCreateSchema,
+  companySkillTestInputUpdateSchema,
+  companySkillTestRunTemplateSchema,
+  companySkillTestRunTemplateCreateSchema,
+  companySkillTestRunTemplateUpdateSchema,
+  companySkillTestRunTemplateSnapshotSchema,
+  companySkillTestRunCostSummarySchema,
+  companySkillTestRunSchema,
+  companySkillTestRunCreateSchema,
+  companySkillTestRunListQuerySchema,
+  catalogSkillKindSchema,
+  catalogSkillFileSchema,
+  catalogSkillGitHubSourceSchema,
+  catalogSkillSourceSchema,
+  catalogSkillSchema,
+  catalogSkillListQuerySchema,
+  catalogSkillFileDetailSchema,
+  companySkillInstallCatalogSchema,
+  companySkillInstallCatalogResultSchema,
+  companySkillInstallUpdateSchema,
+  companySkillResetSchema,
+  catalogTeamKindSchema,
+  catalogTeamTrustLevelSchema,
+  catalogTeamCompatibilitySchema,
+  catalogTeamFileKindSchema,
+  catalogTeamSkillRequirementTypeSchema,
+  catalogTeamSkillRequirementSchema,
+  catalogTeamEnvInputSummarySchema,
+  catalogTeamSourceRefSchema,
+  catalogTeamFileSchema,
+  catalogTeamSchema,
+  catalogTeamListQuerySchema,
+  catalogTeamFileDetailSchema,
+  catalogTeamSourcePolicySchema,
+  catalogTeamPreviewSchema,
+  catalogTeamInstallSchema,
+  catalogTeamSkillPreparationSchema,
   portabilityIncludeSchema,
-  portabilitySecretRequirementSchema,
-  portabilityInstitutionManifestEntrySchema,
+  portabilityEnvInputSchema,
   portabilityCompanyManifestEntrySchema,
+  portabilitySidebarOrderSchema,
   portabilityAgentManifestEntrySchema,
   portabilityManifestSchema,
   portabilitySourceSchema,
   portabilityTargetSchema,
   portabilityAgentSelectionSchema,
   portabilityCollisionStrategySchema,
-  institutionPortabilityExportSchema,
-  institutionPortabilityPreviewSchema,
-  institutionPortabilityImportSchema,
-  type InstitutionPortabilityExport,
-  type InstitutionPortabilityPreview,
-  type InstitutionPortabilityImport,
   companyPortabilityExportSchema,
   companyPortabilityPreviewSchema,
   companyPortabilityImportSchema,
@@ -774,10 +1616,13 @@ export {
   pluginJobDeclarationSchema,
   pluginWebhookDeclarationSchema,
   pluginToolDeclarationSchema,
+  pluginEnvironmentDriverDeclarationSchema,
   pluginUiSlotDeclarationSchema,
   pluginLauncherActionDeclarationSchema,
   pluginLauncherRenderDeclarationSchema,
   pluginLauncherDeclarationSchema,
+  pluginDatabaseDeclarationSchema,
+  pluginApiRouteDeclarationSchema,
   pluginManifestV1Schema,
   installPluginSchema,
   upsertPluginConfigSchema,
@@ -790,10 +1635,13 @@ export {
   type PluginJobDeclarationInput,
   type PluginWebhookDeclarationInput,
   type PluginToolDeclarationInput,
+  type PluginEnvironmentDriverDeclarationInput,
   type PluginUiSlotDeclarationInput,
   type PluginLauncherActionDeclarationInput,
   type PluginLauncherRenderDeclarationInput,
   type PluginLauncherDeclarationInput,
+  type PluginDatabaseDeclarationInput,
+  type PluginApiRouteDeclarationInput,
   type PluginManifestV1Input,
   type InstallPlugin,
   type UpsertPluginConfig,
@@ -807,51 +1655,52 @@ export {
 
 export { API_PREFIX, API } from "./api.js";
 export { normalizeAgentUrlKey, deriveAgentUrlKey, isUuidLike } from "./agent-url-key.js";
-export { deriveProjectUrlKey, normalizeProjectUrlKey } from "./project-url-key.js";
+export { deriveProjectUrlKey, normalizeProjectUrlKey, hasNonAsciiContent } from "./project-url-key.js";
 export {
-  deriveTenantRoute,
-  normalizeTenantShortCode,
-  normalizeTenantCountryCode,
-  normalizeTenantCitySlug,
-  normalizeTenantJurisdictionType,
-  normalizeTenantPostalCode,
-  deriveTenantDispatcherKey,
-  deriveTenantPathPrefix,
-  deriveTenantPathPrefixFromDispatcherKey,
-  deriveTenantWorkerName,
-  deriveTenantUrl,
-  parseTenantRoutePathname,
-  type DerivedTenantRoute,
-  type TenantRouteInput,
-  type TenantRouteOptions,
-} from "./tenant-routing.js";
-export {
-  ARGENTINA_TENANT_ROUTING_CONFIG,
-  TENANT_JURISDICTION_TYPES,
-  TENANT_ROUTING_COUNTRY_CONFIGS,
-  getTenantRoutingCountryConfig,
-  type TenantCountryRoutingConfig,
-  type TenantJurisdictionRoutingConfig,
-  type TenantJurisdictionType,
-  type TenantRouteSeed,
-  type TenantRouteSegmentStrategy,
-} from "./tenant-routing-configs/index.js";
-export {
-  MockTenantProvisioner,
-  CloudflareTenantProvisioner,
-  type CloudflareApiEnvelope,
-  type CloudflareApiError,
-  type TenantProvisioningResources,
-  type TenantProvisioner,
-  type CloudflareTenantProvisionerOptions,
-} from "./cloudflare-provisioning.js";
-export {
+  AGENT_MENTION_SCHEME,
   PROJECT_MENTION_SCHEME,
+  ROUTINE_MENTION_SCHEME,
+  SKILL_MENTION_SCHEME,
+  USER_MENTION_SCHEME,
+  PIPELINE_MENTION_SCHEME,
+  buildAgentMentionHref,
+  buildPipelineMentionHref,
   buildProjectMentionHref,
-  parseProjectMentionHref,
+  buildRoutineMentionHref,
+  buildSkillMentionHref,
+  buildUserMentionHref,
+  extractAgentMentionIds,
+  extractPipelineMentions,
   extractProjectMentionIds,
+  extractRoutineMentionIds,
+  extractSkillMentionIds,
+  extractUserMentionIds,
+  parseAgentMentionHref,
+  parsePipelineMentionHref,
+  parseProjectMentionHref,
+  parseRoutineMentionHref,
+  parseSkillMentionHref,
+  parseUserMentionHref,
+  type ParsedAgentMention,
+  type ParsedPipelineMention,
   type ParsedProjectMention,
+  type ParsedRoutineMention,
+  type ParsedSkillMention,
+  type ParsedUserMention,
 } from "./project-mentions.js";
+
+export {
+  BUILTIN_ROUTINE_VARIABLE_NAMES,
+  extractRoutineVariableNames,
+  getBuiltinRoutineVariableValues,
+  interpolateRoutineTemplate,
+  isBuiltinRoutineVariable,
+  isRoutineDateVariableName,
+  isValidRoutineDateString,
+  isValidRoutineVariableName,
+  stringifyRoutineVariableValue,
+  syncRoutineVariablesWithTemplate,
+} from "./routine-variables.js";
 
 export {
   paperclipConfigSchema,
@@ -867,7 +1716,9 @@ export {
   storageLocalDiskConfigSchema,
   storageS3ConfigSchema,
   secretsLocalEncryptedConfigSchema,
-  type CiutatisConfig,
+  telemetryConfigSchema,
+  type TelemetryConfig,
+  type PaperclipConfig,
   type LlmConfig,
   type DatabaseBackupConfig,
   type DatabaseConfig,
@@ -882,929 +1733,52 @@ export {
   type ConfigMeta,
 } from "./config-schema.js";
 
-// === STUB EXPORTS FOR UPSTREAM FEATURES NOT IN CIUTATIS ===
-// These are stub implementations to satisfy imports from upstream code
-// that references features intentionally removed from ciutatis
+export {
+  adapterSupportsRemoteManagedEnvironments,
+  getEnvironmentCapabilities,
+  getAdapterEnvironmentSupport,
+  isEnvironmentDriverSupportedForAdapter,
+  isSandboxProviderSupportedForAdapter,
+  supportedEnvironmentDriversForAdapter,
+  supportedSandboxProvidersForAdapter,
+} from "./environment-support.js";
 
-// Issue relation types
-export interface IssueRelationIssueSummary {
-  id: string;
-  identifier: string | null;
-  title: string;
-  status: string;
-  priority: string | null;
-  assigneeAgentId: string | null;
-  assigneeUserId: string | null;
-  terminalBlockers?: IssueRelationIssueSummary[];
-}
-
-// Issue comment types  
-export type IssueCommentAuthorType = string;
-
-export interface IssueCommentMetadataRow {
-  type: "text" | "code" | "key_value" | "issue_link" | "agent_link" | "run_link";
-  label: string;
-  text?: string;
-  code?: string;
-  value?: string;
-  issueId?: string;
-  identifier?: string | null;
-  title?: string | null;
-  agentId?: string;
-  name?: string | null;
-  runId?: string;
-}
-
-export interface IssueCommentMetadataSection {
-  title: string;
-  rows: IssueCommentMetadataRow[];
-}
-
-export interface IssueCommentMetadata {
-  version?: number;
-  sourceRunId?: string | null;
-  sections: IssueCommentMetadataSection[];
-}
-
-export interface IssueCommentPresentation {
-  kind: string;
-  tone: string;
-  title: string;
-  detailsDefaultOpen: boolean;
-}
-
-export type IssueCommentMetadataRowType = IssueCommentMetadataRow["type"];
-export const issueCommentAuthorTypeSchema = null;
-export const issueCommentMetadataSchema = null;
-export const issueCommentPresentationSchema = null;
-
-// Issue identifier utilities
-export function clampIssueRequestDepth(_depth: number): number {
-  return 0;
-}
-export function extractAgentMentionIds(_text: string): string[] {
-  return [];
-}
-export function normalizeIssueIdentifier(_id: string): string {
-  const value = _id.trim();
-  if (!value) return "";
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
-    return "";
-  }
-  if (/^[a-z0-9]+-\d+$/i.test(value)) {
-    return value.toUpperCase();
-  }
-  return "";
-}
-
-// Run liveness types
-export type RunLivenessState = string;
-
-// Environment / Sandbox types
-export type EnvironmentLeaseStatus = typeof ENVIRONMENT_LEASE_STATUSES[number];
-export type EnvironmentProbeResult = {
-  success?: boolean;
-  ok: boolean;
-  summary: string;
-  message?: string;
-  driver?: string;
-  details?: Record<string, unknown>;
-};
-export interface FakeSandboxEnvironmentConfig {
-  enabled?: boolean;
-  mockData?: Record<string, unknown>;
-  // Allow additional properties for flexibility
-  [key: string]: unknown;
-}
-export interface SandboxEnvironmentConfig {
-  provider?: string;
-  image?: string;
-  resources?: {
-    cpu?: number;
-    memory?: number;
-  };
-  reuseLease?: boolean | string | null;
-  // Allow additional properties for flexibility
-  [key: string]: unknown;
-}
-export type SandboxEnvironmentProvider = string;
-
-export interface Environment {
-  id: string;
-  driver: "local" | "ssh" | "sandbox" | "plugin" | string;
-  name?: string;
-  description?: string | null;
-  status?: string;
-  config: Record<string, unknown>;
-  metadata?: Record<string, unknown> | null;
-  companyId: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface EnvironmentLease {
-  id: string;
-  environmentId: string;
-  providerLeaseId?: string | null;
-  provider?: string | null;
-  status: EnvironmentLeaseStatus;
-  metadata?: Record<string, unknown> | null;
-  companyId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  expiresAt?: string | null;
-  // Extended properties for workspace realization
-  executionWorkspaceId?: string | null;
-  issueId?: string | null;
-  heartbeatRunId?: string | null;
-  projectId?: string | null;
-  agentId?: string | null;
-  // Upstream-only: lease policy configuration
-  leasePolicy?: string | Record<string, unknown> | null;
-  // Additional properties from upstream
-  acquiredAt?: string | null;
-  lastUsedAt?: string | null;
-  releasedAt?: string | null;
-  cleanupStatus?: "success" | "failed" | null;
-  failureReason?: string | null;
-}
-
-// Workspace runtime types
-export type WorkspaceRuntimeDesiredState = "stopped" | "running" | "manual";
-
-export interface WorkspaceRuntimeServiceState {
-  status: "starting" | "running" | "stopped" | "failed" | "unknown" | "manual";
-  port?: number | null;
-  url?: string | null;
-  pid?: number | null;
-  startedAt?: string | null;
-  stoppedAt?: string | null;
-  error?: string | null;
-}
-
-export type WorkspaceRuntimeServiceStateMap = Record<string, WorkspaceRuntimeDesiredState>;
-
-export interface WorkspaceServiceCommandDefinition {
-  id: string;
-  name: string;
-  command: string;
-  kind: "service" | "job";
-  serviceIndex?: number;
-  description?: string;
-  category?: string;
-  rawConfig?: Record<string, unknown>;
-  // Allow additional properties for flexibility
-  [key: string]: unknown;
-}
-
-function readRuntimeArray(runtime: Record<string, unknown>, keys: string[]): unknown[] {
-  for (const key of keys) {
-    const value = runtime[key];
-    if (Array.isArray(value)) return value;
-  }
-  return [];
-}
-
-function readString(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
-}
-
-export function listWorkspaceServiceCommandDefinitions(
-  runtime?: Record<string, unknown> | null,
-): WorkspaceServiceCommandDefinition[] {
-  if (!runtime) return [];
-  const serviceEntries: WorkspaceServiceCommandDefinition[] = [];
-  for (const [index, entry] of readRuntimeArray(runtime, ["services", "serviceCommands"]).entries()) {
-    const record = readRecord(entry);
-    if (!record) continue;
-    const name = readString(record.name) ?? readString(record.serviceName) ?? `service-${index + 1}`;
-    const command = readString(record.command) ?? readString(record.startCommand);
-    if (!command) continue;
-    serviceEntries.push({
-      id: readString(record.id) ?? `service:${name}`,
-      name,
-      command,
-      kind: "service" as const,
-      serviceIndex: index,
-      description: readString(record.description) ?? undefined,
-      category: readString(record.category) ?? "service",
-      rawConfig: record,
-    });
-  }
-
-  const jobEntries: WorkspaceServiceCommandDefinition[] = [];
-  for (const [index, entry] of readRuntimeArray(runtime, ["jobs", "commands", "tasks"]).entries()) {
-    const record = readRecord(entry);
-    if (!record) continue;
-    const declaredKind = readString(record.kind);
-    const name = readString(record.name) ?? readString(record.id) ?? `job-${index + 1}`;
-    const command = readString(record.command) ?? readString(record.run);
-    if (!command) continue;
-    if (declaredKind === "service") {
-      serviceEntries.push({
-        id: readString(record.id) ?? `service:${name}`,
-        name,
-        command,
-        kind: "service" as const,
-        serviceIndex: serviceEntries.length,
-        description: readString(record.description) ?? undefined,
-        category: readString(record.category) ?? "service",
-        rawConfig: record,
-      });
-      continue;
-    }
-    jobEntries.push({
-      id: readString(record.id) ?? `job:${name}`,
-      name,
-      command,
-      kind: "job" as const,
-      description: readString(record.description) ?? undefined,
-      category: readString(record.category) ?? "job",
-      rawConfig: record,
-    });
-  }
-
-  return [...serviceEntries, ...jobEntries];
-}
-
-export interface ExecutionWorkspaceConfig {
-  provisionCommand?: string | null;
-  teardownCommand?: string | null;
-  cleanupCommand?: string | null;
-  // Upstream-only: workspaceRuntime can be an object or string
-  workspaceRuntime?: Record<string, unknown> | string | null;
-  // Extended properties for workspace runtime
-  desiredState?: WorkspaceRuntimeDesiredState | string | null;
-  serviceStates?: WorkspaceRuntimeServiceStateMap | null;
-  // Upstream-only: environment binding for workspace sessions
-  environmentId?: string | null;
-}
-
-export interface WorkspaceRealizationLocalSource {
-  kind: string;
-  strategy: string;
-  projectId: string | null;
-  projectWorkspaceId?: string | null;
-  repoUrl?: string | null;
-  repoRef?: string | null;
-  branchName?: string | null;
-  worktreePath?: string | null;
-  localPath?: string | null;
-  path?: string | null;
-}
-
-export interface WorkspaceRealizationRemote {
-  path: string | null;
-  host?: string | null;
-  port?: number | null;
-  username?: string | null;
-  sandboxId?: string | null;
-  executionWorkspaceId?: string | null;
-  issueId?: string | null;
-  heartbeatRunId?: string | null;
-}
-
-export interface WorkspaceRealizationSync {
-  strategy: "none" | "ssh_git_import_export" | "sandbox_archive_upload_download" | "provider_defined";
-  prepare: string | null;
-  syncBack: string | null;
-}
-
-export interface WorkspaceRealizationBootstrap {
-  command: string | null;
-}
-
-export interface WorkspaceRealizationRebuild {
-  executionWorkspaceId: string | null;
-  mode: string | null;
-  repoUrl: string | null;
-  repoRef: string | null;
-  localPath: string;
-  remotePath: string | null;
-  providerLeaseId: string | null;
-  metadata: Record<string, unknown>;
-}
-
-export interface WorkspaceRealizationRecord {
-  version: number;
-  transport: "local" | "ssh" | "sandbox" | "plugin";
-  provider: string | null;
-  environmentId: string;
-  leaseId: string;
-  providerLeaseId: string | null;
-  local: WorkspaceRealizationLocalSource;
-  remote: WorkspaceRealizationRemote;
-  sync: WorkspaceRealizationSync;
-  bootstrap: WorkspaceRealizationBootstrap;
-  rebuild: WorkspaceRealizationRebuild;
-  summary: string;
-}
-
-export interface WorkspaceRealizationRequestSource {
-  kind: string;
-  strategy: string;
-  projectId: string | null;
-  projectWorkspaceId?: string | null;
-  repoUrl?: string | null;
-  repoRef?: string | null;
-  branchName?: string | null;
-  worktreePath?: string | null;
-  localPath: string;
-}
-
-export interface WorkspaceRealizationRequestRuntimeOverlay {
-  provisionCommand: string | null;
-  teardownCommand: string | null;
-  cleanupCommand: string | null;
-  workspaceRuntime: string | Record<string, unknown> | null;
-}
-
-export interface WorkspaceRealizationRequest {
-  version?: number;
-  adapterType: string;
-  companyId: string;
-  environmentId: string;
-  source: WorkspaceRealizationRequestSource;
-  runtimeOverlay: WorkspaceRealizationRequestRuntimeOverlay;
-  requestedMode: string | null;
-  executionWorkspaceId: string | null;
-  issueId: string | null;
-  heartbeatRunId: string;
-}
-
-// Execution policy types
-export interface IssueBlockerAttention {
-  state: "none" | "covered" | "stalled" | "needs_attention" | string;
-  reason?: "active_child" | "active_dependency" | "stalled_review" | "attention_required" | string | null;
-  coveredBlockerCount?: number;
-  sampleBlockerIdentifier?: string | null;
-  stalledBlockerCount?: number;
-  sampleStalledBlockerIdentifier?: string | null;
-  attentionBlockerCount?: number;
-  unresolvedBlockerCount?: number;
-}
-export type IssueProductivityReview = unknown;
-export type IssueProductivityReviewTrigger = unknown;
-export type IssueWorkMode = "managed" | "manual" | "background" | string;
-
-export interface IssueScheduledRetry {
-  runId: string;
-  status: string;
-  agentId: string;
-  agentName?: string | null;
-  retryOfRunId: string | null;
-  scheduledRetryAt: string | Date | null;
-  scheduledRetryAttempt: number | null;
-  scheduledRetryReason: string | null;
-  retryExhaustedReason: string | null;
-  error: string | null;
-  errorCode: string | null;
-}
-
-export type IssueRetryNowOutcome =
-  | "promoted"
-  | "already_promoted"
-  | "no_scheduled_retry"
-  | "gate_suppressed";
-
-export interface IssueRetryNowResponse {
-  outcome: IssueRetryNowOutcome;
-  message: string;
-  scheduledRetry: IssueScheduledRetry | null;
-}
-
-export type IssueThreadInteractionStatus =
-  | "pending"
-  | "accepted"
-  | "rejected"
-  | "answered"
-  | "cancelled"
-  | "expired"
-  | "failed";
-export type IssueThreadInteractionContinuationPolicy =
-  | "none"
-  | "wake_assignee"
-  | "wake_assignee_on_accept";
-
-export interface IssueThreadInteractionActorFields {
-  createdByAgentId: string | null;
-  createdByUserId: string | null;
-  resolvedByAgentId: string | null;
-  resolvedByUserId: string | null;
-}
-
-export interface IssueThreadInteractionBase extends IssueThreadInteractionActorFields {
-  id: string;
-  companyId: string;
-  issueId: string;
-  kind: "suggest_tasks" | "ask_user_questions" | "request_confirmation";
-  title?: string | null;
-  summary?: string | null;
-  status: IssueThreadInteractionStatus;
-  continuationPolicy: IssueThreadInteractionContinuationPolicy;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  resolvedAt: Date | string | null;
-}
-
-export interface SuggestedTaskDraft {
-  clientKey: string;
-  parentClientKey?: string | null;
-  title: string;
-  description?: string | null;
-  priority?: string | null;
-  assigneeAgentId?: string | null;
-  assigneeUserId?: string | null;
-  billingCode?: string | null;
-  projectId?: string | null;
-  labels?: string[];
-  hiddenInPreview?: boolean;
-}
-
-export interface SuggestTasksResultCreatedTask {
-  clientKey: string;
-  issueId: string;
-  identifier?: string | null;
-  title?: string | null;
-  parentIssueId?: string | null;
-  [key: string]: unknown;
-}
-
-export interface SuggestTasksPayload {
-  version: 1;
-  defaultParentId?: string | null;
-  tasks: SuggestedTaskDraft[];
-}
-
-export interface SuggestTasksResult {
-  version?: number;
-  createdTasks?: SuggestTasksResultCreatedTask[];
-  skippedClientKeys?: string[];
-  selectedClientKeys?: string[];
-  rejectionReason?: string | null;
-  [key: string]: unknown;
-}
-
-export interface SuggestTasksInteraction extends IssueThreadInteractionBase {
-  kind: "suggest_tasks";
-  payload: SuggestTasksPayload;
-  result: SuggestTasksResult | null;
-}
-
-export interface AskUserQuestionsQuestionOption {
-  id: string;
-  label: string;
-  description?: string | null;
-}
-
-export interface AskUserQuestionsQuestion {
-  id: string;
-  prompt: string;
-  helpText?: string | null;
-  selectionMode: "single" | "multi";
-  required: boolean;
-  options: AskUserQuestionsQuestionOption[];
-}
-
-export interface AskUserQuestionsAnswer {
-  questionId: string;
-  optionIds: string[];
-}
-
-export interface AskUserQuestionsPayload {
-  version: 1;
-  title?: string | null;
-  submitLabel?: string | null;
-  questions: AskUserQuestionsQuestion[];
-}
-
-export interface AskUserQuestionsResult {
-  version?: number;
-  answers?: AskUserQuestionsAnswer[];
-  summaryMarkdown?: string | null;
-  cancellationReason?: string | null;
-  [key: string]: unknown;
-}
-
-export interface AskUserQuestionsInteraction extends IssueThreadInteractionBase {
-  kind: "ask_user_questions";
-  payload: AskUserQuestionsPayload;
-  result: AskUserQuestionsResult | null;
-}
-
-export interface RequestConfirmationIssueDocumentTarget {
-  type: "issue_document";
-  issueId?: string | null;
-  key: string;
-  revisionId?: string | null;
-  revisionNumber?: number | null;
-  label?: string | null;
-  href?: string | null;
-}
-
-export type RequestConfirmationTarget =
-  | RequestConfirmationIssueDocumentTarget
-  | {
-    type: string;
-    key?: string;
-    label?: string | null;
-    href?: string | null;
-    revisionNumber?: number | null;
-    [key: string]: unknown;
-  };
-
-export interface RequestConfirmationPayload {
-  version: 1;
-  prompt: string;
-  acceptLabel?: string | null;
-  rejectLabel?: string | null;
-  rejectRequiresReason?: boolean;
-  rejectReasonLabel?: string | null;
-  declineReasonPlaceholder?: string | null;
-  allowDeclineReason?: boolean;
-  detailsMarkdown?: string | null;
-  supersedeOnUserComment?: boolean;
-  target?: RequestConfirmationTarget | null;
-}
-
-export interface RequestConfirmationResult {
-  version?: number;
-  outcome?: "accepted" | "rejected" | "superseded_by_comment" | "stale_target" | "failed" | string;
-  reason?: string | null;
-  commentId?: string | null;
-  staleTarget?: RequestConfirmationTarget | null;
-  error?: string | null;
-  [key: string]: unknown;
-}
-
-export interface RequestConfirmationInteraction extends IssueThreadInteractionBase {
-  kind: "request_confirmation";
-  payload: RequestConfirmationPayload;
-  result: RequestConfirmationResult | null;
-}
-
-export type IssueThreadInteraction =
-  | SuggestTasksInteraction
-  | AskUserQuestionsInteraction
-  | RequestConfirmationInteraction;
-
-// Redaction options
-export interface CurrentUserRedactionOptions { 
-  enabled?: boolean;
-  // Allow additional properties for flexibility
-  [key: string]: any;
-}
-
-// Stub exports for upstream features not in Ciutatis
-export const createCliAuthChallengeSchema = z.object({
-  provider: z.string().optional(),
-  redirectUri: z.string().optional(),
-});
-
-export const listCompanyInvitesQuerySchema = z.object({
-  status: z.enum(["active", "accepted", "revoked", "expired"]).optional(),
-  limit: z.coerce.number().int().positive().max(100).default(50),
-  offset: z.coerce.number().int().nonnegative().default(0),
-});
-
-export const resolveCliAuthChallengeSchema = z.object({
-  challengeId: z.string(),
-  code: z.string(),
-});
-
-export const searchAdminUsersQuerySchema = z.object({
-  query: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(100).default(50),
-  offset: z.coerce.number().int().nonnegative().default(0),
-});
-
-export const updateCompanyMemberWithPermissionsSchema = z.object({
-  role: z.string().optional(),
-  grants: z.array(z.object({
-    permissionKey: z.string(),
-    scope: z.record(z.unknown()).nullable(),
-  })).optional(),
-});
-
-export const updateCompanyMemberSchema = z.object({
-  role: z.string().optional(),
-  status: z.enum(["active", "inactive", "archived"]).optional(),
-});
-
-export const archiveCompanyMemberSchema = z.object({
-  reason: z.string().optional(),
-});
-
-export type HumanCompanyMembershipRole = "owner" | "admin" | "operator" | "viewer";
-
-export const agentSkillSyncSchema = z.object({
-  skills: z.array(z.object({
-    skillId: z.string(),
-    version: z.string().optional(),
-    config: z.record(z.unknown()).optional(),
-  })),
-  replaceAll: z.boolean().default(false),
-});
-
-export const agentMineInboxQuerySchema = z.object({
-  userId: z.string().optional(),
-  status: z.enum(["open", "in_progress", "closed", "all"]).optional(),
-  limit: z.coerce.number().int().positive().max(100).default(50),
-  offset: z.coerce.number().int().nonnegative().default(0),
-});
-
-export const AGENT_DEFAULT_MAX_CONCURRENT_RUNS = 3;
-export type AgentSkillSnapshot = {
-  skillId?: string;
-  version?: string;
-  config?: Record<string, unknown>;
-  syncedAt?: Date;
-  adapterType?: string;
-  mode?: string;
-  supported?: boolean;
-  entries?: Array<{ path: string; content: string }>;
-  warnings?: string[];
-  desiredSkills?: string[];
-};
-
-export const upsertAgentInstructionsFileSchema = z.object({
-  path: z.string(),
-  content: z.string(),
-});
-
-export const updateAgentInstructionsBundleSchema = z.object({
-  files: z.array(z.object({
-    path: z.string(),
-    content: z.string(),
-  })),
-  entryFile: z.string().default("AGENTS.md"),
-});
-export function supportedEnvironmentDriversForAdapter(_adapter: string): string[] {
-  return [];
-}
-
-// Auth stub exports
-export function assertAuthenticated(_req: unknown, _res: unknown, _next: unknown): void {
-  throw new Error("assertAuthenticated not implemented");
-}
-export function assertInstanceAdmin(_req: unknown, _res: unknown, _next: unknown): void {
-  throw new Error("assertInstanceAdmin not implemented");
-}
-
-// Environment stub exports
-export const createEnvironmentSchema = z.object({
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  driver: z.string(),
-  status: z.enum(ENVIRONMENT_STATUSES).default("active"),
-  config: z.record(z.unknown()).optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
-});
-
-export const updateEnvironmentSchema = z.object({
-  name: z.string().optional(),
-  description: z.string().nullable().optional(),
-  driver: z.string().optional(),
-  status: z.enum(ENVIRONMENT_STATUSES).optional(),
-  config: z.record(z.unknown()).optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
-});
-
-export const probeEnvironmentConfigSchema = z.object({
-  driver: z.string(),
-  config: z.record(z.unknown()),
-});
-
-export type EnvironmentSupportLevel = "supported" | "unsupported";
-
-export interface AdapterEnvironmentSupport {
-  adapterType: string;
-  drivers: {
-    local: EnvironmentSupportLevel;
-    ssh: EnvironmentSupportLevel;
-    sandbox: EnvironmentSupportLevel;
-    plugin: EnvironmentSupportLevel;
-  };
-  sandboxProviders: Record<string, EnvironmentSupportLevel>;
-}
-
-export interface EnvironmentSandboxProviderCapability {
-  status: EnvironmentSupportLevel;
-  supportsSavedProbe: boolean;
-  supportsUnsavedProbe: boolean;
-  supportsRunExecution: boolean;
-  supportsReusableLeases: boolean;
-  displayName: string;
-  description: string | null;
-  source?: "core" | "plugin";
-  pluginKey?: string;
-  pluginId?: string;
-  configSchema?: Record<string, unknown>;
-}
-
-export interface EnvironmentCapabilities {
-  drivers: Record<string, EnvironmentSupportLevel>;
-  sandboxProviders: Record<string, EnvironmentSandboxProviderCapability>;
-  adapters: AdapterEnvironmentSupport[];
-}
-
-export function getAdapterEnvironmentSupport(
-  adapterType: string,
-  sandboxProviders: Record<string, EnvironmentSandboxProviderCapability> = {},
-): AdapterEnvironmentSupport {
-  const runCapableSandboxProviders = Object.fromEntries(
-    Object.entries(sandboxProviders).map(([provider, capability]) => [
-      provider,
-      capability.supportsRunExecution ? "supported" : "unsupported",
-    ] as const),
-  );
-
-  return {
-    adapterType,
-    drivers: {
-      local: "supported",
-      ssh: "supported",
-      sandbox: Object.values(runCapableSandboxProviders).some((status) => status === "supported")
-        ? "supported"
-        : "unsupported",
-      plugin: "unsupported",
-    },
-    sandboxProviders: runCapableSandboxProviders,
-  };
-}
-
-export function getEnvironmentCapabilities(
-  adapters: readonly string[],
-  options: {
-    sandboxProviders?: Record<string, EnvironmentSandboxProviderCapability>;
-  } = {},
-): EnvironmentCapabilities {
-  const sandboxProviders: Record<string, EnvironmentSandboxProviderCapability> = {
-    fake: {
-      status: "supported",
-      supportsSavedProbe: true,
-      supportsUnsavedProbe: true,
-      supportsRunExecution: false,
-      supportsReusableLeases: false,
-      displayName: "Fake sandbox",
-      description: "Deterministic test provider for probes only.",
-      source: "core",
-      configSchema: {},
-    },
-    ...(options.sandboxProviders ?? {}),
-  };
-
-  const hasRunCapableSandbox = Object.values(sandboxProviders).some(
-    (provider) => provider.supportsRunExecution,
-  );
-
-  return {
-    drivers: {
-      local: "supported",
-      ssh: "supported",
-      sandbox: hasRunCapableSandbox ? "supported" : "unsupported",
-      plugin: "unsupported",
-    },
-    sandboxProviders,
-    adapters: adapters.map((adapterType) => getAdapterEnvironmentSupport(adapterType, sandboxProviders)),
-  };
-}
-
-// Workspace execution stub exports
-export function findWorkspaceCommandDefinition(
-  config: Record<string, unknown> | null,
-  commandId: string | null,
-): WorkspaceServiceCommandDefinition & { kind: "service" | "job"; serviceIndex?: number; id: string } | null {
-  const commands = listWorkspaceServiceCommandDefinitions(config);
-  if (!commandId) {
-    return commands.find((command) => command.kind === "service") ?? commands.find((command) => command.kind === "job") ?? null;
-  }
-  return commands.find((command) => command.id === commandId || command.name === commandId) ?? null;
-}
-
-export function matchWorkspaceRuntimeServiceToCommand(
-  command: Record<string, unknown>,
-  services: Array<{ id: string; serviceName?: string | null; command?: string | null }>,
-): { id: string } | null {
-  const serviceName = readString(command.serviceName) ?? readString(command.name);
-  const commandText = readString(command.command);
-  return services.find((service) => {
-    if (serviceName && service.serviceName === serviceName) return true;
-    return Boolean(commandText && service.command === commandText);
-  }) ?? null;
-}
-
-export const issueGraphLivenessAutoRecoveryRequestSchema = z.object({
-  enabled: z.boolean().optional(),
-  thresholdMinutes: z.number().int().positive().optional(),
-  lookbackHours: z.number().int().positive().optional(),
-});
-
-export const patchInstanceGeneralSettingsSchema = z.object({
-  instanceName: z.string().optional(),
-  contactEmail: z.string().email().optional(),
-  timezone: z.string().optional(),
-  locale: z.string().optional(),
-  backupRetention: z.number().optional(),
-  censorUsernameInLogs: z.boolean().optional(),
-  keyboardShortcuts: z.boolean().optional(),
-  feedbackDataSharingPreference: z.enum(["prompt", "allowed", "denied"]).optional(),
-  autoRestartDevServerWhenIdle: z.boolean().optional(),
-});
-
-const issueTreeControlModeSchema = z.enum(["pause", "resume", "cancel", "restore"]);
-const issueTreeHoldReleasePolicySchema = z.object({
-  strategy: z.enum(["manual", "auto_on_ready", "after_active_runs_finish"]),
-  readyAfterMinutes: z.number().int().positive().optional().nullable(),
-  note: z.string().optional().nullable(),
-}).optional();
-
-export const createIssueTreeHoldSchema = z.object({
-  mode: issueTreeControlModeSchema,
-  reason: z.string().optional(),
-  releasePolicy: issueTreeHoldReleasePolicySchema,
-  metadata: z.record(z.unknown()).optional(),
-  durationMinutes: z.number().int().positive().optional(),
-});
-
-export const previewIssueTreeControlSchema = z.object({
-  mode: issueTreeControlModeSchema,
-  reason: z.string().optional(),
-  releasePolicy: issueTreeHoldReleasePolicySchema,
-  metadata: z.record(z.unknown()).optional(),
-});
-
-export const releaseIssueTreeHoldSchema = z.object({
-  holdId: z.string(),
-  reason: z.string().optional(),
-});
-
-// IssueTree type exports for upstream compatibility
 export type {
-  IssueTreeControlMode,
-  IssueTreeHoldStatus,
-  IssueTreeHoldReleasePolicyStrategy,
-  IssueTreeHoldReleasePolicy,
-  IssueTreePreviewTotals,
-  IssueTreePreviewWarning,
-  IssueTreePreviewRun,
-  IssueTreePreviewIssue,
-  IssueTreePreviewAgent,
-  IssueTreeControlPreview,
-  IssueTreeHoldMember,
-  IssueTreeHold,
-  IssueGraphLivenessAutoRecoveryPreview,
-  IssueGraphLivenessAutoRecoveryPreviewItem,
-} from "./types/issue-tree.js";
+  AdapterEnvironmentSupport,
+  EnvironmentCapabilities,
+  EnvironmentProviderCapability,
+  EnvironmentSupportStatus,
+} from "./environment-support.js";
+
+export type { AdapterRegistryEntry } from "./types/adapter-registry.js";
 
 export {
-  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-} from "./types/issue-tree.js";
+  adapterRegistryEntrySchema,
+  adapterRegistrySchema,
+  type AdapterRegistryEntryParsed,
+} from "./validators/adapter-registry.js";
 
-export const workspaceRuntimeControlTargetSchema = z
-  .object({
-    workspaceCommandId: z.string().optional().nullable(),
-    runtimeServiceId: z.string().optional().nullable(),
-    serviceIndex: z.coerce.number().int().nonnegative().optional().nullable(),
-  })
-  .strict();
+export {
+  environmentCustomImageTemplateKindSchema,
+  environmentCustomImageTemplateStatusSchema,
+  environmentCustomImageSetupSessionStatusSchema,
+  environmentCustomImageSetupConnectionTypeSchema,
+  environmentCustomImageSetupConnectionSummarySchema,
+  environmentCustomImageTemplateSchema,
+  environmentCustomImageSetupSessionSchema,
+  startEnvironmentCustomImageSetupSessionSchema,
+  finishEnvironmentCustomImageSetupSessionSchema,
+  cancelEnvironmentCustomImageSetupSessionSchema,
+  createEnvironmentCustomImageTerminalSessionTokenSchema,
+  environmentCustomImageTerminalSessionTokenSchema,
+  type EnvironmentCustomImageSetupConnectionSummary,
+  type EnvironmentCustomImageTemplate,
+  type EnvironmentCustomImageSetupSession,
+  type StartEnvironmentCustomImageSetupSession,
+  type FinishEnvironmentCustomImageSetupSession,
+  type CancelEnvironmentCustomImageSetupSession,
+  type CreateEnvironmentCustomImageTerminalSessionToken,
+  type EnvironmentCustomImageTerminalSessionToken,
+} from "./validators/environment-custom-images.js";
 
-// Re-export plugin types from types/plugin.ts
-export type {
-  PluginManagedAgentDeclaration,
-  PluginManagedAgentResolution,
-  PluginManagedProjectDeclaration,
-  PluginManagedProjectResolution,
-  PluginCompanySettings,
-  PluginDatabaseCoreReadTable,
-  PluginDatabaseNamespaceDeclaration,
-  PluginMigrationRecord,
-} from "./types/plugin.js";
-
-// Project types (upstream compatibility)
-export type { ProjectManagedByPlugin } from "./types/project.js";
-
-export type ProjectWorkspaceRuntimeConfig = Record<string, unknown>;
-
-// Utility functions
-export function hasNonAsciiContent(_content: string): boolean {
-  return false;
-}
-
-// telemetry stubs
-export function trackAgentFirstHeartbeat(
-  _tc: { agentRole: string | null; agentId: string }
-): void {
-  // No-op - telemetry removed from Ciutatis
-}
-
-// skill mention stubs
-export function extractSkillMentionIds(_source: string): string[] {
-  return [];
-}
+export * from "./civic-exports.js";

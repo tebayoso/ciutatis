@@ -1,6 +1,7 @@
-// New canonical exports
+// Ciutatis civic type exports (fork branding + public portal / tenants)
 export type { Institution } from "./institution.js";
-export type { TenantInstance } from "./tenant-instance.js";
+export type { TenantInstance, TenantProvisioningJobSummary } from "./tenant-instance.js";
+export type { TenantProvisioningJob } from "./tenant-provisioning-job.js";
 export type { Objective } from "./objective.js";
 export type { PublicContactSubmission, PublicContactLocale } from "./public-contact.js";
 export type {
@@ -28,10 +29,6 @@ export type {
   RequestDocument,
   RequestComment,
   RequestAttachment,
-  DocumentFormat,
-  DocumentRevision,
-  LegacyPlanDocument,
-  SuccessfulRunHandoffState,
 } from "./request.js";
 export type {
   RequestWorkProduct,
@@ -41,6 +38,19 @@ export type {
   RequestWorkProductReviewState,
 } from "./work-product.js";
 export type { InstitutionMembership } from "./access.js";
+export type { InstitutionSecret } from "./secrets.js";
+export type {
+  CloudflareProvisioningSettings,
+  CloudflareProvisioningValidationResult,
+  InstanceAdminOverview,
+  TenantProvisioningSettings,
+} from "./instance.js";
+export type {
+  PluginApiRouteMethod,
+  PluginApiRouteAuthMode,
+  PluginApiRouteCheckoutPolicy,
+} from "../constants.js";
+export type { PaperclipPluginManifestV1 as CiutatisPluginManifestV1 } from "./plugin.js";
 export type {
   InstitutionPortabilityInclude,
   InstitutionPortabilitySecretRequirement,
@@ -60,21 +70,9 @@ export type {
   InstitutionPortabilityExportRequest,
 } from "./institution-portability.js";
 
-// Backward-compat aliases (old names)
+// --- upstream Paperclip type barrel ---
 export type { Company } from "./company.js";
-export type { Goal } from "./goal.js";
 export type {
-  Issue,
-  IssueAssigneeAdapterOverrides,
-  IssueComment,
-  IssueDocument,
-  IssueDocumentSummary,
-  IssueAncestor,
-  IssueAncestorProject,
-  IssueAncestorGoal,
-  IssueAttachment,
-  IssueLabel,
-} from "./issue.js";
   AttentionDecisionVerb,
   AttentionDetailImage,
   AttentionFeed,
@@ -103,46 +101,18 @@ export type {
   SshEnvironmentConfig,
 } from "./environment.js";
 export type {
-  IssueWorkProduct,
-  IssueWorkProductType,
-  IssueWorkProductProvider,
-  IssueWorkProductStatus,
-  IssueWorkProductReviewState,
-} from "./work-product.js";
-export type { CompanyMembership } from "./access.js";
-export type { InstitutionSecret } from "./secrets.js";
+  FeedbackVote,
+  FeedbackDataSharingPreference,
+  FeedbackTargetType,
+  FeedbackVoteValue,
+  FeedbackTrace,
+  FeedbackTraceStatus,
+  FeedbackTraceTargetSummary,
+  FeedbackTraceBundleCaptureStatus,
+  FeedbackTraceBundleFile,
+  FeedbackTraceBundle,
+} from "./feedback.js";
 export type {
-  CompanyPortabilityInclude,
-  CompanyPortabilitySecretRequirement,
-  CompanyPortabilityCompanyManifestEntry,
-  CompanyPortabilityAgentManifestEntry,
-  CompanyPortabilityManifest,
-  CompanyPortabilityExportResult,
-  CompanyPortabilitySource,
-  CompanyPortabilityImportTarget,
-  CompanyPortabilityAgentSelection,
-  CompanyPortabilityCollisionStrategy,
-  CompanyPortabilityPreviewRequest,
-  CompanyPortabilityPreviewAgentPlan,
-  CompanyPortabilityPreviewResult,
-  CompanyPortabilityImportRequest,
-  CompanyPortabilityImportResult,
-  CompanyPortabilityExportRequest,
-} from "./company-portability.js";
-
-export type {
-  IssueTreeControlMode,
-  IssueTreeHoldStatus,
-  IssueTreeHoldReleasePolicyStrategy,
-  IssueTreeHoldReleasePolicy,
-  IssueTreePreviewTotals,
-  IssueTreePreviewWarning,
-  IssueTreePreviewRun,
-  IssueTreePreviewIssue,
-  IssueTreePreviewAgent,
-  IssueTreeControlPreview,
-  IssueTreeHoldMember,
-  IssueTreeHold,
   InstanceExecutionMode,
   InstanceExperimentalSettings,
   InstanceGeneralSettings,
@@ -150,24 +120,16 @@ export type {
   BackupRetentionPolicy,
   IssueGraphLivenessAutoRecoveryPreview,
   IssueGraphLivenessAutoRecoveryPreviewItem,
-} from "./issue-tree.js";
-export {
-  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
-} from "./issue-tree.js";
-
-// Unchanged exports
-export type { InstanceExperimentalSettings, InstanceSettings, InstanceGeneralSettings } from "./instance.js";
-export type {
-  CloudflareProvisioningSettings,
-  CloudflareProvisioningValidationResult,
-  InstanceAdminOverview,
 } from "./instance.js";
-export type { TenantProvisioningJobSummary } from "./tenant-instance.js";
-export type { TenantProvisioningJob } from "./tenant-provisioning-job.js";
-export type {
-  Agent,
+export {
+  DAILY_RETENTION_PRESETS,
+  WEEKLY_RETENTION_PRESETS,
+  MONTHLY_RETENTION_PRESETS,
+  DEFAULT_BACKUP_RETENTION,
+  DEFAULT_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MIN_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+  MAX_ISSUE_GRAPH_LIVENESS_AUTO_RECOVERY_LOOKBACK_HOURS,
+} from "./instance.js";
 export {
   TRUST_PRESETS,
   DEFAULT_TRUST_PRESET,
@@ -182,8 +144,12 @@ export {
   type LowTrustReviewPresetPolicy,
   type TrustAuthorizationPolicy,
 } from "../trust-policy.js";
+export type {
+  CompanySkillSourceType,
   CompanySkillTrustLevel,
   CompanySkillCompatibility,
+  CompanySkillSourceBadge,
+  CompanySkillSharingScope,
   CompanySkillListSort,
   CompanySkillListInclude,
   CompanySkillLastEditor,
@@ -197,6 +163,7 @@ export {
   CompanySkillCategoryCount,
   CompanySkillVersion,
   CompanySkillVersionCreateRequest,
+  CompanySkillStarResult,
   CompanySkillComment,
   CompanySkillCommentCreateRequest,
   CompanySkillCommentUpdateRequest,
@@ -252,6 +219,7 @@ export {
   CompanySkillInstallCatalogRequest,
   CompanySkillInstallCatalogResult,
 } from "./company-skill.js";
+export type {
   CatalogTeamKind,
   CatalogTeamTrustLevel,
   CatalogTeamCompatibility,
@@ -274,6 +242,7 @@ export {
   CatalogTeamInstallResult,
   InstalledCatalogTeam,
 } from "./teams-catalog.js";
+export type {
   AgentSkillSyncMode,
   AgentSkillState,
   AgentSkillOrigin,
@@ -282,12 +251,19 @@ export {
   AgentSkillSnapshot,
   AgentSkillSyncRequest,
 } from "./adapter-skills.js";
+export type {
+  Agent,
   AgentAccessState,
   AgentChainOfCommandEntry,
   AgentDetail,
   ClearAgentErrorResponse,
   AgentModelProfileConfig,
   AgentPermissions,
+  AgentRuntimeConfig,
+  AgentInstructionsBundleMode,
+  AgentInstructionsFileSummary,
+  AgentInstructionsFileDetail,
+  AgentInstructionsBundle,
   AgentKeyCreated,
   AgentConfigRevision,
   AdapterEnvironmentCheckLevel,
@@ -295,10 +271,7 @@ export {
   AdapterEnvironmentCheck,
   AdapterEnvironmentTestResult,
 } from "./agent.js";
-export type { AssetImage } from "./asset.js";
-export type { Project, ProjectCodebase, ProjectCodebaseOrigin, ProjectGoalRef, ProjectWorkspace } from "./project.js";
 export type {
-  ExecutionWorkspace,
   AgentEligibilityAgent,
   AgentEligibilityLifecycleReason,
   AgentInvalidOrgChainAncestor,
@@ -307,6 +280,8 @@ export type {
   AgentOrgChainInvalidReason,
   AgentWorkEligibility,
 } from "../agent-eligibility.js";
+export type { AssetImage } from "./asset.js";
+export type {
   CreateDocumentAnnotationCommentRequest,
   CreateDocumentAnnotationThreadRequest,
   DocumentAnnotationAnchorRemapSnapshot,
@@ -330,6 +305,7 @@ export type {
   UpdateDocumentAnnotationThreadRequest,
 } from "./document-annotation.js";
 export type { Project, ProjectBudgetSummary, ProjectCodebase, ProjectCodebaseOrigin, ProjectGoalRef, ProjectManagedByPlugin, ProjectWorkspace } from "./project.js";
+export type {
   CompanySearchCountType,
   CompanySearchFilterOptionCounts,
   CompanySearchHighlight,
@@ -347,6 +323,8 @@ export type { Project, ProjectBudgetSummary, ProjectCodebase, ProjectCodebaseOri
   CompanySearchZeroResultsLoosenSuggestion,
 } from "./search.js";
 export { COMPANY_SEARCH_SCOPES, COMPANY_SEARCH_SORTS, COMPANY_SEARCH_UPDATED_WITHIN_OPTIONS } from "./search.js";
+export type {
+  ExecutionWorkspace,
   ExecutionWorkspaceSummary,
   ExecutionWorkspaceConfig,
   ExecutionWorkspaceCloseAction,
@@ -364,6 +342,12 @@ export { COMPANY_SEARCH_SCOPES, COMPANY_SEARCH_SORTS, COMPANY_SEARCH_UPDATED_WIT
   WorkspaceCommandKind,
   WorkspaceRuntimeControlTarget,
   WorkspaceRuntimeService,
+  WorkspaceRuntimeServiceStateMap,
+  WorkspaceRuntimeDesiredState,
+  WorkspaceRealizationRecord,
+  WorkspaceRealizationRequest,
+  WorkspaceRealizationSyncStrategy,
+  WorkspaceRealizationTransport,
   ExecutionWorkspaceStrategyType,
   ExecutionWorkspaceMode,
   ExecutionWorkspaceProviderType,
@@ -598,8 +582,6 @@ export type {
   SecretStatus,
   SecretVersionStatus,
 } from "./secrets.js";
-export type { CostEvent, CostSummary, CostByAgent, CostByProviderModel, CostByBiller, CostByAgentModel, CostWindowSpendRow, CostByProject } from "./cost.js";
-export type { FinanceEvent, FinanceSummary, FinanceByBiller, FinanceByKind } from "./finance.js";
 export type {
   Routine,
   RoutineEnvConfig,
@@ -621,6 +603,8 @@ export type {
   RoutineListItem,
 } from "./routine.js";
 export type { CostEvent, CostSummary, IssueCostSummary, CostByAgent, CostByProviderModel, CostByBiller, CostByAgentModel, CostWindowSpendRow, CostByProject } from "./cost.js";
+export type { FinanceEvent, FinanceSummary, FinanceByBiller, FinanceByKind } from "./finance.js";
+export type {
   AgentWakeupResponse,
   AgentWakeupSkipped,
   GitWorktreeBranchAncestryVerdict,
@@ -647,6 +631,16 @@ export type {
   WorkTimelineResult,
 } from "./work-timeline.js";
 export type { ActivityEvent } from "./activity.js";
+export type {
+  UserProfileActivitySummary,
+  UserProfileAgentUsage,
+  UserProfileDailyPoint,
+  UserProfileIdentity,
+  UserProfileIssueSummary,
+  UserProfileProviderUsage,
+  UserProfileResponse,
+  UserProfileWindowStats,
+} from "./user-profile.js";
 export type { SidebarBadges } from "./sidebar-badges.js";
 export type { SidebarOrderPreference } from "./sidebar-preferences.js";
 export type {
@@ -659,18 +653,62 @@ export type {
 export { RESOURCE_MEMBERSHIP_STATES } from "./resource-memberships.js";
 export type { InboxDismissal, InboxDismissalKind } from "./inbox-dismissal.js";
 export type {
+  AccessUserProfile,
+  CompanyMemberRecord,
+  CompanyMembersResponse,
+  ArchiveCompanyMemberResponse,
+  CompanyMembership,
+  CompanyInviteListResponse,
+  CompanyInviteRecord,
   PrincipalPermissionGrant,
   Invite,
   JoinRequest,
+  JoinRequestInviteSummary,
+  JoinRequestRecord,
   InstanceUserRoleGrant,
+  AdminUserDirectoryEntry,
+  UserCompanyAccessEntry,
+  UserCompanyAccessResponse,
 } from "./access.js";
 export type { QuotaWindow, ProviderQuotaResult } from "./quota.js";
+export type {
+  CompanyPortabilitySecretRequirement,
+  CompanyPortabilityInclude,
+  CompanyPortabilityEnvInput,
+  CompanyPortabilityFileEntry,
+  CompanyPortabilityCompanyManifestEntry,
+  CompanyPortabilitySidebarOrder,
+  CompanyPortabilityAgentManifestEntry,
+  CompanyPortabilitySkillManifestEntry,
+  CompanyPortabilityProjectManifestEntry,
+  CompanyPortabilityProjectWorkspaceManifestEntry,
+  CompanyPortabilityIssueRoutineTriggerManifestEntry,
+  CompanyPortabilityIssueRoutineManifestEntry,
+  CompanyPortabilityIssueCommentManifestEntry,
+  CompanyPortabilityIssueManifestEntry,
+  CompanyPortabilityManifest,
+  CompanyPortabilityExportResult,
+  CompanyPortabilityExportPreviewFile,
+  CompanyPortabilityExportPreviewResult,
+  CompanyPortabilitySource,
+  CompanyPortabilityImportTarget,
+  CompanyPortabilityAgentSelection,
+  CompanyPortabilityCollisionStrategy,
+  CompanyPortabilityPreviewRequest,
+  CompanyPortabilityPreviewAgentPlan,
+  CompanyPortabilityPreviewProjectPlan,
+  CompanyPortabilityPreviewIssuePlan,
+  CompanyPortabilityPreviewResult,
+  CompanyPortabilityAdapterOverride,
+  CompanyPortabilityImportRequest,
+  CompanyPortabilityImportResult,
+  CompanyPortabilityExportRequest,
+} from "./company-portability.js";
 export type {
   JsonSchema,
   PluginJobDeclaration,
   PluginWebhookDeclaration,
   PluginToolDeclaration,
-  PluginLocalFolderDeclaration,
   PluginEnvironmentDriverDeclaration,
   PluginEnvironmentTemplateConfigBinding,
   PluginManagedAgentDeclaration,
@@ -678,6 +716,7 @@ export type {
   PluginManagedRoutineDeclaration,
   PluginManagedSkillDeclaration,
   PluginManagedSkillFileDeclaration,
+  PluginLocalFolderDeclaration,
   PluginManagedAgentResolution,
   PluginManagedProjectResolution,
   PluginManagedRoutineResolution,
@@ -691,29 +730,25 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
-  PluginApiRouteMethod,
-  PluginApiRouteAuthMode,
-  PluginApiRouteCheckoutPolicy,
+  PluginDatabaseDeclaration,
   PluginApiRouteCompanyResolution,
   PluginApiRouteDeclaration,
-  CiutatisPluginManifestV1,
   PluginObjectReferenceRefreshPolicy,
   PluginObjectReferenceProviderDeclaration,
   PaperclipPluginManifestV1,
   PluginRecord,
+  PluginDatabaseNamespaceRecord,
+  PluginMigrationRecord,
   PluginStateRecord,
   PluginConfig,
+  PluginCompanySettings,
   PluginEntityRecord,
   PluginEntityQuery,
   PluginJobRecord,
   PluginJobRunRecord,
   PluginWebhookDeliveryRecord,
-  PluginManagedProjectDeclaration,
-  PluginManagedProjectResolution,
-  PluginManagedAgentDeclaration,
-  PluginManagedAgentResolution,
-  PluginCompanySettings,
   PluginDatabaseCoreReadTable,
-  PluginDatabaseNamespaceDeclaration,
-  PluginMigrationRecord,
+  PluginDatabaseMigrationStatus,
+  PluginDatabaseNamespaceMode,
+  PluginDatabaseNamespaceStatus,
 } from "./plugin.js";

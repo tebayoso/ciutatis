@@ -2,7 +2,20 @@ import type { IssuePriority, IssueStatus } from "../constants.js";
 import type { Objective } from "./objective.js";
 import type { Project, ProjectWorkspace } from "./project.js";
 import type { ExecutionWorkspace, IssueExecutionWorkspaceSettings } from "./workspace-runtime.js";
-import type { RequestWorkProduct } from "./work-product.js";
+import type {
+  RequestWorkProduct,
+  RequestWorkProductType,
+  RequestWorkProductProvider,
+  RequestWorkProductStatus,
+  RequestWorkProductReviewState,
+} from "./work-product.js";
+export type {
+  RequestWorkProduct,
+  RequestWorkProductType,
+  RequestWorkProductProvider,
+  RequestWorkProductStatus,
+  RequestWorkProductReviewState,
+};
 import type { IssueTreePreviewRun } from "./issue-tree.js";
 
 export interface RequestAncestorProject {

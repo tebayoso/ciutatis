@@ -1,27 +1,3 @@
-export {
-  portabilityIncludeSchema,
-  portabilitySecretRequirementSchema,
-  portabilityInstitutionManifestEntrySchema,
-  portabilityInstitutionManifestEntrySchema as portabilityCompanyManifestEntrySchema,
-  portabilityAgentManifestEntrySchema,
-  portabilityManifestSchema,
-  portabilitySourceSchema,
-  portabilityTargetSchema,
-  portabilityAgentSelectionSchema,
-  portabilityCollisionStrategySchema,
-  institutionPortabilityExportSchema,
-  institutionPortabilityExportSchema as companyPortabilityExportSchema,
-  institutionPortabilityPreviewSchema,
-  institutionPortabilityPreviewSchema as companyPortabilityPreviewSchema,
-  institutionPortabilityImportSchema,
-  institutionPortabilityImportSchema as companyPortabilityImportSchema,
-  type InstitutionPortabilityExport,
-  type InstitutionPortabilityExport as CompanyPortabilityExport,
-  type InstitutionPortabilityPreview,
-  type InstitutionPortabilityPreview as CompanyPortabilityPreview,
-  type InstitutionPortabilityImport,
-  type InstitutionPortabilityImport as CompanyPortabilityImport,
-} from "./institution-portability.js";
 import { z } from "zod";
 import { PERMISSION_KEYS } from "../constants.js";
 import { MAX_COMPANY_ATTACHMENT_MAX_BYTES } from "../constants.js";
@@ -30,6 +6,7 @@ import {
   issueCommentMetadataSchema,
   issueCommentPresentationSchema,
 } from "./issue.js";
+import { routineVariableSchema } from "./routine.js";
 
 export const portabilityIncludeSchema = z
   .object({
@@ -160,6 +137,7 @@ export const portabilityIssueRoutineTriggerManifestEntrySchema = z.object({
 export const portabilityIssueRoutineManifestEntrySchema = z.object({
   concurrencyPolicy: z.string().nullable(),
   catchUpPolicy: z.string().nullable(),
+  variables: z.array(routineVariableSchema).nullable().optional(),
   triggers: z.array(portabilityIssueRoutineTriggerManifestEntrySchema).default([]),
 });
 

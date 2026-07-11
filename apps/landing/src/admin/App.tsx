@@ -43,13 +43,7 @@ import { CouncilClaimPage } from "./pages/CouncilClaim";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { PublicSite } from "./pages/PublicSite";
-import { PublicPortalPage } from "./pages/PublicPortalPage";
-import { PublicPortalRequestPage } from "./pages/PublicPortalRequestPage";
-import { GovOpsPage } from "./pages/GovOpsPage";
-import { ScrutinyPage } from "./pages/ScrutinyPage";
 import { queryKeys } from "./lib/queryKeys";
-import { isAdminHostname, isPublicSitePath } from "./lib/public-site-paths";
 import { useCompany, useOptionalCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
@@ -389,50 +383,26 @@ function NoCompaniesStartPage() {
   );
 }
 
+function LegacyPublicRedirect() {
+  return <Navigate to="/" replace />;
+}
+
 export function App() {
-  const location = useLocation();
   const companyContext = useOptionalCompany();
-  const currentHostname = globalThis.location?.hostname ?? null;
-  const isAdminHost = isAdminHostname(currentHostname);
-  const isPublicRoute = isPublicSitePath(location.pathname, currentHostname);
-  const publicEntryElement = isAdminHost ? <ShellEntryRedirect /> : <PublicSite />;
 
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={publicEntryElement} />
-        <Route path="contact" element={publicEntryElement} />
-        <Route path="platform" element={publicEntryElement} />
-        <Route path="about" element={publicEntryElement} />
-        <Route path="partners" element={publicEntryElement} />
-        <Route path="portal" element={<PublicPortalPage />} />
-        <Route path="portal/requests/:publicId" element={<PublicPortalRequestPage />} />
-        <Route path="portal/:institutionSlug" element={<PublicPortalPage />} />
-        <Route path="en" element={publicEntryElement} />
-        <Route path="en/contact" element={publicEntryElement} />
-        <Route path="en/platform" element={publicEntryElement} />
-        <Route path="en/govops" element={<GovOpsPage />} />
-        <Route path="en/scrutiny" element={<ScrutinyPage />} />
-        <Route path="en/about" element={publicEntryElement} />
-        <Route path="en/partners" element={publicEntryElement} />
-        <Route path="en/portal" element={<PublicPortalPage />} />
-        <Route path="en/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
-        <Route path="en/portal/:institutionSlug" element={<PublicPortalPage />} />
-        <Route path="es" element={publicEntryElement} />
-        <Route path="es/contacto" element={publicEntryElement} />
-        <Route path="es/procesos" element={publicEntryElement} />
-        <Route path="es/modulos" element={publicEntryElement} />
-        <Route path="es/casos" element={publicEntryElement} />
-        <Route path="es/plataforma" element={publicEntryElement} />
-        <Route path="es/nosotros" element={publicEntryElement} />
-        <Route path="es/alianzas" element={publicEntryElement} />
-        <Route path="es/portal" element={<PublicPortalPage />} />
-        <Route path="es/portal/requests/:publicId" element={<PublicPortalRequestPage />} />
-        <Route path="es/portal/:institutionSlug" element={<PublicPortalPage />} />
-        <Route path="govops" element={<GovOpsPage />} />
-        <Route path="scrutiny" element={<ScrutinyPage />} />
-        <Route path="es/govops" element={<GovOpsPage />} />
-        <Route path="es/escrutinio" element={<ScrutinyPage />} />
+        <Route path="/" element={<RootPage />} />
+        <Route path="contact" element={<LegacyPublicRedirect />} />
+        <Route path="platform" element={<LegacyPublicRedirect />} />
+        <Route path="about" element={<LegacyPublicRedirect />} />
+        <Route path="partners" element={<LegacyPublicRedirect />} />
+        <Route path="portal/*" element={<LegacyPublicRedirect />} />
+        <Route path="en/*" element={<LegacyPublicRedirect />} />
+        <Route path="es/*" element={<LegacyPublicRedirect />} />
+        <Route path="govops" element={<LegacyPublicRedirect />} />
+        <Route path="scrutiny" element={<LegacyPublicRedirect />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="app" element={<ShellEntryRedirect />} />
         <Route path="council-claim/:token" element={<CouncilClaimPage />} />
@@ -498,7 +468,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
-      {companyContext && !isPublicRoute ? <OnboardingWizard /> : null}
+      {companyContext ? <OnboardingWizard /> : null}
     </ErrorBoundary>
   );
 }

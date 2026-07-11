@@ -40,10 +40,12 @@
     "typecheck": "tsc --noEmit",
     "generate": "tsc -p tsconfig.json && drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "seed:local": "tsx src/seed-local-dev.ts"
   },
   "dependencies": {
     "@paperclipai/shared": "workspace:*",
+    "better-auth": "1.4.18",
     "drizzle-orm": "^0.38.4",
     "embedded-postgres": "^18.1.0-beta.16",
     "postgres": "^3.4.5"

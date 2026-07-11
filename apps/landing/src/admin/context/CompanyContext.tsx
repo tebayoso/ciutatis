@@ -9,12 +9,10 @@ import {
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Company } from "@paperclipai/shared";
-import { useLocation } from "@/lib/router";
 import { companiesApi } from "../api/companies";
 import { ApiError } from "../api/client";
 import { queryKeys } from "../lib/queryKeys";
 import type { CompanySelectionSource } from "../lib/company-selection";
-import { isPublicSitePath } from "../lib/public-site-paths";
 type CompanySelectionOptions = { source?: CompanySelectionSource };
 type CompanyQueryResult = { companies: Company[]; unauthorized: boolean };
 type CompanySelectionCompany = Pick<Company, "id">;
@@ -80,20 +78,10 @@ function normalizeCompaniesQueryResult(data: CompanyQueryResult | Company[] | un
   return data ?? { companies: [], unauthorized: false };
 }
 
-function useSafeLocationPathname() {
-  try {
-    return useLocation().pathname;
-  } catch {
-    return typeof window === "undefined" ? "/" : window.location.pathname;
-  }
-}
-
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const pathname = useSafeLocationPathname();
   const queryClient = useQueryClient();
   const [selectionSource, setSelectionSource] = useState<CompanySelectionSource>("bootstrap");
   const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(null);
-  const isPublicRoute = isPublicSitePath(pathname);
 
   const { data: companiesQuery, isLoading, error } = useQuery<CompanyQueryResult>({
     queryKey: queryKeys.companies.all,
@@ -107,7 +95,6 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    enabled: !isPublicRoute,
     retry: false,
   });
   const { companies, unauthorized } = normalizeCompaniesQueryResult(companiesQuery);

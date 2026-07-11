@@ -6,18 +6,19 @@ import path from "node:path";
 
 const repoRoot = process.cwd();
 const serverRoot = path.join(repoRoot, "server");
+const serverSrcDir = path.join(repoRoot, "server", "src");
 const serverTestsDir = path.join(repoRoot, "server", "src", "__tests__");
-const nonServerSuites = [
-  { label: "@paperclipai/shared", args: ["--project", "@paperclipai/shared"] },
-  { label: "@paperclipai/db", args: ["--project", "@paperclipai/db"] },
-  { label: "@paperclipai/adapter-utils", args: ["--project", "@paperclipai/adapter-utils"] },
-  { label: "@paperclipai/adapter-claude-local", args: ["--project", "@paperclipai/adapter-claude-local"] },
-  { label: "@paperclipai/adapter-codex-local", args: ["--project", "@paperclipai/adapter-codex-local"] },
-  { label: "@paperclipai/adapter-cursor-local", args: ["--project", "@paperclipai/adapter-cursor-local"] },
-  { label: "@paperclipai/adapter-gemini-local", args: ["--project", "@paperclipai/adapter-gemini-local"] },
-  { label: "@paperclipai/adapter-opencode-local", args: ["--project", "@paperclipai/adapter-opencode-local"] },
-  { label: "@paperclipai/adapter-pi-local", args: ["--project", "@paperclipai/adapter-pi-local"] },
-  { label: "paperclipai", args: [], cwd: path.join(repoRoot, "cli") },
+const nonServerProjects = [
+  "@paperclipai/shared",
+  "@paperclipai/skills-catalog",
+  "@paperclipai/db",
+  "@paperclipai/adapter-utils",
+  "@paperclipai/adapter-codex-local",
+  "@paperclipai/adapter-opencode-local",
+  "@paperclipai/plugin-sdk",
+  "@paperclipai/create-paperclip-plugin",
+  "@paperclipai/ui",
+  "paperclipai",
 ];
 const routeTestPattern = /[^/]*(?:route|routes|authz)[^/]*\.test\.ts$/;
 const additionalSerializedServerTests = new Set([
@@ -50,6 +51,16 @@ let invocationIndex = 0;
 const serializedModeName = "serialized";
 const generalModeName = "general";
 const allModeName = "all";
+const generalServerGroupName = "general-server";
+const generalWorkspacesAGroupName = "general-workspaces-a";
+const generalWorkspacesBGroupName = "general-workspaces-b";
+const generalWorkspacesAProjects = ["@paperclipai/ui", "paperclipai"];
+const generalWorkspacesBProjects = nonServerProjects.filter((project) => !generalWorkspacesAProjects.includes(project));
+const generalGroupNames = [generalServerGroupName, generalWorkspacesAGroupName, generalWorkspacesBGroupName];
+const serializedServerVitestArgs = [
+  "--no-file-parallelism",
+  "--maxWorkers=1",
+];
 
 function walk(dir) {
   const entries = readdirSync(dir);
@@ -118,6 +129,7 @@ function parseCliOptions(argv) {
   let mode = allModeName;
   let shardIndex = null;
   let shardCount = null;
+  let group = null;
   let dryRun = false;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -164,6 +176,17 @@ function parseCliOptions(argv) {
       continue;
     }
 
+    if (arg === "--group") {
+      group = readOptionValue(argv, index, arg);
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--group=")) {
+      group = arg.slice("--group=".length);
+      continue;
+    }
+
     fail(`Unknown argument "${arg}".`);
   }
 
@@ -175,29 +198,44 @@ function parseCliOptions(argv) {
     fail("--shard-index and --shard-count must be provided together.");
   }
 
-  if (mode !== serializedModeName && shardIndex !== null) {
-    fail("--shard-index/--shard-count are only valid with --mode serialized.");
+  const shardAllowed =
+    mode === serializedModeName ||
+    (mode === generalModeName && group === generalServerGroupName);
+  if (!shardAllowed && shardIndex !== null) {
+    fail(
+      "--shard-index/--shard-count are only valid with --mode serialized or --mode general --group general-server.",
+    );
+  }
+
+  if (group !== null && mode !== generalModeName) {
+    fail("--group is only valid with --mode general.");
+  }
+
+  if (group !== null && !generalGroupNames.includes(group)) {
+    fail(`Unknown group "${group}". Expected one of: ${generalGroupNames.join(", ")}.`);
+  }
+
+  if (shardIndex !== null) {
+    if (shardIndex >= shardCount) {
+      fail(`--shard-index must be less than --shard-count. Received ${shardIndex} of ${shardCount}.`);
+    }
   }
 
   if (mode === serializedModeName) {
-    const resolvedShardCount = shardCount ?? 1;
-    const resolvedShardIndex = shardIndex ?? 0;
-    if (resolvedShardIndex >= resolvedShardCount) {
-      fail(`--shard-index must be less than --shard-count. Received ${resolvedShardIndex} of ${resolvedShardCount}.`);
-    }
-
     return {
       mode,
-      shardIndex: resolvedShardIndex,
-      shardCount: resolvedShardCount,
+      shardIndex: shardIndex ?? 0,
+      shardCount: shardCount ?? 1,
+      group: null,
       dryRun,
     };
   }
 
   return {
     mode,
-    shardIndex: null,
-    shardCount: null,
+    shardIndex,
+    shardCount,
+    group,
     dryRun,
   };
 }
@@ -206,21 +244,23 @@ function selectSerializedSuites(routeTests, shardIndex, shardCount) {
   return routeTests.filter((_, index) => index % shardCount === shardIndex);
 }
 
-function runVitest(args, label, cwd = repoRoot) {
+function runVitest(args, label) {
   console.log(`\n[test:run] ${label}`);
   invocationIndex += 1;
-  const testRoot = mkdtempSync(path.join(os.tmpdir(), `paperclip-vitest-${process.pid}-${invocationIndex}-`));
+  const tempRootParent = process.platform === "win32" ? os.tmpdir() : "/tmp";
+  const testRoot = mkdtempSync(path.join(tempRootParent, `pcvt-${process.pid}-${invocationIndex}-`));
+  // Keep per-run paths compact so Unix socket fixtures stay under macOS path limits.
   const env = {
     ...process.env,
-    PAPERCLIP_HOME: path.join(testRoot, "home"),
-    PAPERCLIP_INSTANCE_ID: `vitest-${process.pid}-${invocationIndex}`,
-    PAPERCLIP_ENV_LIVE_SSH_NO_AUTO_FIXTURE: process.env.PAPERCLIP_ENV_LIVE_SSH_NO_AUTO_FIXTURE ?? "true",
-    TMPDIR: path.join(testRoot, "tmp"),
+    NODE_ENV: "test",
+    PAPERCLIP_HOME: path.join(testRoot, "h"),
+    PAPERCLIP_INSTANCE_ID: `vt-${process.pid}-${invocationIndex}`,
+    TMPDIR: path.join(testRoot, "t"),
   };
   mkdirSync(env.PAPERCLIP_HOME, { recursive: true });
   mkdirSync(env.TMPDIR, { recursive: true });
   const result = spawnSync("pnpm", ["exec", "vitest", "run", ...args], {
-    cwd,
+    cwd: repoRoot,
     env,
     stdio: "inherit",
   });
@@ -234,15 +274,66 @@ function runVitest(args, label, cwd = repoRoot) {
 }
 
 function runGeneralSuites(routeTests) {
-  const excludeRouteArgs = routeTests.flatMap((file) => ["--exclude", file.serverPath]);
-  for (const suite of nonServerSuites) {
-    runVitest(suite.args, `non-server project ${suite.label}`, suite.cwd ?? repoRoot);
+  for (const groupName of generalGroupNames) {
+    runGeneralGroup(routeTests, groupName);
+  }
+}
+
+function runProjectGroup(projects, groupName) {
+  for (const project of projects) {
+    runVitest(["--project", project], `${groupName} project ${project}`);
+  }
+}
+
+function runGeneralGroup(routeTests, groupName, shardIndex = null, shardCount = null) {
+  if (groupName === generalServerGroupName) {
+    if (shardCount !== null && shardCount > 1) {
+      const shardFiles = generalServerTestFiles.filter(
+        (_, index) => index % shardCount === shardIndex,
+      );
+      console.log(
+        `\n[test:run] general-server shard ${shardIndex + 1}/${shardCount} running ${shardFiles.length} of ${generalServerTestFiles.length} suites`,
+      );
+      if (shardFiles.length === 0) {
+        return;
+      }
+
+      runVitest(
+        [
+          "--project",
+          "@paperclipai/server",
+          ...serializedServerVitestArgs,
+          ...shardFiles,
+        ],
+        `${groupName} shard ${shardIndex + 1}/${shardCount}`,
+      );
+      return;
+    }
+
+    const excludeRouteArgs = routeTests.flatMap((file) => ["--exclude", file.serverPath]);
+    runVitest(
+      [
+        "--project",
+        "@paperclipai/server",
+        ...serializedServerVitestArgs,
+        ...excludeRouteArgs,
+      ],
+      `${groupName} server suites excluding ${routeTests.length} serialized suites`,
+    );
+    return;
   }
 
-  runVitest(
-    ["--project", "@paperclipai/server", ...excludeRouteArgs],
-    `server suites excluding ${routeTests.length} serialized suites`,
-  );
+  if (groupName === generalWorkspacesAGroupName) {
+    runProjectGroup(generalWorkspacesAProjects, groupName);
+    return;
+  }
+
+  if (groupName === generalWorkspacesBGroupName) {
+    runProjectGroup(generalWorkspacesBProjects, groupName);
+    return;
+  }
+
+  fail(`Unknown group "${groupName}".`);
 }
 
 function runSerializedSuites(routeTests, shardIndex, shardCount) {
@@ -258,7 +349,7 @@ function runSerializedSuites(routeTests, shardIndex, shardCount) {
         "@paperclipai/server",
         routeTest.repoPath,
         "--pool=forks",
-        "--poolOptions.forks.isolate=true",
+        "--isolate",
       ],
       routeTest.repoPath,
     );
@@ -273,6 +364,17 @@ const routeTests = walk(serverTestsDir)
   }))
   .sort((a, b) => a.repoPath.localeCompare(b.repoPath));
 
+// Every server test file that the general-server group is responsible for,
+// i.e. the whole server project minus the route/authz suites that run in the
+// dedicated serialized shards. Sharding this list across runners is what keeps
+// the general-server lane from becoming the PR critical path: the server vitest
+// config pins maxWorkers to 1, so the only way to parallelize is across jobs.
+const generalServerTestFiles = walk(serverSrcDir)
+  .map((file) => toRepoPath(file))
+  .filter((repoPath) => repoPath.endsWith(".test.ts"))
+  .filter((repoPath) => !isRouteOrAuthzTest(repoPath))
+  .sort((a, b) => a.localeCompare(b));
+
 const options = parseCliOptions(process.argv.slice(2));
 if (options.dryRun) {
   const serializedSuites =
@@ -285,8 +387,19 @@ if (options.dryRun) {
         mode: options.mode,
         shardIndex: options.shardIndex,
         shardCount: options.shardCount,
+        group: options.group,
+        availableGeneralGroups: generalGroupNames,
         serializedSuiteCount: routeTests.length,
         selectedSerializedSuites: serializedSuites.map((routeTest) => routeTest.repoPath),
+        generalServerSuiteCount: generalServerTestFiles.length,
+        selectedGeneralServerSuites:
+          options.mode === generalModeName &&
+          options.group === generalServerGroupName &&
+          options.shardCount !== null
+            ? generalServerTestFiles.filter(
+                (_, index) => index % options.shardCount === options.shardIndex,
+              )
+            : null,
       },
       null,
       2,
@@ -296,7 +409,11 @@ if (options.dryRun) {
 }
 
 if (options.mode === generalModeName || options.mode === allModeName) {
-  runGeneralSuites(routeTests);
+  if (options.group) {
+    runGeneralGroup(routeTests, options.group, options.shardIndex, options.shardCount);
+  } else {
+    runGeneralSuites(routeTests);
+  }
 }
 
 if (options.mode === serializedModeName || options.mode === allModeName) {

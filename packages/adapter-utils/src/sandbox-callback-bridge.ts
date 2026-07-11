@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { CommandManagedRuntimeRunner } from "./command-managed-runtime.js";
-import { preferredShellForSandbox } from "./sandbox-shell.js";
+import { preferredShellForSandbox, shellCommandArgs } from "./sandbox-shell.js";
 import type { RunProcessResult } from "./server-utils.js";
 
 const DEFAULT_BRIDGE_TOKEN_BYTES = 24;
@@ -15,6 +15,8 @@ const DEFAULT_BRIDGE_MAX_QUEUE_DEPTH = 64;
 const DEFAULT_BRIDGE_MAX_BODY_BYTES = 256 * 1024;
 const REMOTE_WRITE_BASE64_CHUNK_SIZE = 32 * 1024;
 const SANDBOX_CALLBACK_BRIDGE_ENTRYPOINT = "paperclip-bridge-server.mjs";
+const SANDBOX_EXEC_CHANNEL_ENV = "PAPERCLIP_SANDBOX_EXEC_CHANNEL";
+const SANDBOX_EXEC_CHANNEL_BRIDGE = "bridge";
 
 export const DEFAULT_SANDBOX_CALLBACK_BRIDGE_MAX_BODY_BYTES = DEFAULT_BRIDGE_MAX_BODY_BYTES;
 
@@ -64,6 +66,11 @@ export const DEFAULT_SANDBOX_CALLBACK_BRIDGE_ROUTE_ALLOWLIST: readonly SandboxCa
   { method: "POST", path: /^\/api\/issues\/[^/]+\/release$/ },
   { method: "PATCH", path: /^\/api\/issues\/[^/]+$/ },
   { method: "GET", path: /^\/api\/issues\/[^/]+\/approvals$/ },
+
+  // Work products: publish branch/commit/artifact metadata for completed work.
+  { method: "GET", path: /^\/api\/issues\/[^/]+\/work-products$/ },
+  { method: "POST", path: /^\/api\/issues\/[^/]+\/work-products$/ },
+  { method: "PATCH", path: /^\/api\/work-products\/[^/]+$/ },
 
   // Issue-thread interactions (suggest tasks, ask questions, request confirmation)
   { method: "GET", path: /^\/api\/issues\/[^/]+\/interactions(?:\/[^/]+)?$/ },
@@ -207,8 +214,11 @@ async function runShell(
 ): Promise<RunProcessResult> {
   return await runner.execute({
     command: shellCommand,
-    args: ["-lc", script],
+    args: shellCommandArgs(script),
     cwd,
+    env: {
+      [SANDBOX_EXEC_CHANNEL_ENV]: SANDBOX_EXEC_CHANNEL_BRIDGE,
+    },
     timeoutMs,
     stdin,
   });
@@ -569,10 +579,11 @@ async function writeBridgeResponse(
   requestPath: string,
   responsePath: string,
   response: SandboxCallbackBridgeResponse,
+  options: { requireRequestPath?: boolean } = {},
 ) {
   const body = `${JSON.stringify(response)}\n`;
   if (client.writeResponseFile) {
-    await client.writeResponseFile(responsePath, body, { requestPath });
+    await client.writeResponseFile(responsePath, body, options.requireRequestPath === false ? {} : { requestPath });
     return;
   }
   const tempPath = `${responsePath}.tmp`;
@@ -717,12 +728,15 @@ export async function startSandboxCallbackBridgeWorker(input: {
       try {
         const raw = await input.client.readTextFile(requestPath);
         const parsed = JSON.parse(raw) as Partial<SandboxCallbackBridgeRequest>;
+        await input.client.remove(requestPath).catch(() => undefined);
         await writeBridgeResponse(input.client, requestPath, responsePath, {
           id: typeof parsed.id === "string" && parsed.id.length > 0 ? parsed.id : requestId,
           status: 503,
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ error: message }),
           completedAt: new Date().toISOString(),
+        }, {
+          requireRequestPath: false,
         });
         abortedRequestIds.add(typeof parsed.id === "string" && parsed.id.length > 0 ? parsed.id : requestId);
       } catch (error) {
@@ -933,20 +947,22 @@ export async function startSandboxCallbackBridgeServer(input: {
   const nodeCommand = input.nodeCommand?.trim() || "node";
   const startResult = await input.runner.execute({
     command: shellCommand,
-    args: [
-      "-lc",
+    args: shellCommandArgs(
       [
         `mkdir -p ${shellQuote(directories.requestsDir)} ${shellQuote(directories.responsesDir)} ${shellQuote(directories.logsDir)}`,
         `rm -f ${shellQuote(directories.readyFile)} ${shellQuote(directories.pidFile)}`,
-        `nohup env ${Object.entries(env).map(([key, value]) => `${key}=${shellQuote(value)}`).join(" ")} ` +
-          `${shellQuote(nodeCommand)} ${shellQuote(remoteEntrypoint)} ` +
+        `nohup ${shellQuote(nodeCommand)} ${shellQuote(remoteEntrypoint)} ` +
           `>> ${shellQuote(directories.logFile)} 2>&1 < /dev/null &`,
         "pid=$!",
         `printf '%s\\n' \"$pid\" > ${shellQuote(directories.pidFile)}`,
         "printf '{\"pid\":%s}\\n' \"$pid\"",
       ].join("\n"),
-    ],
+    ),
     cwd: input.remoteCwd,
+    env: {
+      [SANDBOX_EXEC_CHANNEL_ENV]: SANDBOX_EXEC_CHANNEL_BRIDGE,
+      ...env,
+    },
     timeoutMs,
   });
   requireSuccessfulResult("start sandbox callback bridge", startResult);
@@ -1007,8 +1023,7 @@ export async function startSandboxCallbackBridgeServer(input: {
     stop: async () => {
       const stopResult = await input.runner.execute({
         command: shellCommand,
-        args: [
-          "-lc",
+        args: shellCommandArgs(
           [
             `if [ -s ${shellQuote(directories.pidFile)} ]; then`,
             `  pid="$(cat ${shellQuote(directories.pidFile)})"`,
@@ -1021,8 +1036,11 @@ export async function startSandboxCallbackBridgeServer(input: {
             "fi",
             `rm -f ${shellQuote(directories.pidFile)} ${shellQuote(directories.readyFile)}`,
           ].join("\n"),
-        ],
+        ),
         cwd: input.remoteCwd,
+        env: {
+          [SANDBOX_EXEC_CHANNEL_ENV]: SANDBOX_EXEC_CHANNEL_BRIDGE,
+        },
         timeoutMs,
       });
       if (stopResult.timedOut) {

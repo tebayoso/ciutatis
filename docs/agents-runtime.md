@@ -1,12 +1,12 @@
 # Agent Runtime Guide
 
-Status: User-facing guide  
-Last updated: 2026-02-17  
-Audience: Operators setting up and running agents in Ciutatis
+Status: User-facing guide
+Last updated: 2026-03-26
+Audience: Operators setting up and running agents in Paperclip
 
 ## 1. What this system does
 
-Agents in Ciutatis do not run continuously.  
+Agents in Paperclip do not run continuously.  
 They run in **heartbeats**: short execution windows triggered by a wakeup.
 
 Each heartbeat:
@@ -32,14 +32,24 @@ If an agent is already running, new wakeups are merged (coalesced) instead of la
 
 ## 3.1 Adapter choice
 
-Common choices:
+Built-in adapters:
 
 - `claude_local`: runs your local `claude` CLI
 - `codex_local`: runs your local `codex` CLI
+- `opencode_local`: runs your local `opencode` CLI
+- `cursor`: runs Cursor in background mode
+- `pi_local`: runs an embedded Pi agent locally
+- `hermes_local`: starts your local `hermes` CLI through `@paperclipai/hermes-paperclip-adapter`
+- `hermes_gateway`: calls an already-running Hermes API server through `@paperclipai/hermes-paperclip-adapter/gateway`
+- `openclaw_gateway`: connects to an OpenClaw gateway endpoint
 - `process`: generic shell command adapter
 - `http`: calls an external HTTP endpoint
 
-For `claude_local` and `codex_local`, Ciutatis assumes the CLI is already installed and authenticated on the host machine.
+External plugin adapters (install via the adapter manager or API):
+
+- `droid_local`: runs your local Factory Droid CLI (`@henkey/droid-paperclip-adapter`)
+
+For local CLI adapters (`claude_local`, `codex_local`, `opencode_local`, `hermes_local`, `droid_local`), Paperclip assumes the CLI is already installed and authenticated on the host machine. For `hermes_gateway`, Paperclip assumes the Hermes API server is already running, reachable from the Paperclip server, and configured with an API key. The older `@paperclipai/adapter-hermes-gateway` npm package is only a deprecated compatibility shim; the adapter type remains `hermes_gateway`.
 
 ## 3.2 Runtime behavior
 
@@ -56,7 +66,7 @@ In agent runtime settings, configure heartbeat policy:
 For local adapters, set:
 
 - `cwd` (working directory)
-- `timeoutSec` (max runtime per heartbeat)
+- `timeoutSec` (max runtime per heartbeat; `0` uses the target default — no adapter timeout on local/SSH, a 4-hour backstop on sandbox targets — and a negative value disables the adapter timeout everywhere, including sandboxes)
 - `graceSec` (time before force-kill after timeout/cancel)
 - optional env vars and extra CLI args
 - use **Test environment** in agent configuration to run adapter-specific diagnostics before saving
@@ -69,9 +79,11 @@ You can set:
 
 Templates support variables like `{{agent.id}}`, `{{agent.name}}`, and run context values.
 
+> **Note:** `bootstrapPromptTemplate` is deprecated and should not be used for new agents. Existing configs that use it will continue to work but should be migrated to the managed instructions bundle system.
+
 ## 4. Session resume behavior
 
-Ciutatis stores session IDs for resumable adapters.
+Paperclip stores session IDs for resumable adapters.
 
 - Next heartbeat reuses the saved session automatically.
 - This gives continuity across heartbeats.
@@ -96,7 +108,7 @@ In local/dev setups, full logs are stored on disk under the configured run-log p
 
 ## 6. Live updates in the UI
 
-Ciutatis pushes runtime/activity updates to the browser in real time.
+Paperclip pushes runtime/activity updates to the browser in real time.
 
 You should see live changes for:
 
@@ -133,7 +145,7 @@ If the connection drops, the UI reconnects automatically.
 
 If runs fail repeatedly:
 
-1. Check adapter command availability (`claude`/`codex` installed and logged in).
+1. Check adapter command availability (e.g. `claude`/`codex`/`opencode`/`hermes` installed and logged in).
 2. Verify `cwd` exists and is accessible.
 3. Inspect run error + stderr excerpt, then full log.
 4. Confirm timeout is not too low.
@@ -150,7 +162,7 @@ Typical failure causes:
 
 Claude-specific note:
 
-- If `ANTHROPIC_API_KEY` is set in adapter env or host environment, Claude uses API-key auth instead of subscription login. Ciutatis surfaces this as a warning in environment tests, not a hard error.
+- If `ANTHROPIC_API_KEY` is set in adapter env or host environment, Claude uses API-key auth instead of subscription login. Paperclip surfaces this as a warning in environment tests, not a hard error.
 
 ## 9. Security and risk notes
 
@@ -166,9 +178,9 @@ Start with least privilege where possible, and avoid exposing secrets in broad r
 
 ## 10. Minimal setup checklist
 
-1. Choose adapter (`claude_local` or `codex_local`).
-2. Set `cwd` to the target workspace.
-3. Add bootstrap + normal prompt templates.
+1. Choose adapter (e.g. `claude_local`, `codex_local`, `opencode_local`, `hermes_local`, `hermes_gateway`, `cursor`, or `openclaw_gateway`). External plugins like `droid_local` are also available via the adapter manager.
+2. Set `cwd` to the target workspace (for local adapters).
+3. Optionally add a prompt template (`promptTemplate`) or use the managed instructions bundle.
 4. Configure heartbeat policy (timer and/or assignment wakeups).
 5. Trigger a manual wakeup.
 6. Confirm run succeeds and session/token usage is recorded.

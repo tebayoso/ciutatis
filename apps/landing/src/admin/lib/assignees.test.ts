@@ -3,6 +3,7 @@ import {
   assigneeValueFromSelection,
   currentUserAssigneeOption,
   formatAssigneeUserLabel,
+  formatUserLabel,
   parseAssigneeValue,
 } from "./assignees";
 
@@ -49,5 +50,49 @@ describe("assignee selection helpers", () => {
     expect(formatAssigneeUserLabel("user-1", "user-1")).toBe("Me");
     expect(formatAssigneeUserLabel("local-board", "someone-else")).toBe("Board");
     expect(formatAssigneeUserLabel("user-abcdef", "someone-else")).toBe("user-");
+  });
+
+  it("formats actual user labels without current-user substitution", () => {
+    expect(formatUserLabel("user-1", new Map([["user-1", "Dotta"]]))).toBe("Dotta");
+    expect(formatUserLabel("user-1", new Map([["user-2", "Someone Else"]]))).toBe("user-");
+    expect(formatUserLabel("local-board")).toBe("Board");
+  });
+
+  it("suggests the last non-me commenter without changing the actual assignee encoding", () => {
+    expect(
+      suggestedCommentAssigneeValue(
+        { assigneeUserId: "board-user" },
+        [
+          { authorUserId: "board-user" },
+          { authorAgentId: "agent-123" },
+        ],
+        "board-user",
+      ),
+    ).toBe("agent:agent-123");
+  });
+
+  it("falls back to the actual assignee when there is no better commenter hint", () => {
+    expect(
+      suggestedCommentAssigneeValue(
+        { assigneeUserId: "board-user" },
+        [{ authorUserId: "board-user" }],
+        "board-user",
+      ),
+    ).toBe("user:board-user");
+  });
+
+  it("skips the current agent when choosing a suggested commenter assignee", () => {
+    expect(
+      suggestedCommentAssigneeValue(
+        { assigneeUserId: "board-user" },
+        [
+          { authorUserId: "board-user" },
+          { authorAgentId: "agent-self" },
+          { authorAgentId: "agent-123" },
+        ],
+        null,
+        "agent-self",
+      ),
+    ).toBe("agent:agent-123");
   });
 });

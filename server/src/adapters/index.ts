@@ -15,6 +15,7 @@ export {
 } from "./registry.js";
 export type {
   ServerAdapterModule,
+  AcpTargetDescriptor,
   AdapterExecutionContext,
   AdapterExecutionResult,
   AdapterInvocationMeta,

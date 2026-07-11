@@ -11,6 +11,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { cn } from "@/lib/utils";
 import { useInboxBadge } from "../hooks/useInboxBadge";
+import { Badge } from "@/components/ui/badge";
 
 interface MobileBottomNavProps {
   visible: boolean;
@@ -43,6 +44,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
     () => [
       { type: "link", to: "/dashboard", label: "Home", icon: House },
       { type: "link", to: "/requests", label: "Requests", icon: CircleDot },
+      { type: "link", to: "/issues", label: "Tasks", icon: CircleDot },
       { type: "action", label: "Create", icon: SquarePen, onClick: () => openNewIssue() },
       { type: "link", to: "/agents/all", label: "Agents", icon: Users },
       {
@@ -61,6 +63,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
       className={cn(
         "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-transform duration-150 ease-out md:hidden",
         "pb-[env(safe-area-inset-bottom)] px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]",
+        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 transition-transform duration-200 ease-out md:hidden pb-(--sz-safe-bottom)",
         visible ? "translate-y-0" : "translate-y-full",
       )}
       aria-label="Mobile navigation"
@@ -82,6 +85,11 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
                 <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary">
                   <Icon className="h-[18px] w-[18px]" />
                 </div>
+                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-(length:--text-nano) font-medium transition-colors",
+                  active
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                <Icon className="h-(--sz-18px) w-(--sz-18px)" />
                 <span className="truncate">{item.label}</span>
               </button>
             );
@@ -95,6 +103,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
               className={({ isActive }) =>
                 cn(
                   "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-medium transition-all active:scale-95",
+                  "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-(length:--text-nano) font-medium transition-colors",
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -104,11 +113,11 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
               {({ isActive }) => (
                 <>
                   <span className="relative">
-                    <Icon className={cn("h-[18px] w-[18px]", isActive && "stroke-[2.3]")} />
+                    <Icon className={cn("h-(--sz-18px) w-(--sz-18px)", isActive && "stroke-(length:--sw-2_3)")} />
                     {item.badge != null && item.badge > 0 && (
-                      <span className="absolute -right-2 -top-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">
+                      <Badge variant="ghost" className="absolute -right-2 -top-2 bg-primary px-1.5 text-(length:--text-nano) leading-none text-primary-foreground">
                         {item.badge > 99 ? "99+" : item.badge}
-                      </span>
+                      </Badge>
                     )}
                   </span>
                   <span className="truncate">{item.label}</span>

@@ -51,6 +51,36 @@ export const claimJoinRequestApiKeySchema = z.object({
 
 export type ClaimJoinRequestApiKey = z.infer<typeof claimJoinRequestApiKeySchema>;
 
+export const boardCliAuthAccessLevelSchema = z.enum([
+  "board",
+  "instance_admin_required",
+]);
+
+export type BoardCliAuthAccessLevel = z.infer<typeof boardCliAuthAccessLevelSchema>;
+
+export const createCliAuthChallengeSchema = z.object({
+  command: z.string().min(1).max(240),
+  clientName: z.string().max(120).optional().nullable(),
+  requestedAccess: boardCliAuthAccessLevelSchema.default("board"),
+  requestedCompanyId: z.string().uuid().optional().nullable(),
+});
+
+export type CreateCliAuthChallenge = z.infer<typeof createCliAuthChallengeSchema>;
+
+export const resolveCliAuthChallengeSchema = z.object({
+  token: z.string().min(16).max(256),
+});
+
+export type ResolveCliAuthChallenge = z.infer<typeof resolveCliAuthChallengeSchema>;
+
+export const createBoardApiKeySchema = z.object({
+  name: z.string().trim().min(1).max(120).default("paperclipai cli"),
+  expiresAt: z.coerce.date().optional().nullable(),
+  requestedCompanyId: z.string().uuid().optional().nullable(),
+});
+
+export type CreateBoardApiKey = z.infer<typeof createBoardApiKeySchema>;
+
 export const updateMemberPermissionsSchema = z.object({
   grants: z.array(
     z.object({

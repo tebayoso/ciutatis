@@ -52,6 +52,7 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "projects.managed.reset": ["projects.managed"],
   "project.workspaces.list": ["project.workspaces.read"],
   "project.workspaces.get": ["project.workspaces.read"],
+  "execution.workspaces.get": ["execution.workspaces.read"],
   "issues.list": ["issues.read"],
   "issues.get": ["issues.read"],
   "issues.relations.get": ["issue.relations.read"],
@@ -94,6 +95,10 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "metrics.write": ["metrics.write"],
   "db.migrate": ["database.namespace.write"],
   "db.execute": ["database.namespace.write"],
+  "external.objects.detect": ["external.objects.detect"],
+  "external.objects.read": ["external.objects.read"],
+  "external.objects.write": ["external.objects.write"],
+  "external.objects.refresh": ["external.objects.refresh"],
 
   // Plugin state operations
   "plugin.state.get": ["plugin.state.read"],
@@ -123,6 +128,11 @@ const OPERATION_CAPABILITIES: Record<string, readonly PluginCapability[]> = {
   "environment.destroyLease": ["environment.drivers.register"],
   "environment.realizeWorkspace": ["environment.drivers.register"],
   "environment.execute": ["environment.drivers.register"],
+  "environment.startInteractiveSetup": ["environment.drivers.register"],
+  "environment.getInteractiveSetup": ["environment.drivers.register"],
+  "environment.captureTemplate": ["environment.drivers.register"],
+  "environment.cancelInteractiveSetup": ["environment.drivers.register"],
+  "environment.deleteTemplate": ["environment.drivers.register"],
 };
 
 /**
@@ -145,6 +155,8 @@ const UI_SLOT_CAPABILITIES: Record<PluginUiSlotType, PluginCapability> = {
   commentAnnotation: "ui.commentAnnotation.register",
   commentContextMenuItem: "ui.action.register",
   settingsPage: "instance.settings.register",
+  companySettingsPage: "instance.settings.register",
+  routeSidebar: "ui.sidebar.register",
 };
 
 /**
@@ -181,6 +193,8 @@ const FEATURE_CAPABILITIES: Record<string, PluginCapability> = {
   environmentDrivers: "environment.drivers.register",
   agents: "agents.managed",
   projects: "projects.managed",
+  routines: "routines.managed",
+  objectReferences: "external.objects.detect",
 };
 
 // ---------------------------------------------------------------------------
@@ -440,6 +454,14 @@ export function pluginCapabilityValidator(): PluginCapabilityValidator {
         const featureValue = manifest[feature as keyof PaperclipPluginManifestV1];
         if (Array.isArray(featureValue) && featureValue.length > 0) {
           if (!declared.has(requiredCap)) {
+            allMissing.push(requiredCap);
+          }
+        }
+      }
+
+      if ((manifest.objectReferences?.length ?? 0) > 0) {
+        for (const requiredCap of ["external.objects.detect", "external.objects.read"] as const) {
+          if (!declared.has(requiredCap) && !allMissing.includes(requiredCap)) {
             allMissing.push(requiredCap);
           }
         }

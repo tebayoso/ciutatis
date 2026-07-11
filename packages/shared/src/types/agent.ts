@@ -4,9 +4,78 @@ import type {
   AgentRole,
   AgentStatus,
 } from "../constants.js";
+import type {
+  CompanyMembership,
+  PrincipalPermissionGrant,
+} from "./access.js";
+import type {
+  TrustAuthorizationPolicy,
+  TrustPreset,
+} from "../trust-policy.js";
+import type { AgentOrgChainHealth } from "../agent-eligibility.js";
+import type { AgentApiKeyScope } from "../validators/agent.js";
 
-export interface AgentPermissions {
+export interface AgentPermissions extends Record<string, unknown> {
   canCreateAgents: boolean;
+  canCreateSkills?: boolean;
+  trustPreset?: TrustPreset;
+  authorizationPolicy?: TrustAuthorizationPolicy;
+}
+
+export interface AgentModelProfileConfig {
+  enabled?: boolean;
+  label?: string;
+  adapterConfig: Record<string, unknown>;
+}
+
+export interface AgentRuntimeConfig extends Record<string, unknown> {
+  modelProfiles?: Partial<Record<ModelProfileKey, AgentModelProfileConfig>>;
+}
+
+export type AgentInstructionsBundleMode = "managed" | "external";
+
+export interface AgentInstructionsFileSummary {
+  path: string;
+  size: number;
+  language: string;
+  markdown: boolean;
+  isEntryFile: boolean;
+  editable: boolean;
+  deprecated: boolean;
+  virtual: boolean;
+}
+
+export interface AgentInstructionsFileDetail extends AgentInstructionsFileSummary {
+  content: string;
+}
+
+export interface AgentInstructionsBundle {
+  agentId: string;
+  companyId: string;
+  mode: AgentInstructionsBundleMode | null;
+  rootPath: string | null;
+  managedRootPath: string;
+  entryFile: string;
+  resolvedEntryPath: string | null;
+  editable: boolean;
+  warnings: string[];
+  legacyPromptTemplateActive: boolean;
+  legacyBootstrapPromptTemplateActive: boolean;
+  files: AgentInstructionsFileSummary[];
+}
+
+export interface AgentAccessState {
+  canAssignTasks: boolean;
+  taskAssignSource: "simple_default" | "explicit_grant" | "agent_creator" | "ceo_role" | "none";
+  membership: CompanyMembership | null;
+  grants: PrincipalPermissionGrant[];
+}
+
+export interface AgentChainOfCommandEntry {
+  id: string;
+  name: string;
+  role: AgentRole;
+  title: string | null;
 }
 
 export interface Agent {
@@ -27,16 +96,26 @@ export interface Agent {
   spentMonthlyCents: number;
   pauseReason: PauseReason | null;
   pausedAt: Date | null;
+  errorReason?: string | null;
   permissions: AgentPermissions;
   lastHeartbeatAt: Date | null;
   metadata: Record<string, unknown> | null;
+  orgChainHealth?: AgentOrgChainHealth;
   createdAt: Date;
   updatedAt: Date;
 }
 
+export interface AgentDetail extends Agent {
+  chainOfCommand: AgentChainOfCommandEntry[];
+  access: AgentAccessState;
+}
+
+export type ClearAgentErrorResponse = Agent;
+
 export interface AgentKeyCreated {
   id: string;
   name: string;
+  scope: AgentApiKeyScope;
   token: string;
   createdAt: Date;
 }

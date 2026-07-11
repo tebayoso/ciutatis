@@ -16,6 +16,7 @@ import type {
   ProjectStatus,
 } from "../constants.js";
 import type { Agent } from "./agent.js";
+import type { CompanySkill } from "./company-skill.js";
 import type { Project } from "./project.js";
 
 // ---------------------------------------------------------------------------
@@ -25,8 +26,24 @@ import type { Project } from "./project.js";
 /**
  * A JSON Schema object used for plugin config schemas and tool parameter schemas.
  * Plugins provide these as plain JSON Schema compatible objects.
+ *
+ * The Paperclip extension keywords below are recognised by the Paperclip UI
+ * but are otherwise ignored by standard JSON Schema validators.
  */
-export type JsonSchema = Record<string, unknown>;
+export type JsonSchema = {
+  /**
+   * When true, the Paperclip config UI hides this property behind an
+   * "Advanced options" disclosure. Defaults to false (always visible).
+   */
+  "x-paperclip-advanced"?: boolean;
+  /**
+   * Optional sub-section heading used to group advanced properties inside
+   * the disclosure (e.g. "SSH access", "VM resources"). Ignored when
+   * `x-paperclip-advanced` is not true.
+   */
+  "x-paperclip-group"?: string;
+  [key: string]: unknown;
+};
 
 
 
@@ -89,6 +106,13 @@ export interface PluginToolDeclaration {
  *
  * Requires the `environment.drivers.register` capability.
  */
+export interface PluginEnvironmentTemplateConfigBinding {
+  /** Top-level provider config field that should receive the captured template ref. */
+  field: string;
+  /** Top-level provider config fields to remove when the captured template ref is applied. */
+  unsetFields?: string[];
+}
+
 export interface PluginEnvironmentDriverDeclaration {
   /** Stable driver key, unique within the plugin. Namespaced by plugin ID at runtime. */
   driverKey: string;
@@ -104,6 +128,34 @@ export interface PluginEnvironmentDriverDeclaration {
   displayName: string;
   /** Optional description for operator-facing docs or UI affordances. */
   description?: string;
+  /**
+   * Sandbox providers must opt in before the host retains and resumes provider
+   * leases across runs. Providers without this flag keep per-run acquire/release
+   * behavior even if their config schema exposes a reuse-like setting.
+   */
+  supportsReusableLeases?: boolean;
+  /** Provider can keep a temporary setup sandbox alive for user-driven sandbox customization and capture. */
+  supportsInteractiveSetup?: boolean;
+  /** Connection types the setup sandbox can expose. Initially `ssh`; providers may add custom values. */
+  interactiveSetupConnectionTypes?: string[];
+  /** Provider can capture a reusable template from a live setup sandbox. */
+  supportsTemplateCapture?: boolean;
+  /** Kind of template reference returned by the provider's capture hook. */
+  templateRefKind?: "snapshot" | "image" | "provider_template" | "unknown" | (string & {});
+  /**
+   * How Paperclip should apply a captured template ref back into this provider's
+   * runtime config. Omit to use the standard key for `templateRefKind`.
+   */
+  templateConfigBinding?: PluginEnvironmentTemplateConfigBinding;
+  /**
+   * Config paths (dot notation) that scope where captured templates live for
+   * this provider, such as an API endpoint. When one of these changes on a
+   * saved environment, captured templates cannot be re-linked to the updated
+   * config and a fresh capture is required.
+   */
+  templateIdentityPaths?: string[];
+  /** Provider supports best-effort deletion/cleanup of captured templates. */
+  supportsTemplateDelete?: boolean;
   /** JSON Schema describing the driver's provider-specific configuration. */
   configSchema: JsonSchema;
 }
@@ -180,6 +232,7 @@ export interface PluginManagedAgentDeclaration {
   instructions?: {
     entryFile?: string;
     content?: string;
+    files?: Record<string, string>;
     assetPath?: string;
   };
 }
@@ -225,6 +278,32 @@ export interface PluginManagedProjectDeclaration {
 }
 
 export type PluginManagedResourceKind = "agent" | "project";
+export interface PluginManagedSkillFileDeclaration {
+  /** Relative path inside the skill folder, for example `references/guide.md`. */
+  path: string;
+  /** File contents written when the skill is installed or reset. */
+  content: string;
+}
+
+/**
+ * Declares a company skill that a plugin can install into each company's
+ * skills library and later resolve by stable key.
+ */
+export interface PluginManagedSkillDeclaration {
+  /** Stable identifier for this managed skill, unique within the plugin. */
+  skillKey: string;
+  /** Suggested visible skill name. */
+  displayName: string;
+  /** Suggested skill slug. Defaults to `skillKey`. */
+  slug?: string;
+  /** Suggested skill description. */
+  description?: string | null;
+  /** Full `SKILL.md` contents. Defaults to generated markdown from display metadata. */
+  markdown?: string;
+  /** Additional files installed with the skill. */
+  files?: PluginManagedSkillFileDeclaration[];
+
+export type PluginManagedResourceKind = "agent" | "project" | "routine" | "skill";
 
 export interface PluginManagedResourceRef {
   pluginKey?: string;
@@ -243,6 +322,10 @@ export interface PluginManagedAgentResolution {
   agent: Agent | null;
   status: "missing" | "resolved" | "created" | "relinked" | "reset";
   approvalId?: string | null;
+  defaultDrift?: {
+    entryFile: string;
+    changedFiles: string[];
+  } | null;
 }
 
 export interface PluginManagedProjectResolution {
@@ -256,6 +339,19 @@ export interface PluginManagedProjectResolution {
 }
 
 
+
+export interface PluginManagedSkillResolution {
+  pluginKey: string;
+  resourceKind: "skill";
+  resourceKey: string;
+  companyId: string;
+  skillId: string | null;
+  skill: CompanySkill | null;
+  status: "missing" | "resolved" | "created" | "relinked" | "reset";
+  defaultDrift?: {
+    changedFiles: string[];
+  } | null;
+}
 
 /**
  * Declares a UI extension slot the plugin fills with a React component.
@@ -277,8 +373,11 @@ export interface PluginUiSlotDeclaration {
    */
   entityTypes?: PluginUiSlotEntityType[];
   /**
-   * Optional company-scoped route segment for page and routeSidebar slots.
+   * Optional company-scoped route segment for page, routeSidebar, and
+   * companySettingsPage slots.
    * Example: `kitchensink` becomes `/:companyPrefix/kitchensink`.
+   * For companySettingsPage, `permissions` becomes
+   * `/:companyPrefix/company/settings/permissions`.
    */
   routePath?: string;
   /**
@@ -393,7 +492,30 @@ export interface PluginApiRouteDeclaration {
   companyResolution?: PluginApiRouteCompanyResolution;
 }
 
+export interface PluginObjectReferenceRefreshPolicy {
+  /** Default freshness window for resolved objects from this provider. */
+  defaultTtlSeconds?: number;
+  /** UI-visible staleness window. Core still stores liveness separately from remote status. */
+  staleAfterSeconds?: number;
+}
 
+export interface PluginObjectReferenceProviderDeclaration {
+  /** Stable provider key such as "github", "linear", or "mocktracker". */
+  providerKey: string;
+  /** Human-readable provider name shown in operator-facing surfaces. */
+  displayName: string;
+  /** Provider object types this plugin can detect and resolve. */
+  objectTypes: string[];
+  /**
+   * Human-readable URL patterns this provider recognizes.
+   * These are metadata for operators and docs; workers still perform detection.
+   */
+  urlPatterns?: string[];
+  /** Optional default refresh behavior for this provider. */
+  refreshPolicy?: PluginObjectReferenceRefreshPolicy;
+  /** Optional webhook endpoint keys declared under `webhooks` that can refresh these objects. */
+  webhookEndpointKeys?: string[];
+}
 
 // ---------------------------------------------------------------------------
 // Plugin Manifest V1
@@ -452,7 +574,14 @@ export interface CiutatisPluginManifestV1 {
   /** Suggested company-scoped projects this plugin can provision and resolve by stable key. */
   projects?: PluginManagedProjectDeclaration[];
   /** Company-scoped local folders this plugin asks the operator to configure. */
+  /** Suggested company-scoped routines this plugin can provision and resolve by stable key. */
+  routines?: PluginManagedRoutineDeclaration[];
+  /** Suggested company skills this plugin can install and resolve by stable key. */
+  skills?: PluginManagedSkillDeclaration[];
+  /** Trusted local folders this plugin can configure and access by stable key. */
   localFolders?: PluginLocalFolderDeclaration[];
+  /** External object reference providers this plugin contributes. */
+  objectReferences?: PluginObjectReferenceProviderDeclaration[];
   /**
    * Legacy top-level launcher declarations.
    * Prefer `ui.launchers` for new manifests.

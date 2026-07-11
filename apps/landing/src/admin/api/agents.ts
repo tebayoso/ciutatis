@@ -1,5 +1,11 @@
 import type {
   Agent,
+  AgentDesiredSkillEntry,
+  AgentPermissions,
+  AgentDetail,
+  AgentInstructionsBundle,
+  AgentInstructionsFileDetail,
+  AgentSkillSnapshot,
   AdapterEnvironmentTestResult,
   AgentKeyCreated,
   AgentRuntimeState,
@@ -7,6 +13,8 @@ import type {
   HeartbeatRun,
   Approval,
   AgentConfigRevision,
+  ClearAgentErrorResponse,
+  AgentApiKeyScope,
 } from "@paperclipai/shared";
 import { isUuidLike, normalizeAgentUrlKey } from "@paperclipai/shared";
 import { ApiError, api } from "./client";
@@ -14,6 +22,7 @@ import { ApiError, api } from "./client";
 export interface AgentKey {
   id: string;
   name: string;
+  scope: AgentApiKeyScope;
   createdAt: Date;
   revokedAt: Date | null;
 }
@@ -62,6 +71,23 @@ export interface OrgNode {
 export interface AgentHireResponse {
   agent: Agent;
   approval: Approval | null;
+}
+
+export interface AgentPermissionUpdate {
+  canCreateAgents: boolean;
+  canCreateSkills: boolean;
+  canAssignTasks: boolean;
+  trustPreset?: AgentPermissions["trustPreset"];
+  authorizationPolicy?: AgentPermissions["authorizationPolicy"];
+}
+
+export interface AgentWakeRequest {
+  source?: "timer" | "assignment" | "on_demand" | "automation";
+  triggerDetail?: "manual" | "ping" | "callback" | "system";
+  reason?: string | null;
+  payload?: Record<string, unknown> | null;
+  idempotencyKey?: string | null;
+  forceFreshSession?: boolean;
 }
 
 function withCompanyScope(path: string, companyId?: string) {
@@ -128,6 +154,15 @@ export const agentsApi = {
   listKeys: (id: string, companyId?: string) => api.get<AgentKey[]>(agentPath(id, companyId, "/keys")),
   createKey: (id: string, name: string, companyId?: string) =>
     api.post<AgentKeyCreated>(agentPath(id, companyId, "/keys"), { name }),
+  clearError: (id: string, companyId?: string) =>
+    api.post<ClearAgentErrorResponse>(agentPath(id, companyId, "/clear-error"), {}),
+  approve: (id: string, companyId?: string) => api.post<Agent>(agentPath(id, companyId, "/approve"), {}),
+  skills: (id: string, companyId?: string) =>
+    api.get<AgentSkillSnapshot>(agentPath(id, companyId, "/skills")),
+  syncSkills: (id: string, desiredSkills: Array<string | AgentDesiredSkillEntry>, companyId?: string) =>
+    api.post<AgentSkillSnapshot>(agentPath(id, companyId, "/skills/sync"), { desiredSkills }),
+  createKey: (id: string, name: string, companyId?: string, scope?: AgentApiKeyScope) =>
+    api.post<AgentKeyCreated>(agentPath(id, companyId, "/keys"), { name, ...(scope ? { scope } : {}) }),
   revokeKey: (agentId: string, keyId: string, companyId?: string) =>
     api.delete<{ ok: true }>(agentPath(agentId, companyId, `/keys/${encodeURIComponent(keyId)}`)),
   runtimeState: (id: string, companyId?: string) =>

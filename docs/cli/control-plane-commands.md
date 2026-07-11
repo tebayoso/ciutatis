@@ -9,101 +9,144 @@ Client-side commands for managing issues, agents, approvals, and more.
 
 ```sh
 # List issues
-pnpm ciutatis issue list [--status todo,in_progress] [--assignee-agent-id <id>] [--match text]
+pnpm paperclipai issue list [--status todo,in_progress] [--assignee-agent-id <id>] [--match text]
 
 # Get issue details
-pnpm ciutatis issue get <issue-id-or-identifier>
+pnpm paperclipai issue get <issue-id-or-identifier>
 
 # Create issue
-pnpm ciutatis issue create --title "..." [--description "..."] [--status todo] [--priority high]
+pnpm paperclipai issue create --title "..." [--description "..."] [--status todo] [--priority high]
 
 # Update issue
-pnpm ciutatis issue update <issue-id> [--status in_progress] [--comment "..."]
+pnpm paperclipai issue update <issue-id> [--status in_progress] [--comment "..."]
 
 # Add comment
-pnpm ciutatis issue comment <issue-id> --body "..." [--reopen]
+pnpm paperclipai issue comment <issue-id> --body "..." [--reopen]
 
 # Checkout task
-pnpm ciutatis issue checkout <issue-id> --agent-id <agent-id>
+pnpm paperclipai issue checkout <issue-id> --agent-id <agent-id>
 
 # Release task
-pnpm ciutatis issue release <issue-id>
+pnpm paperclipai issue release <issue-id>
 ```
 
 ## Company Commands
 
 ```sh
-pnpm ciutatis company list
-pnpm ciutatis company get <company-id>
+pnpm paperclipai company list
+pnpm paperclipai company get <company-id>
+pnpm paperclipai company current [--company-id <company-id>]
 
 # Export to portable folder package (writes manifest + markdown files)
-pnpm ciutatis company export <company-id> --out ./exports/acme --include company,agents
+pnpm paperclipai company export <company-id> --out ./exports/acme --include company,agents
 
 # Preview import (no writes)
-pnpm ciutatis company import \
-  --from https://github.com/<owner>/<repo>/tree/main/<path> \
+pnpm paperclipai company import \
+  <owner>/<repo>/<path> \
   --target existing \
   --company-id <company-id> \
+  --ref main \
   --collision rename \
   --dry-run
 
 # Apply import
-pnpm ciutatis company import \
-  --from ./exports/acme \
+pnpm paperclipai company import \
+  ./exports/acme \
   --target new \
   --new-company-name "Acme Imported" \
   --include company,agents
 ```
 
+With agent authentication, use `company list` or `company current` to resolve
+the scoped company. `company list` first tries the board-wide list; if that is
+forbidden, it falls back to `--company-id`, `PAPERCLIP_COMPANY_ID`, context, or
+`/api/agents/me` and returns only that scoped company. `company create` requires
+board/instance-admin authentication because it is an instance-wide setup
+command.
+
 ## Agent Commands
 
 ```sh
-pnpm ciutatis agent list
-pnpm ciutatis agent get <agent-id>
+pnpm paperclipai agent list
+pnpm paperclipai agent get <agent-id>
+```
+
+## Skills Commands
+
+```sh
+# Browse app-shipped catalog skills without changing company state
+pnpm paperclipai skills browse [--kind bundled|optional] [--category software-development] [--query github]
+pnpm paperclipai skills search "pull request" [--json]
+
+# Inspect catalog metadata and file inventory before install
+pnpm paperclipai skills inspect github-pr-workflow
+
+# Install a catalog skill into the company skill library
+# This does not attach the skill to any agent.
+pnpm paperclipai skills install github-pr-workflow --company-id <company-id>
+pnpm paperclipai skills install github-pr-workflow --as pr-flow --force --company-id <company-id>
+
+# External sources still use import instead of catalog install
+pnpm paperclipai skills import ./skills/my-skill --company-id <company-id>
+pnpm paperclipai skills import owner/repo/path/to/skill --company-id <company-id>
+
+# Attach desired company skills to an agent after install/import
+pnpm paperclipai skills agent sync <agent-id> --skill github-pr-workflow --company-id <company-id>
 ```
 
 ## Approval Commands
 
 ```sh
 # List approvals
-pnpm ciutatis approval list [--status pending]
+pnpm paperclipai approval list [--status pending]
 
 # Get approval
-pnpm ciutatis approval get <approval-id>
+pnpm paperclipai approval get <approval-id>
 
 # Create approval
-pnpm ciutatis approval create --type hire_agent --payload '{"name":"..."}' [--issue-ids <id1,id2>]
+pnpm paperclipai approval create --type hire_agent --payload '{"name":"..."}' [--issue-ids <id1,id2>]
 
 # Approve
-pnpm ciutatis approval approve <approval-id> [--decision-note "..."]
+pnpm paperclipai approval approve <approval-id> [--decision-note "..."]
 
 # Reject
-pnpm ciutatis approval reject <approval-id> [--decision-note "..."]
+pnpm paperclipai approval reject <approval-id> [--decision-note "..."]
 
 # Request revision
-pnpm ciutatis approval request-revision <approval-id> [--decision-note "..."]
+pnpm paperclipai approval request-revision <approval-id> [--decision-note "..."]
 
 # Resubmit
-pnpm ciutatis approval resubmit <approval-id> [--payload '{"..."}']
+pnpm paperclipai approval resubmit <approval-id> [--payload '{"..."}']
 
 # Comment
-pnpm ciutatis approval comment <approval-id> --body "..."
+pnpm paperclipai approval comment <approval-id> --body "..."
 ```
 
 ## Activity Commands
 
 ```sh
-pnpm ciutatis activity list [--agent-id <id>] [--entity-type issue] [--entity-id <id>]
+pnpm paperclipai activity list [--agent-id <id>] [--entity-type issue] [--entity-id <id>]
 ```
 
 ## Dashboard
 
 ```sh
-pnpm ciutatis dashboard get
+pnpm paperclipai dashboard get
 ```
+
+## Instance Settings
+
+```sh
+pnpm paperclipai instance settings:general
+pnpm paperclipai instance settings:general:update --payload-json '{...}'
+pnpm paperclipai instance settings:experimental
+pnpm paperclipai instance settings:experimental:update --payload-json '{...}'
+```
+
+Experimental features are opt-in and are provided without compatibility guarantees. They may break, change, or be removed at any time. Use them at your own risk.
 
 ## Heartbeat
 
 ```sh
-pnpm ciutatis heartbeat run --agent-id <agent-id> [--api-base http://localhost:3100]
+pnpm paperclipai heartbeat run --agent-id <agent-id> [--api-base http://localhost:3100]
 ```

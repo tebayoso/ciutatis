@@ -40,6 +40,11 @@ interface DialogContextValue {
   onboardingOptions: OnboardingOptions;
   openOnboarding: (options?: OnboardingOptions) => void;
   closeOnboarding: () => void;
+  // Whether the user has dismissed the route-driven onboarding wizard (the one
+  // that auto-opens on /onboarding). Shared so the route launcher can hand off
+  // fully to the wizard instead of remaining interactive behind it.
+  onboardingRouteDismissed: boolean;
+  setOnboardingRouteDismissed: (dismissed: boolean) => void;
 }
 
 type DialogStateValue = Pick<
@@ -52,6 +57,7 @@ type DialogStateValue = Pick<
   | "newAgentOpen"
   | "onboardingOpen"
   | "onboardingOptions"
+  | "onboardingRouteDismissed"
 >;
 
 type DialogActionsValue = Omit<DialogContextValue, keyof DialogStateValue>;
@@ -68,6 +74,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const [newAgentOpen, setNewAgentOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingOptions, setOnboardingOptions] = useState<OnboardingOptions>({});
+  const [onboardingRouteDismissed, setOnboardingRouteDismissed] = useState(false);
 
   const openNewIssue = useCallback((defaults: NewIssueDefaults = {}) => {
     setNewIssueDefaults(defaults);
@@ -125,6 +132,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       newAgentOpen,
       onboardingOpen,
       onboardingOptions,
+      onboardingRouteDismissed,
     }),
     [
       newIssueOpen,
@@ -135,6 +143,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       newAgentOpen,
       onboardingOpen,
       onboardingOptions,
+      onboardingRouteDismissed,
     ],
   );
 
@@ -150,6 +159,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       closeNewAgent,
       openOnboarding,
       closeOnboarding,
+      setOnboardingRouteDismissed,
     }),
     [
       openNewIssue,
@@ -162,6 +172,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       closeNewAgent,
       openOnboarding,
       closeOnboarding,
+      setOnboardingRouteDismissed,
     ],
   );
 

@@ -11,6 +11,7 @@ export interface BaseClientOptions {
   profile?: string;
   apiBase?: string;
   apiKey?: string;
+  runId?: string;
   companyId?: string;
   json?: boolean;
 }
@@ -21,6 +22,7 @@ export interface ResolvedClientContext {
   profileName: string;
   profile: ClientContextProfile;
   json: boolean;
+  authSource: "explicit" | "env" | "profile_env" | "stored_board" | "none";
 }
 
 export function addCommonClientOptions(command: Command, opts?: { includeCompany?: boolean }): Command {
@@ -31,6 +33,7 @@ export function addCommonClientOptions(command: Command, opts?: { includeCompany
     .option("--profile <name>", "CLI context profile name")
     .option("--api-base <url>", "Base URL for the Ciutatis API")
     .option("--api-key <token>", "Bearer token for agent-authenticated calls")
+    .option("--run-id <id>", "Heartbeat run id for agent-authenticated mutations (checkout/release/interactions/in-progress update); falls back to $PAPERCLIP_RUN_ID")
     .option("--json", "Output raw JSON");
 
   if (opts?.includeCompany) {
@@ -47,16 +50,16 @@ export function resolveCommandContext(
   const context = readContext(options.context);
   const { name: profileName, profile } = resolveProfile(context, options.profile);
 
-  const apiBase =
-    options.apiBase?.trim() ||
-    process.env.PAPERCLIP_API_URL?.trim() ||
-    profile.apiBase ||
-    inferApiBaseFromConfig(options.config);
+  const apiBase = resolveApiBase(options, profile);
 
   const apiKey =
     options.apiKey?.trim() ||
     process.env.PAPERCLIP_API_KEY?.trim() ||
     readKeyFromProfileEnv(profile);
+  const resolvedApiKey = resolveApiKey(options, profile);
+  const explicitApiKey = resolvedApiKey.value;
+  const storedBoardCredential = explicitApiKey ? null : getStoredBoardCredential(apiBase);
+  const apiKey = explicitApiKey || storedBoardCredential?.token;
 
   const companyId =
     options.companyId?.trim() ||
@@ -70,12 +73,39 @@ export function resolveCommandContext(
   }
 
   const api = new CiutatisApiClient({ apiBase, apiKey });
+  // Agent-authenticated mutations (checkout, release, interactions, PATCH of an
+  // in-progress issue) require the X-Paperclip-Run-Id header (the server returns
+  // "401 Agent run id required" without it). Source it from --run-id, else the
+  // PAPERCLIP_RUN_ID env the adapter/embodiment context already exports.
+  const runId = options.runId?.trim() || process.env.PAPERCLIP_RUN_ID?.trim() || undefined;
+
+  const api = new PaperclipApiClient({
+    apiBase,
+    apiKey,
+    runId,
+      ? undefined
+      : async ({ error }) => {
+          const requestedAccess = error.message.includes("Instance admin required")
+            ? "instance_admin_required"
+            : "board";
+            return null;
+          }
+          const login = await loginBoardCli({
+            apiBase,
+            requestedAccess,
+            requestedCompanyId: companyId ?? null,
+            command: buildCliCommandLabel(),
+          });
+          return login.token;
+        },
+  });
   return {
     api,
     companyId,
     profileName,
     profile,
     json: Boolean(options.json),
+    authSource: explicitApiKey ? resolvedApiKey.source : storedBoardCredential ? "stored_board" : "none",
   };
 }
 
@@ -149,7 +179,7 @@ function renderValue(value: unknown): string {
   return "[object]";
 }
 
-function inferApiBaseFromConfig(configPath?: string): string {
+export function inferApiBaseFromConfig(configPath?: string): string {
   const envHost = process.env.PAPERCLIP_SERVER_HOST?.trim() || "localhost";
   let port = Number(process.env.PAPERCLIP_SERVER_PORT || "");
 

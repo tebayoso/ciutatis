@@ -86,6 +86,33 @@ export { pluginLogs } from "./plugin_logs.js";
 export { issueTreeHolds } from "./issue_tree_holds.js";
 export { issueTreeHoldMembers } from "./issue_tree_hold_members.js";
 
+export { cloudUpstreamConnections, cloudUpstreamRuns } from "./cloud_upstreams.js";
+export { builtInManagedResources } from "./built_in_managed_resources.js";
+export { agentMemberships } from "./agent_memberships.js";
+export { projectMemberships } from "./project_memberships.js";
+export { environmentCustomImageTemplates } from "./environment_custom_image_templates.js";
+export { environmentCustomImageSetupSessions } from "./environment_custom_image_setup_sessions.js";
+export { externalObjects } from "./external_objects.js";
+export { externalObjectMentions } from "./external_object_mentions.js";
+export { issueWatchdogs } from "./issue_watchdogs.js";
+export { issuePlanDecompositions } from "./issue_plan_decompositions.js";
+export { issueRecoveryActions } from "./issue_recovery_actions.js";
+export { pipelines, pipelineStages, pipelineTransitions } from "./pipelines.js";
+export { cases, caseAttachments, caseDocuments, caseEvents, caseIssueLinks, caseLabels } from "./cases.js";
+export { pipelineCaseEvents } from "./pipeline_case_events.js";
+export { documentAnnotationThreads } from "./document_annotation_threads.js";
+export { documentAnnotationComments } from "./document_annotation_comments.js";
+export { documentAnnotationAnchorSnapshots } from "./document_annotation_anchor_snapshots.js";
+export { companySecretProviderConfigs } from "./company_secret_provider_configs.js";
+export { companySecretBindings } from "./company_secret_bindings.js";
+export { userSecretDefinitions } from "./user_secret_definitions.js";
+export { userSecretDeclarations } from "./user_secret_declarations.js";
+export { secretAccessEvents } from "./secret_access_events.js";
+
+export { pipelineCases, pipelineCaseIssueLinks, pipelineCaseBlockers, pipelineDocuments, pipelineCaseDocuments, pipelineAutomationExecutions } from "./pipeline_cases.js";
+
+export { issueThreadInteractions } from "./issue_thread_interactions.js";
+
 // Stub exports for upstream compatibility - tables intentionally removed from Ciutatis
 // These are minimal table definitions to satisfy upstream type requirements
 import { sql } from "drizzle-orm";
@@ -127,38 +154,6 @@ export const issueRelations = pgTable(
   })
 );
 
-export const issueThreadInteractions = pgTable(
-  "issue_thread_interactions",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => institutions.id),
-    issueId: uuid("issue_id").notNull().references(() => requests.id),
-    kind: text("kind").notNull(),
-    status: text("status").notNull().default("pending"),
-    continuationPolicy: text("continuation_policy").notNull().default("wake_assignee"),
-    idempotencyKey: text("idempotency_key"),
-    sourceCommentId: uuid("source_comment_id").references(() => requestComments.id, { onDelete: "set null" }),
-    sourceRunId: uuid("source_run_id").references(() => heartbeatRuns.id, { onDelete: "set null" }),
-    title: text("title"),
-    summary: text("summary"),
-    createdByAgentId: uuid("created_by_agent_id").references(() => agents.id),
-    createdByUserId: text("created_by_user_id"),
-    resolvedByAgentId: uuid("resolved_by_agent_id").references(() => agents.id),
-    resolvedByUserId: text("resolved_by_user_id"),
-    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
-    result: jsonb("result").$type<Record<string, unknown>>(),
-    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    issueIdx: index("issue_thread_interactions_issue_idx").on(table.issueId),
-    companyIdx: index("issue_thread_interactions_company_idx").on(table.companyId),
-    companyIssueIdempotencyUq: uniqueIndex("issue_thread_interactions_company_issue_idempotency_uq")
-      .on(table.companyId, table.issueId, table.idempotencyKey)
-      .where(sql`${table.idempotencyKey} IS NOT NULL`),
-  })
-);
 
 export const issueInboxArchives = pgTable(
   "issue_inbox_archives",

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { isStaticUiAssetPath, resolveStaticUiCacheControl } from "../app.ts";
+import { resolveViteHmrHost, resolveViteHmrPort } from "../app.ts";
 
 describe("resolveStaticUiCacheControl", () => {
   const uiRoot = path.resolve("/tmp/ciutatis-ui");
@@ -32,5 +33,17 @@ describe("isStaticUiAssetPath", () => {
   it("ignores non-asset routes", () => {
     expect(isStaticUiAssetPath("/api/assets/123/content")).toBe(false);
     expect(isStaticUiAssetPath("/en")).toBe(false);
+  });
+});
+
+describe("resolveViteHmrHost", () => {
+  it("omits wildcard bind hosts so Vite uses the browser hostname", () => {
+    expect(resolveViteHmrHost("0.0.0.0")).toBeUndefined();
+    expect(resolveViteHmrHost("::")).toBeUndefined();
+  });
+
+  it("keeps concrete bind hosts", () => {
+    expect(resolveViteHmrHost("127.0.0.1")).toBe("127.0.0.1");
+    expect(resolveViteHmrHost("paperclip-dev")).toBe("paperclip-dev");
   });
 });

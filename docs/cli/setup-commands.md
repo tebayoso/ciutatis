@@ -5,92 +5,106 @@ summary: Onboard, run, doctor, and configure
 
 Instance setup and diagnostics commands.
 
-## `ciutatis run`
+## `paperclipai run`
 
 One-command bootstrap and start:
 
 ```sh
-pnpm ciutatis run
+pnpm paperclipai run
 ```
 
 Does:
 
 1. Auto-onboards if config is missing
-2. Runs `ciutatis doctor` with repair enabled
+2. Runs `paperclipai doctor` with repair enabled
 3. Starts the server when checks pass
 
 Choose a specific instance:
 
 ```sh
-pnpm ciutatis run --instance dev
+pnpm paperclipai run --instance dev
 ```
 
-## `ciutatis onboard`
+## `paperclipai onboard`
 
 Interactive first-time setup:
 
 ```sh
-pnpm ciutatis onboard
+pnpm paperclipai onboard
 ```
+
+If Paperclip is already configured, rerunning `onboard` keeps the existing config in place. Use `paperclipai configure` to change settings on an existing install.
 
 First prompt:
 
 1. `Quickstart` (recommended): local defaults (embedded database, no LLM provider, local disk storage, default secrets)
-2. `Advanced setup`: full interactive configuration, including optional Cloudflare Workers AI account ID + API token
+2. `Advanced setup`: full interactive configuration
 
 Start immediately after onboarding:
 
 ```sh
-pnpm ciutatis onboard --run
+pnpm paperclipai onboard --run
 ```
 
 Non-interactive defaults + immediate start (opens browser on server listen):
 
 ```sh
-pnpm ciutatis onboard --yes
+pnpm paperclipai onboard --yes
 ```
 
-## `ciutatis doctor`
+On an existing install, `--yes` now preserves the current config and just starts Paperclip with that setup.
+
+## `paperclipai doctor`
 
 Health checks with optional auto-repair:
 
 ```sh
-pnpm ciutatis doctor
-pnpm ciutatis doctor --repair
+pnpm paperclipai doctor
+pnpm paperclipai doctor --repair
 ```
 
 Validates:
 
 - Server configuration
 - Database connectivity
-- Secrets adapter configuration
+- Secrets adapter configuration, including AWS Secrets Manager non-secret env
+  config when selected
 - Storage configuration
 - Missing key files
 
-## `ciutatis configure`
+## `paperclipai configure`
 
 Update configuration sections:
 
 ```sh
-pnpm ciutatis configure --section server
-pnpm ciutatis configure --section secrets
-pnpm ciutatis configure --section storage
+pnpm paperclipai configure --section server
+pnpm paperclipai configure --section secrets
+pnpm paperclipai configure --section storage
 ```
 
-## `ciutatis env`
+`--section secrets` updates the deployment-level provider used as the fallback
+for secrets that do not target a specific company vault. Per-company provider
+vaults (named instances, default vault selection, multiple vaults per provider,
+coming-soon GCP/Vault) live in the board UI under
+`Company Settings → Secrets → Provider vaults` and the
+`/api/companies/{companyId}/secret-provider-configs` API.
+
+## `paperclipai env`
 
 Show resolved environment configuration:
 
 ```sh
-pnpm ciutatis env
+pnpm paperclipai env
 ```
 
-## `ciutatis allowed-hostname`
+This now includes bind-oriented deployment settings such as `PAPERCLIP_BIND` and `PAPERCLIP_BIND_HOST` when configured.
+
+## `paperclipai allowed-hostname`
 
 Allow a private hostname for authenticated/private mode:
 
 ```sh
-pnpm ciutatis allowed-hostname my-tailscale-host
+pnpm paperclipai allowed-hostname my-tailscale-host
 ```
 
 ## Local Storage Paths
@@ -106,12 +120,12 @@ pnpm ciutatis allowed-hostname my-tailscale-host
 Override with:
 
 ```sh
-PAPERCLIP_HOME=/custom/home PAPERCLIP_INSTANCE_ID=dev pnpm ciutatis run
+PAPERCLIP_HOME=/custom/home PAPERCLIP_INSTANCE_ID=dev pnpm paperclipai run
 ```
 
 Or pass `--data-dir` directly on any command:
 
 ```sh
-pnpm ciutatis run --data-dir ./tmp/paperclip-dev
-pnpm ciutatis doctor --data-dir ./tmp/paperclip-dev
+pnpm paperclipai run --data-dir ./tmp/paperclip-dev
+pnpm paperclipai doctor --data-dir ./tmp/paperclip-dev
 ```

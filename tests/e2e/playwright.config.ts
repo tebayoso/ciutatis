@@ -3,90 +3,32 @@ import os from "node:os";
 import path from "node:path";
 import { defineConfig } from "@playwright/test";
 
-const PORT = Number(process.env.PAPERCLIP_E2E_PORT ?? 3100);
+// Use a dedicated port so e2e tests always start their own server in local_trusted mode,
+// even when the dev server is running on :3100 in authenticated mode.
+const PORT = Number(process.env.PAPERCLIP_E2E_PORT ?? 3199);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
-const DB_PORT =
-  Number(process.env.PAPERCLIP_E2E_DB_PORT) ||
-  (54_000 + Math.floor(Math.random() * 1_000));
-const E2E_ROOT =
-  process.env.PAPERCLIP_E2E_TMPDIR ??
-  fs.mkdtempSync(path.join(os.tmpdir(), "ciutatis-e2e."));
-const E2E_CONFIG = path.join(E2E_ROOT, "config.json");
-const E2E_HOME = path.join(E2E_ROOT, "home");
-const AUTHENTICATED = process.env.PAPERCLIP_E2E_AUTHENTICATED === "true";
+const PAPERCLIP_HOME = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-e2e-home-"));
+const PAPERCLIP_CONFIG = path.join(PAPERCLIP_HOME, "instances", "playwright-e2e", "config.json");
+const PAPERCLIP_AGENT_JWT_SECRET = process.env.PAPERCLIP_AGENT_JWT_SECRET ?? "playwright-e2e-agent-jwt-secret";
+const PLAYWRIGHT_CHANNEL = process.env.PAPERCLIP_PLAYWRIGHT_CHANNEL;
 
-process.env.PAPERCLIP_E2E_TMPDIR = E2E_ROOT;
-process.env.PAPERCLIP_E2E_CONFIG = E2E_CONFIG;
-process.env.PAPERCLIP_E2E_HOME = E2E_HOME;
-process.env.PAPERCLIP_E2E_DB_PORT = String(DB_PORT);
-
-fs.mkdirSync(E2E_HOME, { recursive: true });
-fs.writeFileSync(
-  E2E_CONFIG,
-  JSON.stringify(
-    {
-      $meta: {
-        version: 1,
-        updatedAt: new Date().toISOString(),
-        source: "doctor",
-      },
-      database: {
-        mode: "embedded-postgres",
-        embeddedPostgresDataDir: path.join(E2E_HOME, "instances", "e2e", "db"),
-        embeddedPostgresPort: DB_PORT,
-        backup: {
-          enabled: true,
-          intervalMinutes: 60,
-          retentionDays: 30,
-          dir: path.join(E2E_HOME, "instances", "e2e", "data", "backups"),
-        },
-      },
-      logging: {
-        mode: "file",
-        logDir: path.join(E2E_HOME, "instances", "e2e", "logs"),
-      },
-      server: {
-        deploymentMode: AUTHENTICATED ? "authenticated" : "local_trusted",
-        exposure: "private",
-        host: AUTHENTICATED ? "0.0.0.0" : "127.0.0.1",
-        port: PORT,
-        allowedHostnames: [],
-        serveUi: true,
-      },
-      auth: {
-        baseUrlMode: "auto",
-        disableSignUp: false,
-      },
-      storage: {
-        provider: "local_disk",
-        localDisk: {
-          baseDir: path.join(E2E_HOME, "instances", "e2e", "data", "storage"),
-        },
-        s3: {
-          bucket: "paperclip",
-          region: "us-east-1",
-          prefix: "",
-          forcePathStyle: false,
-        },
-      },
-      secrets: {
-        provider: "local_encrypted",
-        strictMode: false,
-        localEncrypted: {
-          keyFilePath: path.join(E2E_HOME, "instances", "e2e", "secrets", "master.key"),
-        },
-      },
-    },
-    null,
-    2,
-  ),
-);
+process.env.PAPERCLIP_HOME = PAPERCLIP_HOME;
+process.env.PAPERCLIP_CONFIG = PAPERCLIP_CONFIG;
+process.env.PAPERCLIP_AGENT_JWT_SECRET = PAPERCLIP_AGENT_JWT_SECRET;
 
 export default defineConfig({
   testDir: ".",
   testMatch: "**/*.spec.ts",
+  // These suites target dedicated multi-user configurations/ports and are
+  // intentionally not part of the default local_trusted e2e run.
+  testIgnore: ["multi-user.spec.ts", "multi-user-authenticated.spec.ts"],
   timeout: 60_000,
   retries: 0,
+  // All specs share one throwaway server, and several toggle instance-level
+  // state (the `enableConferenceRoomChat` experimental flag) that changes
+  // which UI variant renders. Run files serially so a flag flip in one spec
+  // can't change the wizard/thread under another spec mid-flight.
+  workers: 1,
   use: {
     baseURL: BASE_URL,
     headless: true,
@@ -96,26 +38,34 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { browserName: "chromium" },
+      use: {
+        browserName: "chromium",
+        ...(PLAYWRIGHT_CHANNEL ? { channel: PLAYWRIGHT_CHANNEL } : {}),
+      },
     },
   ],
-  // Start an isolated dev server with embedded Postgres. Authenticated runs use
-  // Better Auth with a deterministic local secret so browser login/signup flows
-  // can be exercised without repo-local config leaking into the harness.
+  // The webServer directive bootstraps a throwaway instance and then starts it.
+  // `onboard --yes --run` works in a non-interactive temp PAPERCLIP_HOME.
   webServer: {
-    command:
-      'env -u DATABASE_URL ' +
-      `PAPERCLIP_CONFIG="${E2E_CONFIG}" ` +
-      `PAPERCLIP_HOME="${E2E_HOME}" ` +
-      'PAPERCLIP_INSTANCE_ID=e2e ' +
-      (AUTHENTICATED
-        ? `BETTER_AUTH_SECRET="ciutatis-e2e-secret-0123456789abcdef" BETTER_AUTH_BASE_URL="${BASE_URL}" pnpm dev:once --authenticated-private`
-        : 'pnpm dev:once'),
+    command: `pnpm paperclipai onboard --yes --run`,
     url: `${BASE_URL}/api/health`,
-    reuseExistingServer: !!process.env.CI,
+    // Always boot a dedicated throwaway instance for e2e so browser tests
+    // never attach to the developer's active Paperclip home/server.
+    reuseExistingServer: false,
     timeout: 120_000,
     stdout: "pipe",
     stderr: "pipe",
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      PAPERCLIP_HOME,
+      PAPERCLIP_CONFIG,
+      PAPERCLIP_AGENT_JWT_SECRET,
+      PAPERCLIP_INSTANCE_ID: "playwright-e2e",
+      PAPERCLIP_BIND: "loopback",
+      PAPERCLIP_DEPLOYMENT_MODE: "local_trusted",
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "private",
+    },
   },
   outputDir: "./test-results",
   reporter: [["list"], ["html", { open: "never", outputFolder: "./playwright-report" }]],

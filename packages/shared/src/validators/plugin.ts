@@ -6,6 +6,7 @@ import {
   PLUGIN_UI_SLOT_TYPES,
   PLUGIN_UI_SLOT_ENTITY_TYPES,
   PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS,
+  PLUGIN_RESERVED_COMPANY_SETTINGS_ROUTE_SEGMENTS,
   PLUGIN_LAUNCHER_PLACEMENT_ZONES,
   PLUGIN_LAUNCHER_ACTIONS,
   PLUGIN_LAUNCHER_BOUNDS,
@@ -13,6 +14,7 @@ import {
   PLUGIN_STATE_SCOPE_KINDS,
   ISSUE_PRIORITIES,
 } from "../constants.js";
+import { externalObjectProviderKeySchema, externalObjectTypeSchema } from "./external-object.js";
 
 // ---------------------------------------------------------------------------
 // JSON Schema placeholder – a permissive validator for JSON Schema objects
@@ -28,7 +30,7 @@ import {
  *
  * @see PLUGIN_SPEC.md §10.1 — Manifest shape
  */
-export const jsonSchemaSchema = z.record(z.unknown()).refine(
+export const jsonSchemaSchema = z.record(z.string(), z.unknown()).refine(
   (val) => {
     // Must have a "type" field if non-empty, or be a valid JSON Schema object
     if (Object.keys(val).length === 0) return true;
@@ -130,6 +132,42 @@ export const pluginToolDeclarationSchema = z.object({
   parametersSchema: jsonSchemaSchema,
 });
 
+const pluginEnvironmentTemplateConfigFieldSchema = z.string()
+  .min(1)
+  .max(100)
+  .regex(
+    /^[A-Za-z_][A-Za-z0-9_-]*$/,
+    "Template config binding fields must be top-level config keys using letters, digits, underscores, or hyphens",
+  )
+  .refine((value) => value !== "provider", {
+    message: "Template config binding must not replace the sandbox provider key",
+  });
+
+export const pluginEnvironmentTemplateConfigBindingSchema = z.object({
+  field: pluginEnvironmentTemplateConfigFieldSchema,
+  unsetFields: z.array(pluginEnvironmentTemplateConfigFieldSchema).max(20).optional(),
+}).strict().superRefine((value, ctx) => {
+  const unsetFields = value.unsetFields ?? [];
+  const seen = new Set<string>();
+  for (const [index, field] of unsetFields.entries()) {
+    if (field === value.field) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Template config binding cannot unset the same field it sets",
+        path: ["unsetFields", index],
+      });
+    }
+    if (seen.has(field)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Template config binding unsetFields must be unique",
+        path: ["unsetFields", index],
+      });
+    }
+    seen.add(field);
+  }
+});
+
 export const pluginEnvironmentDriverDeclarationSchema = z.object({
   driverKey: z.string().min(1).regex(
     /^[a-z0-9][a-z0-9._-]*$/,
@@ -138,6 +176,14 @@ export const pluginEnvironmentDriverDeclarationSchema = z.object({
   kind: z.enum(["environment_driver", "sandbox_provider"]).optional(),
   displayName: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
+  supportsReusableLeases: z.boolean().optional(),
+  supportsInteractiveSetup: z.boolean().optional(),
+  interactiveSetupConnectionTypes: z.array(z.string().min(1).max(100)).max(10).optional(),
+  supportsTemplateCapture: z.boolean().optional(),
+  templateRefKind: z.string().min(1).max(100).optional(),
+  templateConfigBinding: pluginEnvironmentTemplateConfigBindingSchema.optional(),
+  templateIdentityPaths: z.array(z.string().min(1).max(200)).max(20).optional(),
+  supportsTemplateDelete: z.boolean().optional(),
   configSchema: jsonSchemaSchema,
 });
 
@@ -158,14 +204,15 @@ export const pluginManagedAgentDeclarationSchema = z.object({
   capabilities: z.string().max(2000).nullable().optional(),
   adapterType: z.string().min(1).max(100).optional(),
   adapterPreference: z.array(z.string().min(1).max(100)).max(10).optional(),
-  adapterConfig: z.record(z.unknown()).optional(),
-  runtimeConfig: z.record(z.unknown()).optional(),
-  permissions: z.record(z.unknown()).optional(),
+  adapterConfig: z.record(z.string(), z.unknown()).optional(),
+  runtimeConfig: z.record(z.string(), z.unknown()).optional(),
+  permissions: z.record(z.string(), z.unknown()).optional(),
   status: z.enum(["idle", "paused"]).optional(),
   budgetMonthlyCents: z.number().int().min(0).optional(),
   instructions: z.object({
     entryFile: z.string().min(1).max(200).optional(),
     content: z.string().max(200_000).optional(),
+    files: z.record(z.string().max(200_000)).optional(),
     assetPath: z.string().min(1).max(500).optional(),
   }).optional(),
 });
@@ -180,7 +227,7 @@ export const pluginManagedProjectDeclarationSchema = z.object({
   description: z.string().max(2000).nullable().optional(),
   status: z.enum(["backlog", "planned", "in_progress", "completed", "cancelled"]).optional(),
   color: z.string().max(32).nullable().optional(),
-  settings: z.record(z.unknown()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type PluginManagedProjectDeclarationInput = z.infer<typeof pluginManagedProjectDeclarationSchema>;
@@ -188,6 +235,7 @@ export type PluginManagedProjectDeclarationInput = z.infer<typeof pluginManagedP
 const pluginManagedResourceRefSchema = z.object({
   pluginKey: z.string().min(1).max(100).optional(),
   resourceKind: z.enum(["agent", "project"]),
+  resourceKind: z.enum(["agent", "project", "routine", "skill"]),
   resourceKey: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
     message: "resourceKey must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, colons, underscores, or hyphens",
   }),
@@ -214,6 +262,41 @@ export const pluginLocalFolderDeclarationSchema = z.object({
 });
 
 export type PluginLocalFolderDeclarationInput = z.infer<typeof pluginLocalFolderDeclarationSchema>;
+
+export const pluginManagedSkillFileDeclarationSchema = z.object({
+  path: pluginLocalFolderRelativePathSchema.refine(
+    (value) => value.toLowerCase() !== "skill.md",
+    { message: "managed skill files cannot replace SKILL.md; use markdown for the main skill file" },
+  ),
+  content: z.string().max(200_000),
+});
+
+export type PluginManagedSkillFileDeclarationInput = z.infer<typeof pluginManagedSkillFileDeclarationSchema>;
+
+export const pluginManagedSkillDeclarationSchema = z.object({
+  skillKey: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
+    message: "skillKey must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, colons, underscores, or hyphens",
+  }),
+  displayName: z.string().min(1).max(100),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
+    message: "slug must start with a lowercase alphanumeric and contain only lowercase letters, digits, dots, colons, underscores, or hyphens",
+  }).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  markdown: z.string().max(200_000).optional(),
+  files: z.array(pluginManagedSkillFileDeclarationSchema).max(50).optional(),
+}).superRefine((value, ctx) => {
+  const paths = (value.files ?? []).map((file) => file.path);
+  const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
+  if (duplicates.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Duplicate managed skill file paths: ${[...new Set(duplicates)].join(", ")}`,
+      path: ["files"],
+    });
+  }
+});
+
+export type PluginManagedSkillDeclarationInput = z.infer<typeof pluginManagedSkillDeclarationSchema>;
 
 /**
  * Validates a {@link PluginUiSlotDeclaration} — a UI extension slot the plugin
@@ -273,6 +356,20 @@ export const pluginUiSlotDeclarationSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "routePath is only supported for page slots",
+  if (value.routePath && value.type !== "page" && value.type !== "routeSidebar" && value.type !== "companySettingsPage") {
+      message: "routePath is only supported for page, routeSidebar, and companySettingsPage slots",
+      path: ["routePath"],
+    });
+  }
+  if (value.type === "routeSidebar" && !value.routePath) {
+      message: "routeSidebar slots require routePath",
+      path: ["routePath"],
+    });
+  }
+  if (value.type === "companySettingsPage" && !value.routePath) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "companySettingsPage slots require routePath",
       path: ["routePath"],
     });
   }
@@ -280,6 +377,17 @@ export const pluginUiSlotDeclarationSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: `routePath "${value.routePath}" is reserved by the host`,
+      path: ["routePath"],
+    });
+  }
+  if (
+    value.type === "companySettingsPage"
+    && value.routePath
+    && PLUGIN_RESERVED_COMPANY_SETTINGS_ROUTE_SEGMENTS.includes(value.routePath as (typeof PLUGIN_RESERVED_COMPANY_SETTINGS_ROUTE_SEGMENTS)[number])
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `company settings routePath "${value.routePath}" is reserved by the host`,
       path: ["routePath"],
     });
   }
@@ -313,7 +421,7 @@ const launcherBoundsByEnvironment: Record<
 export const pluginLauncherActionDeclarationSchema = z.object({
   type: z.enum(PLUGIN_LAUNCHER_ACTIONS),
   target: z.string().min(1),
-  params: z.record(z.unknown()).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
 }).superRefine((value, ctx) => {
   if (value.type === "performAction" && value.target.includes("/")) {
     ctx.addIssue({
@@ -446,6 +554,97 @@ export const pluginLauncherDeclarationSchema = z.object({
 
 export type PluginLauncherDeclarationInput = z.infer<typeof pluginLauncherDeclarationSchema>;
 
+export const pluginDatabaseDeclarationSchema = z.object({
+  namespaceSlug: z.string().regex(/^[a-z0-9][a-z0-9_]*$/, {
+    message: "namespaceSlug must be lowercase letters, digits, or underscores and start with a letter or digit",
+  }).max(40).optional(),
+  migrationsDir: z.string().min(1).refine(
+    (value) => !value.startsWith("/") && !value.includes("..") && !/[\\]/.test(value),
+    { message: "migrationsDir must be a relative package path without '..' or backslashes" },
+  ),
+  coreReadTables: z.array(z.enum(PLUGIN_DATABASE_CORE_READ_TABLES)).optional(),
+});
+
+export type PluginDatabaseDeclarationInput = z.infer<typeof pluginDatabaseDeclarationSchema>;
+
+export const pluginApiRouteDeclarationSchema = z.object({
+  routeKey: z.string().min(1).max(100).regex(/^[a-z0-9][a-z0-9._:-]*$/, {
+    message: "routeKey must be lowercase letters, digits, dots, colons, underscores, or hyphens",
+  }),
+  method: z.enum(PLUGIN_API_ROUTE_METHODS),
+  path: z.string().min(1).regex(/^\/[a-zA-Z0-9:_./-]*$/, {
+    message: "path must start with / and contain only path-safe literal or :param segments",
+  }).refine(
+    (value) =>
+      !value.includes("..") &&
+      !value.includes("//") &&
+      value !== "/api" &&
+      !value.startsWith("/api/") &&
+      value !== "/plugins" &&
+      !value.startsWith("/plugins/"),
+    { message: "path must stay inside the plugin api namespace" },
+  ),
+  auth: z.enum(PLUGIN_API_ROUTE_AUTH_MODES),
+  capability: z.literal("api.routes.register"),
+  checkoutPolicy: z.enum(PLUGIN_API_ROUTE_CHECKOUT_POLICIES).optional(),
+  companyResolution: z.discriminatedUnion("from", [
+    z.object({ from: z.literal("body"), key: z.string().min(1) }),
+    z.object({ from: z.literal("query"), key: z.string().min(1) }),
+    z.object({ from: z.literal("issue"), param: z.string().min(1) }),
+  ]).optional(),
+});
+
+export type PluginApiRouteDeclarationInput = z.infer<typeof pluginApiRouteDeclarationSchema>;
+
+export const pluginObjectReferenceRefreshPolicySchema = z.object({
+  defaultTtlSeconds: z.number().int().positive().max(86_400).optional(),
+  staleAfterSeconds: z.number().int().positive().max(604_800).optional(),
+}).superRefine((value, ctx) => {
+  if (
+    value.defaultTtlSeconds != null &&
+    value.staleAfterSeconds != null &&
+    value.staleAfterSeconds < value.defaultTtlSeconds
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "staleAfterSeconds must be greater than or equal to defaultTtlSeconds",
+      path: ["staleAfterSeconds"],
+    });
+  }
+});
+
+export const pluginObjectReferenceProviderDeclarationSchema = z.object({
+  providerKey: externalObjectProviderKeySchema,
+  displayName: z.string().min(1).max(100),
+  objectTypes: z.array(externalObjectTypeSchema).min(1),
+  urlPatterns: z.array(z.string().trim().min(1).max(500)).optional(),
+  refreshPolicy: pluginObjectReferenceRefreshPolicySchema.optional(),
+  webhookEndpointKeys: z.array(z.string().min(1)).optional(),
+}).superRefine((value, ctx) => {
+  const duplicateObjectTypes = value.objectTypes.filter((type, i) => value.objectTypes.indexOf(type) !== i);
+  if (duplicateObjectTypes.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Duplicate objectTypes: ${[...new Set(duplicateObjectTypes)].join(", ")}`,
+      path: ["objectTypes"],
+    });
+  }
+
+  const webhookKeys = value.webhookEndpointKeys ?? [];
+  const duplicateWebhookKeys = webhookKeys.filter((key, i) => webhookKeys.indexOf(key) !== i);
+  if (duplicateWebhookKeys.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Duplicate webhookEndpointKeys: ${[...new Set(duplicateWebhookKeys)].join(", ")}`,
+      path: ["webhookEndpointKeys"],
+    });
+  }
+});
+
+export type PluginObjectReferenceProviderDeclarationInput = z.infer<
+  typeof pluginObjectReferenceProviderDeclarationSchema
+>;
+
 // ---------------------------------------------------------------------------
 // Plugin Manifest V1 schema
 // ---------------------------------------------------------------------------
@@ -523,6 +722,9 @@ export const pluginManifestV1Schema = z.object({
     migrationsDir: z.string().min(1),
     coreReadTables: z.array(z.string().min(1)).optional(),
   }).optional(),
+  routines: z.array(pluginManagedRoutineDeclarationSchema).optional(),
+  skills: z.array(pluginManagedSkillDeclarationSchema).optional(),
+  objectReferences: z.array(pluginObjectReferenceProviderDeclarationSchema).optional(),
   launchers: z.array(pluginLauncherDeclarationSchema).optional(),
   ui: z.object({
     slots: z.array(pluginUiSlotDeclarationSchema).min(1).optional(),
@@ -570,6 +772,67 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  // environment drivers require environment.drivers.register
+  if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
+    if (!manifest.capabilities.includes("environment.drivers.register")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.agents && manifest.agents.length > 0) {
+    if (!manifest.capabilities.includes("agents.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'agents.managed' is required when managed agents are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.projects && manifest.projects.length > 0) {
+    if (!manifest.capabilities.includes("projects.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'projects.managed' is required when managed projects are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.routines && manifest.routines.length > 0) {
+    if (!manifest.capabilities.includes("routines.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'routines.managed' is required when managed routines are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.skills && manifest.skills.length > 0) {
+    if (!manifest.capabilities.includes("skills.managed")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'skills.managed' is required when managed skills are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
+  if (manifest.localFolders && manifest.localFolders.length > 0) {
+    if (!manifest.capabilities.includes("local.folders")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Capability 'local.folders' is required when local folders are declared",
+        path: ["capabilities"],
+      });
+    }
+  }
+
   // jobs require jobs.schedule (PLUGIN_SPEC.md §17)
   if (manifest.jobs && manifest.jobs.length > 0) {
     if (!manifest.capabilities.includes("jobs.schedule")) {
@@ -604,6 +867,49 @@ export const pluginManifestV1Schema = z.object({
 
   if (manifest.environmentDrivers && manifest.environmentDrivers.length > 0) {
     if (!manifest.capabilities.includes("environment.drivers.register")) {
+  if (manifest.objectReferences && manifest.objectReferences.length > 0) {
+    for (const capability of ["external.objects.detect", "external.objects.read"] as const) {
+      if (!manifest.capabilities.includes(capability)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Capability '${capability}' is required when objectReferences are declared`,
+          path: ["capabilities"],
+        });
+      }
+    }
+
+    const declaredWebhookKeys = new Set((manifest.webhooks ?? []).map((webhook) => webhook.endpointKey));
+    for (const [providerIndex, provider] of manifest.objectReferences.entries()) {
+      for (const endpointKey of provider.webhookEndpointKeys ?? []) {
+        if (!declaredWebhookKeys.has(endpointKey)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `objectReferences webhookEndpointKey "${endpointKey}" must match a declared webhook endpoint`,
+            path: ["objectReferences", providerIndex, "webhookEndpointKeys"],
+          });
+        }
+      }
+    }
+  }
+
+  if (manifest.database) {
+    const requiredCapabilities = [
+      "database.namespace.migrate",
+      "database.namespace.read",
+    ] as const;
+    for (const capability of requiredCapabilities) {
+      if (!manifest.capabilities.includes(capability)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Capability '${capability}' is required when database migrations are declared`,
+          path: ["capabilities"],
+        });
+      }
+    }
+
+    const coreReadTables = manifest.database.coreReadTables ?? [];
+    const duplicates = coreReadTables.filter((table, i) => coreReadTables.indexOf(table) !== i);
+    if (duplicates.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Capability 'environment.drivers.register' is required when environmentDrivers are declared",
@@ -767,6 +1073,78 @@ export const pluginManifestV1Schema = z.object({
     }
   }
 
+  if (manifest.localFolders) {
+    const folderKeys = manifest.localFolders.map((folder) => folder.folderKey);
+    const duplicates = folderKeys.filter((key, i) => folderKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate local folder keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["localFolders"],
+      });
+    }
+  }
+
+  if (manifest.agents) {
+    const agentKeys = manifest.agents.map((agent) => agent.agentKey);
+    const duplicates = agentKeys.filter((key, i) => agentKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate managed agent keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["agents"],
+      });
+    }
+  }
+
+  if (manifest.projects) {
+    const projectKeys = manifest.projects.map((project) => project.projectKey);
+    const duplicates = projectKeys.filter((key, i) => projectKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate managed project keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["projects"],
+      });
+    }
+  }
+
+  if (manifest.routines) {
+    const routineKeys = manifest.routines.map((routine) => routine.routineKey);
+    const duplicates = routineKeys.filter((key, i) => routineKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate managed routine keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["routines"],
+      });
+    }
+  }
+
+  if (manifest.skills) {
+    const skillKeys = manifest.skills.map((skill) => skill.skillKey);
+    const duplicates = skillKeys.filter((key, i) => skillKeys.indexOf(key) !== i);
+    if (duplicates.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate managed skill keys: ${[...new Set(duplicates)].join(", ")}`,
+        path: ["skills"],
+      });
+    }
+  }
+
+  if (manifest.objectReferences) {
+    const providerKeys = manifest.objectReferences.map((provider) => provider.providerKey);
+    const duplicateProviders = providerKeys.filter((key, i) => providerKeys.indexOf(key) !== i);
+    if (duplicateProviders.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Duplicate object reference provider keys: ${[...new Set(duplicateProviders)].join(", ")}`,
+        path: ["objectReferences"],
+      });
+    }
+  }
+
   // UI slot ids must be unique within the plugin (namespaced at runtime)
   if (manifest.ui) {
     if (manifest.ui.slots) {
@@ -830,7 +1208,7 @@ export type InstallPlugin = z.infer<typeof installPluginSchema>;
  * the plugin's instanceConfigSchema is done at the service layer.
  */
 export const upsertPluginConfigSchema = z.object({
-  configJson: z.record(z.unknown()),
+  configJson: z.record(z.string(), z.unknown()),
 });
 
 export type UpsertPluginConfig = z.infer<typeof upsertPluginConfigSchema>;
@@ -840,7 +1218,7 @@ export type UpsertPluginConfig = z.infer<typeof upsertPluginConfigSchema>;
  * Allows a partial merge of config values.
  */
 export const patchPluginConfigSchema = z.object({
-  configJson: z.record(z.unknown()),
+  configJson: z.record(z.string(), z.unknown()),
 });
 
 export type PatchPluginConfig = z.infer<typeof patchPluginConfigSchema>;

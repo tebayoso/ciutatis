@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { workspaceFileRefSchema } from "./workspace-file-resource.js";
+
+function attachmentContentPath(attachmentId: string): string {
+  return `/api/attachments/${attachmentId}/content`;
+}
 
 export const requestWorkProductTypeSchema = z.enum([
   "preview_url",
@@ -30,6 +35,42 @@ export const requestWorkProductReviewStateSchema = z.enum([
 ]);
 
 export const createRequestWorkProductSchema = z.object({
+export const attachmentArtifactWorkProductMetadataSchema = z.object({
+  attachmentId: z.string().uuid(),
+  contentType: z.string().min(1),
+  byteSize: z.number().int().nonnegative(),
+  contentPath: z.string().min(1),
+  openPath: z.string().min(1),
+  downloadPath: z.string().min(1),
+  originalFilename: z.string().optional().nullable(),
+}).superRefine((value, ctx) => {
+  const contentPath = attachmentContentPath(value.attachmentId);
+  if (value.contentPath !== contentPath) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["contentPath"],
+      message: "contentPath must point to the same-origin attachment content route",
+    });
+  }
+  if (value.openPath !== contentPath) {
+      path: ["openPath"],
+      message: "openPath must point to the same-origin attachment content route",
+  if (value.downloadPath !== `${contentPath}?download=1`) {
+      path: ["downloadPath"],
+      message: "downloadPath must point to the same-origin attachment download route",
+});
+
+export type AttachmentArtifactWorkProductMetadata = z.infer<typeof attachmentArtifactWorkProductMetadataSchema>;
+
+export const issueWorkProductMetadataSchema = z
+  .object({
+    resourceRef: workspaceFileRefSchema.optional().nullable(),
+  })
+  .passthrough();
+
+export type IssueWorkProductMetadata = z.infer<typeof issueWorkProductMetadataSchema>;
+
+export const createIssueWorkProductSchema = z.object({
   projectId: z.string().uuid().optional().nullable(),
   executionWorkspaceId: z.string().uuid().optional().nullable(),
   runtimeServiceId: z.string().uuid().optional().nullable(),
@@ -43,7 +84,7 @@ export const createRequestWorkProductSchema = z.object({
   isPrimary: z.boolean().optional().default(false),
   healthStatus: z.enum(["unknown", "healthy", "unhealthy"]).optional().default("unknown"),
   summary: z.string().optional().nullable(),
-  metadata: z.record(z.unknown()).optional().nullable(),
+  metadata: issueWorkProductMetadataSchema.optional().nullable(),
   createdByRunId: z.string().uuid().optional().nullable(),
 });
 

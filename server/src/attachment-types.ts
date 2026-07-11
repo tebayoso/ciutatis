@@ -2,6 +2,7 @@
  * Shared attachment content-type configuration.
  *
  * By default only image types are allowed.  Set the
+ * By default a curated set of image/document/text/media types are allowed. Set the
  * `PAPERCLIP_ALLOWED_ATTACHMENT_TYPES` environment variable to a
  * comma-separated list of MIME types or wildcard patterns to expand the
  * allowed set.
@@ -25,11 +26,31 @@ export const DEFAULT_ALLOWED_TYPES: readonly string[] = [
   "image/webp",
   "image/gif",
   "application/pdf",
+  "application/zip",
   "text/markdown",
   "text/plain",
   "application/json",
   "text/csv",
   "text/html",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-m4v",
+];
+
+export const DEFAULT_ATTACHMENT_CONTENT_TYPE = "application/octet-stream";
+export const SVG_CONTENT_TYPE = "image/svg+xml";
+export const INLINE_ATTACHMENT_TYPES: readonly string[] = [
+  "image/*",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+  "application/json",
+  "text/csv",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-m4v",
 ];
 
 /**

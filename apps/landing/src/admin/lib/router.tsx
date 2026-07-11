@@ -4,6 +4,7 @@ import type { NavigateOptions, To } from "react-router-dom";
 import { useOptionalCompany } from "@/context/CompanyContext";
 import {
   applyCompanyPrefix,
+  caseHref,
   extractCompanyPrefixFromPath,
   normalizeCompanyPrefix,
 } from "@/lib/company-routes";
@@ -25,6 +26,8 @@ function resolveTo(to: To, companyPrefix: string | null): To {
 
 function useActiveCompanyPrefix(): string | null {
   const company = useOptionalCompany();
+export function useActiveCompanyPrefix(): string | null {
+  const { selectedCompany } = useCompany();
   const params = RouterDom.useParams<{ companyPrefix?: string }>();
   const location = RouterDom.useLocation();
 
@@ -38,12 +41,60 @@ function useActiveCompanyPrefix(): string | null {
   return company?.selectedCompany ? normalizeCompanyPrefix(company.selectedCompany.issuePrefix) : null;
 }
 
+/**
+ * Returns a builder for company-prefixed Cases hrefs bound to the active company
+ * (e.g. `/PAP/cases/PAP-C5`). Use for all case-to-case links so they emit
+ * prefixed paths directly instead of leaning on the PAP-13002 redirect.
+ */
+export function useCaseHref(): (...segments: string[]) => string {
+  const companyPrefix = useActiveCompanyPrefix();
+  return React.useCallback(
+    (...segments: string[]) => caseHref(companyPrefix, ...segments),
+    [companyPrefix],
+  );
+}
+
 export * from "react-router-dom";
 
 export const Link = React.forwardRef<HTMLAnchorElement, React.ComponentProps<typeof RouterDom.Link>>(
   function CompanyLink({ to, ...props }, ref) {
     const companyPrefix = useActiveCompanyPrefix();
     return <RouterDom.Link ref={ref} to={resolveTo(to, companyPrefix)} {...props} />;
+type CompanyLinkProps = React.ComponentProps<typeof RouterDom.Link> & {
+  disableIssueQuicklook?: boolean;
+  issuePrefetch?: Issue | null;
+  issueQuicklookSide?: React.ComponentProps<typeof IssueLinkQuicklook>["issueQuicklookSide"];
+  issueQuicklookAlign?: React.ComponentProps<typeof IssueLinkQuicklook>["issueQuicklookAlign"];
+};
+
+export const Link = React.forwardRef<HTMLAnchorElement, CompanyLinkProps>(
+  function CompanyLink({
+    to,
+    disableIssueQuicklook = false,
+    issuePrefetch = null,
+    issueQuicklookSide,
+    issueQuicklookAlign,
+    ...props
+  }, ref) {
+    const resolvedTo = resolveTo(to, companyPrefix);
+    const issuePathId = parseIssuePathIdFromPath(typeof resolvedTo === "string" ? resolvedTo : resolvedTo.pathname);
+
+    if (issuePathId) {
+      return (
+        <IssueLinkQuicklook
+          ref={ref}
+          to={resolvedTo}
+          issuePathId={issuePathId}
+          disableIssueQuicklook={disableIssueQuicklook}
+          issuePrefetch={issuePrefetch}
+          issueQuicklookSide={issueQuicklookSide}
+          issueQuicklookAlign={issueQuicklookAlign}
+          {...props}
+        />
+      );
+    }
+
+    return <RouterDom.Link ref={ref} to={resolvedTo} {...props} />;
   },
 );
 

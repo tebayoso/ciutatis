@@ -1,42 +1,29 @@
+node_modules
 node_modules/
+**/node_modules
+**/node_modules/
 dist/
+ui/storybook-static/
 .env
-.env.local
-.dev.vars
 *.tsbuildinfo
 drizzle/meta/
 .vite/
-apps/landing/.next/
-apps/landing/out/
-apps/landing/.open-next/
-apps/landing/cloudflare-env.d.ts
-.wrangler/
 coverage/
 .DS_Store
-__pycache__/
-*.py[cod]
-.pytest_cache/
 data/
 .paperclip/
 .pnpm-store/
 tmp-*
 cli/tmp/
-.mcp.json
-.codex/
-.playwright-cli/
-.playwright-mcp/
-.wrangler/
-workers/api/.wrangler/
-workfiles/
-.sisyphus/
 
 # Scratch/seed scripts (but not scripts/ dir)
 check-*.mjs
+!.github/scripts/check-*.mjs
+!.github/scripts/tests/check-*.mjs
 !scripts/check-*.mjs
 new-agent*.json
 newcompany.json
 seed-*.mjs
-!scripts/seed-geo-ar.mjs
 server/check-*.mjs
 server/seed-*.mjs
 packages/db/seed-*.mjs
@@ -50,13 +37,15 @@ server/src/**/*.js.map
 server/src/**/*.d.ts
 server/src/**/*.d.ts.map
 tmp/
+feedback-export-*
+diagnostics/
 
 # Editor / tool temp files
 *.tmp
 .vscode/
 .claude/settings.local.json
 .paperclip-local/
-.paperclip-local-dev/
+.paperclip-runtime/
 /.idea/
 /.agents/
 
@@ -68,15 +57,12 @@ tests/e2e/test-results/
 tests/e2e/playwright-report/
 tests/release-smoke/test-results/
 tests/release-smoke/playwright-report/
+tests/storybook-visual/.cache/
+tests/storybook-visual/.snapshots/
+tests/storybook-visual/baseline-review/
+tests/storybook-visual/test-results/
+tests/storybook-visual/playwright-report/
 .superset/
+.superpowers/
 .claude/worktrees/
-
-# Seed credentials (local reference only — DO NOT COMMIT)
-doc/SEED-CREDENTIALS.md
-.aidesigner/*
-!.aidesigner/.gitkeep
-.env
-!.env.example
-.omo/
-server/ui-dist/
-.venv/
+.herenow

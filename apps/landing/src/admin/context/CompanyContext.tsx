@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Company } from "@paperclipai/shared";
 import { useLocation } from "@/lib/router";
 import { companiesApi } from "../api/companies";
-import { ApiError } from "../api/client";
+import { companiesListQueryOptions, type CompanyListResult } from "../api/companies-query";
 import { queryKeys } from "../lib/queryKeys";
 import type { CompanySelectionSource } from "../lib/company-selection";
 import { isPublicSitePath } from "../lib/public-site-paths";
@@ -111,6 +111,10 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
   const { companies, unauthorized } = normalizeCompaniesQueryResult(companiesQuery);
+  const { data: companiesResult = { companies: [], unauthorized: false }, isLoading, error } =
+    useQuery<CompanyListResult>(companiesListQueryOptions);
+  const companies = companiesResult.companies;
+  const companyListUnauthorized = companiesResult.unauthorized;
   const sidebarCompanies = useMemo(
     () => companies.filter((company) => company.status !== "archived"),
     [companies],
@@ -210,5 +214,12 @@ export function useCompany() {
 }
 
 export function useOptionalCompany() {
+/**
+ * Non-throwing variant of {@link useCompany}. Returns null when called outside a
+ * CompanyProvider instead of throwing, so components that may render in
+ * provider-less surfaces (e.g. exported/standalone markdown) can read company
+ * state without crashing.
+ */
+export function useOptionalCompany(): CompanyContextValue | null {
   return useContext(CompanyContext);
 }

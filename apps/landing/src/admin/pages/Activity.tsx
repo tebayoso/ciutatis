@@ -20,6 +20,27 @@ import {
 } from "@/components/ui/select";
 import { History } from "lucide-react";
 import type { Agent } from "@paperclipai/shared";
+import { Card } from "@/components/ui/card";
+
+const ACTIVITY_PAGE_LIMIT = 200;
+
+function detailString(event: ActivityEvent, ...keys: string[]) {
+  const details = event.details;
+  for (const key of keys) {
+    const value = details?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+function activityEntityName(event: ActivityEvent) {
+  if (event.entityType === "issue") return detailString(event, "identifier", "issueIdentifier");
+  if (event.entityType === "project") return detailString(event, "projectName", "name", "title");
+  if (event.entityType === "goal") return detailString(event, "goalTitle", "title", "name");
+  return detailString(event, "name", "title");
+
+function activityEntityTitle(event: ActivityEvent) {
+  if (event.entityType === "issue") return detailString(event, "issueTitle", "title");
 
 export function Activity() {
   const { selectedCompanyId } = useCompany();
@@ -102,7 +123,7 @@ export function Activity() {
     <div className="space-y-4">
       <div className="flex items-center justify-end">
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectTrigger className="w-(--sz-140px) h-8 text-xs">
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
@@ -123,7 +144,7 @@ export function Activity() {
       )}
 
       {filtered && filtered.length > 0 && (
-        <div className="border border-border divide-y divide-border">
+        <Card className="block py-0 overflow-hidden divide-y divide-border">
           {filtered.map((event) => (
             <ActivityRow
               key={event.id}
@@ -133,7 +154,7 @@ export function Activity() {
               entityTitleMap={entityTitleMap}
             />
           ))}
-        </div>
+        </Card>
       )}
     </div>
   );

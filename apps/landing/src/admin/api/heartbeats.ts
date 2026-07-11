@@ -11,6 +11,18 @@ export interface ActiveRunForIssue extends HeartbeatRun {
   agentName: string;
   adapterType: string;
   lastOutputBytes?: number | null;
+  issueId?: string | null;
+  livenessState?: RunLivenessFields["livenessState"];
+  livenessReason?: string | null;
+  continuationAttempt?: number;
+  lastUsefulActionAt?: string | Date | null;
+  nextAction?: string | null;
+  outputSilence?: HeartbeatRun["outputSilence"];
+  currentStatusMessage?: string | null;
+  currentStatusUpdatedAt?: string | Date | null;
+  currentToolName?: string | null;
+  lastAssistantSnippet?: string | null;
+  lastEventAt?: string | Date | null;
 }
 
 export interface LiveRunForIssue {
@@ -27,6 +39,18 @@ export interface LiveRunForIssue {
   issueId?: string | null;
   logBytes?: number | null;
   lastOutputBytes?: number | null;
+  issueId?: string | null;
+  livenessState?: RunLivenessFields["livenessState"];
+  livenessReason?: string | null;
+  continuationAttempt?: number;
+  lastUsefulActionAt?: string | null;
+  nextAction?: string | null;
+  outputSilence?: HeartbeatRun["outputSilence"];
+  currentStatusMessage?: string | null;
+  currentStatusUpdatedAt?: string | null;
+  currentToolName?: string | null;
+  lastAssistantSnippet?: string | null;
+  lastEventAt?: string | null;
 }
 
 export type LiveRunsForCompanyOptions = {
@@ -53,11 +77,16 @@ function liveRunsForCompanyQuery(options?: number | LiveRunsForCompanyOptions) {
   return query ? `?${query}` : "";
 }
 
+export interface HeartbeatRunListOptions {
+  summary?: boolean;
+}
+
 export const heartbeatsApi = {
-  list: (companyId: string, agentId?: string, limit?: number) => {
+  list: (companyId: string, agentId?: string, limit?: number, options: HeartbeatRunListOptions = {}) => {
     const searchParams = new URLSearchParams();
     if (agentId) searchParams.set("agentId", agentId);
     if (limit) searchParams.set("limit", String(limit));
+    if (options.summary) searchParams.set("summary", "true");
     const qs = searchParams.toString();
     return api.get<HeartbeatRun[]>(`/companies/${companyId}/heartbeat-runs${qs ? `?${qs}` : ""}`);
   },

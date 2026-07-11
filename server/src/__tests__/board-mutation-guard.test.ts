@@ -4,6 +4,10 @@ import request from "supertest";
 import { boardMutationGuard } from "../middleware/board-mutation-guard.js";
 
 function createApp(actorType: "board" | "agent", boardSource: "session" | "local_implicit" = "session") {
+function createApp(
+  actorType: "board" | "agent",
+  boardSource: "session" | "local_implicit" | "board_key" | "cloud_tenant" = "session",
+) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -40,6 +44,12 @@ describe("boardMutationGuard", () => {
     const app = createApp("board", "local_implicit");
     const res = await request(app).post("/mutate").send({ ok: true });
     expect(res.status).toBe(204);
+  });
+
+  it("allows trusted Cloud tenant mutations without origin", async () => {
+    const app = createApp("board", "cloud_tenant");
+    const res = await request(app).post("/mutate").send({ ok: true });
+    expect([200, 204]).toContain(res.status);
   });
 
   it("allows board mutations from trusted origin", async () => {

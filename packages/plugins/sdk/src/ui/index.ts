@@ -140,6 +140,7 @@ export type {
 // Slot component prop interfaces
 export type {
   PluginPageProps,
+  PluginCompanySettingsPageProps,
   PluginWidgetProps,
   PluginDetailTabProps,
   PluginSidebarProps,

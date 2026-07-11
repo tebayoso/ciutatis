@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { prepareCommandManagedRuntime } from "./command-managed-runtime.js";
 import {
@@ -46,7 +46,7 @@ describe("sandbox callback bridge", () => {
         if (
           input.stdin != null &&
           (input.command === "sh" || input.command === "bash") &&
-          args[0] === "-lc" &&
+          (args[0] === "-c" || args[0] === "-lc") &&
           typeof args[1] === "string"
         ) {
           env.PAPERCLIP_TEST_STDIN = input.stdin;
@@ -99,15 +99,6 @@ describe("sandbox callback bridge", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     throw new Error(`Timed out waiting for a JSON file in ${directory}.`);
-  }
-
-  async function waitForCondition(predicate: () => Promise<boolean> | boolean, timeoutMs = 2_000): Promise<void> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      if (await predicate()) return;
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-    throw new Error("Timed out waiting for condition.");
   }
 
   afterEach(async () => {
@@ -517,7 +508,7 @@ describe("sandbox callback bridge", () => {
       authorizeRequest: async () => null,
       handleRequest: async (request) => {
         seenRequestIds.push(request.id);
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 250));
         return {
           status: 200,
           headers: { "content-type": "application/json" },
@@ -547,7 +538,9 @@ describe("sandbox callback bridge", () => {
       },
     });
 
-    await waitForCondition(() => seenRequestIds.length === 1);
+    for (let attempt = 0; attempt < 50 && seenRequestIds.length === 0; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
 
     expect(seenRequestIds).toHaveLength(1);
     await worker.stop({ drainTimeoutMs: 10 });
@@ -558,10 +551,7 @@ describe("sandbox callback bridge", () => {
       error: "Bridge worker stopped before request could be handled.",
     });
 
-    await waitForCondition(async () => {
-      const entries = await readdir(directories.responsesDir);
-      return entries.length === 0;
-    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     await expect(readdir(directories.responsesDir)).resolves.toEqual([]);
     await expect(
@@ -906,6 +896,9 @@ describe("sandbox callback bridge", () => {
       { method: "POST", path: "/api/issues/issue-1/release" },
       { method: "PATCH", path: "/api/issues/issue-1" },
       { method: "GET", path: "/api/issues/issue-1/approvals" },
+      { method: "GET", path: "/api/issues/issue-1/work-products" },
+      { method: "POST", path: "/api/issues/issue-1/work-products" },
+      { method: "PATCH", path: "/api/work-products/wp-1" },
       { method: "GET", path: "/api/issues/issue-1/interactions" },
       { method: "GET", path: "/api/issues/issue-1/interactions/inter-1" },
       { method: "POST", path: "/api/issues/issue-1/interactions" },
@@ -950,6 +943,7 @@ describe("sandbox callback bridge", () => {
       { method: "POST", path: "/api/companies/co-1/archive" },
       { method: "DELETE", path: "/api/issues/issue-1/documents/plan" },
       { method: "DELETE", path: "/api/issues/issue-1/approvals/ap-1" },
+      { method: "DELETE", path: "/api/work-products/wp-1" },
       { method: "POST", path: "/api/approvals/ap-1/approve" },
       { method: "POST", path: "/api/approvals/ap-1/reject" },
       { method: "POST", path: "/api/companies/co-1/logo" },
@@ -961,5 +955,33 @@ describe("sandbox callback bridge", () => {
         `Route not allowed: ${request.method} ${request.path}`,
       );
     }
+  });
+
+  it("marks command-managed bridge operations with the bridge execution channel", async () => {
+    const runner = {
+      execute: vi.fn(async () => ({
+        exitCode: 0,
+        signal: null,
+        timedOut: false,
+        stdout: "",
+        stderr: "",
+        pid: null,
+        startedAt: new Date().toISOString(),
+      })),
+    };
+
+    const client = createCommandManagedSandboxCallbackBridgeQueueClient({
+      runner,
+      remoteCwd: "/workspace",
+      timeoutMs: 30_000,
+    });
+
+    await client.makeDir("/workspace/.paperclip-runtime/codex/paperclip-bridge/queue");
+
+    expect(runner.execute).toHaveBeenCalledWith(expect.objectContaining({
+      env: {
+        PAPERCLIP_SANDBOX_EXEC_CHANNEL: "bridge",
+      },
+    }));
   });
 });

@@ -5,7 +5,7 @@
   "description": "Open-source civic operating system for governed institutional execution.",
   "start_url": "/en",
   "scope": "/",
-  "display": "standalone",
+  "display": "browser",
   "orientation": "any",
   "theme_color": "#fcfbf7",
   "background_color": "#fcfbf7",

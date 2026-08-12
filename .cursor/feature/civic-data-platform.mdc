@@ -1,0 +1,43 @@
+# Feature: Civic Data Platform
+
+Full spec: `doc/spec/civic-data-platform.md`
+
+Companion: `doc/spec/govops-control-plane.md` (enrollment, RBAC, Paperclip OLTP, usage export).
+
+## What it is
+
+Users load files/URLs/Drive/public-request attachments. Parsers emit typed facts with provenance. Authorized users run **read-only SQL** over `published.*` and build dashboard tiles (Dune-like). Not a notebook. Not NL-to-SQL as the only interface. Not raw Paperclip OLTP.
+
+## Data-plane lock
+
+| Plane | Store | Queried by |
+|---|---|---|
+| Paperclip OLTP | Postgres / D1 | Control-plane APIs only |
+| Analytics warehouse | Dedicated Postgres | `POST /api/data/query`, saved dashboards |
+
+`usage_daily` is imported aggregates from GovOps. Never `SUM` civic `money` facts with token cents. Never join `agent_api_keys` or secret material.
+
+## Superparser
+
+- `apps/superparser-service` — ingest/parse **worker**. Keep and evolve.
+- `apps/superparser-portal` — **not a site**. Fold into Next `/data/new`.
+- Superparser Postgres is a scratchpad, not the Dune `search_path`.
+- Production Collaborate is 503 while `SUPERPARSER_URL=""` (`workers/api/wrangler.toml`). That is a launch blocker.
+
+## Warehouse (logical)
+
+Schemas: `ingest`, `warehouse`, `oltp`, `published`. Default SQL search_path is `published`. Facts are typed (`money`, `date`, `ordinance`, `person`, `org`, `place`, `program`) with doc/span/extractor/confidence. PII: `redactPublicText` in `packages/shared/src/public-portal.ts`.
+
+## Query engine
+
+Read-only `SELECT` / `WITH … SELECT`. Timeout, max rows, no DDL/DML, schema allowlist, bind `government_id` for non-platform users. DuckDB-WASM is not the system of record.
+
+APIs: `POST /api/data/query`, `GET/POST /api/data/queries`, `GET /api/data/queries/:id/results`.
+
+## UI (one Next app)
+
+Public: `/data`, `/data/new`, `/data/queries`, `/data/dashboards` (EN/ES in `apps/landing/lib/routes.ts`). Government: `/admin/:prefix/data/*`. `/collaborate` enqueues the same ingest jobs. Embed public dashboards on `/scrutiny`, `/explore`, geo pages.
+
+## Do not in this docs-only pass
+
+Do not create the warehouse, SQL studio, or delete `apps/superparser-portal` until a follow-up implementation PR.

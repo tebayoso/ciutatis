@@ -1,67 +1,110 @@
-# Civic Data Platform — Ingest, Parse, and Warehouse Schema
+# Civic Data Platform — product and architecture specification
 
-Status: Draft chapters (ingest + parse + warehouse) of the Civic Data Platform spec
-Date: 2026-08-12
-Audience: Product, engineering, warehouse, and public-portal authors
-Parent: Civic Data Platform (full spec). These chapters are the system-of-record contract for civic documents, facts, and SQL.
+**Status:** Forward contract (documentation). This document is the product+architecture spec for the civic data platform. It does **not** implement warehouse, SQL studio, or parsers in this pass.
 
-`doc/SPEC.md` remains the long-horizon control-plane product spec.
-`doc/SPEC-implementation.md` remains the V1 control-plane build contract.
-This document is the Civic Data Platform data contract. When this document conflicts with Superparser’s current HTTP surface, this document wins for the TO-BE platform.
+**Audience:** Data platform engineers and civic users (journalists, officials, citizens).
+
+**Companion:** [GovOps Control Plane](./govops-control-plane.md) owns enrollment, RBAC, entitlements, Paperclip OLTP, and usage export. This document owns ingest, parse, warehouse, sandboxed SQL, and visualization.
+
+**UX metaphor:** [Dune Analytics](https://dune.com) — SQL over indexed, parsed data; saved queries; dashboards. Not a notebook product. Not raw access to Paperclip OLTP.
+
+**Canonical UI host:** One Next.js app at `apps/landing`. Data surfaces live at `/data/*` and `/admin/:govPrefix/data/*`. Superparser is a **backend worker**, not a site.
+
+**Locked data-plane rule:** The Dune surface queries the **analytics warehouse** (`published.*` views). Paperclip OLTP (agents, keys, memberships, runs) is never ad-hoc SQL. Platform usage arrives only as imported aggregates (`usage_daily`).
+
+**As-is baseline:** [../plans/2026-08-12-inherited-codebase-audit.md](../plans/2026-08-12-inherited-codebase-audit.md)
 
 ---
 
-## 0. Locked decisions (AS-IS → TO-BE)
+## Contents
 
-| Topic | AS-IS (repo today) | TO-BE (locked) |
+1. [Problem and product boundary](#1-problem-and-product-boundary)
+2. [Actors and access](#2-actors-and-access-civic-data-platform)
+3. [Ingest](#3-ingest)
+4. [Parse pipeline](#4-parse-pipeline)
+5. [Canonical warehouse model](#5-full-logical-sql-schema)
+6. [Query engine](#6-query-engine-dune-like)
+7. [Visualization panels](#7-visualization-panels)
+8. [UI in the one Next app](#8-ui-in-the-one-next-app)
+9. [Join to civic site data](#9-id-join-strategy)
+10. [Security and abuse](#10-security-and-abuse-data-platform)
+11. [Migration](#11-migration-data-platform)
+12. [Implementation backlog](#12-implementation-backlog-data-platform)
+- [Appendix A — UI host](#appendix-a--ui-host-identical-in-both-product-specs) (identical in both product specs)
+
+---
+
+## 1. Problem and product boundary
+
+### 1.1 What this system is
+
+Civic users (journalists, officials, citizens, government publishers) **load files, URLs, Drive documents, and public-request attachments**. Parsers emit **typed facts** with provenance. Anyone with access runs **read-only SQL** over a published warehouse and builds **visualization panels**. Public pages (`/scrutiny`, `/explore`, geo entity pages, government profiles) embed those panels.
+
+Today `/scrutiny`, `/govops`, `/explore`, and `/collaborate` are marketing pages or thin REST. Collaborate is a **503** in production while `SUPERPARSER_URL=""` (`workers/api/wrangler.toml`). Superparser Postgres is an ingest scratchpad with `govops_v1` extraction, not a query API. This spec is the real product.
+
+Ciutatis remains the institution. The GovOps control plane enrolls governments and meters Paperclip. This platform is how civic **information** becomes queryable.
+
+### 1.2 What this system is not
+
+- Not a notebook product (no Jupyter, no arbitrary Python in the query path).
+- Not NL-to-SQL as the only interface. SQL studio ships first. Natural language is **Deferred**.
+- Not a crawler of the entire internet. `source_kind=url` is allowlisted fetch, not a spider.
+- Not raw access to Paperclip OLTP. Nobody runs SQL against `agent_api_keys`, `company_secret_versions`, sessions, or `adapter_config`.
+- Not a second Next.js app. Superparser portal folds into `/data/new`.
+- Not DuckDB-WASM as the system of record. Optional Parquet on R2 is for large scans.
+
+### 1.3 Two data planes (never mixed)
+
+| Plane | Store | Who queries it | What it holds |
+|---|---|---|---|
+| Paperclip OLTP | Postgres (`packages/db`) or D1 (`packages/db-cloudflare`) | Control-plane APIs only | Agents, keys, memberships, runs, approvals, secrets |
+| Analytics warehouse | Dedicated Postgres (evolve Superparser Cloud SQL **or** a new analytics DB) | `POST /api/data/query` and saved dashboards | Parsed facts, published views, geo/institution/request **mirrors**, `usage_daily` aggregates |
+
+Usage metrics are **exported** from the control plane as `usage_daily` (see [govops-control-plane.md](./govops-control-plane.md) §7). Civic `money` facts (ordinance amounts) are a different grain; never `SUM` them with token cents.
+
+### 1.4 Superparser is a backend
+
+| Piece | To-be |
+|---|---|
+| `apps/superparser-service` | Ingest/parse **worker**. Keep and evolve. Cloud Run stays valid. |
+| `apps/superparser-portal` | **Not a site.** Fold UX into Next `/data/new`. |
+| Superparser Postgres | Ingest scratchpad + job queue. Not the Dune search_path. |
+| Warehouse Postgres | System of record for `published.*`. |
+
+### 1.5 Locked decisions
+
+1. One human product UI: `apps/landing`.
+2. Default SQL `search_path` is `published`. Unauthorized users cannot see `warehouse.*` unpublished objects.
+3. Dataset visibility total order: `private` → `government` → `public`.
+4. PII: reuse `redactPublicText` in `packages/shared/src/public-portal.ts`. Contact columns never ETL into `published`.
+5. Collaborate launch blocker: `SUPERPARSER_URL` must be set; empty string is not a product.
+6. D1 `geo_entities` stays the geography source; warehouse holds a mirror (`oltp.geo_entities`).
+7. Citizen portal REST (`/api/public/requests`) stays transactional on D1; analytics copies into the warehouse.
+
+---
+
+## 2. Actors and access (Civic Data Platform)
+
+### 2.1 Actors
+
+| Actor | Auth | What they can see in SQL |
 |---|---|---|
-| Superparser role | Standalone GovOps agent with ingest **and** query APIs (`POST /v1/search`, `GET /v1/documents`) on its own Postgres + pgvector | **Ingest worker only.** It normalizes, chunks, extracts, classifies, and writes into the warehouse. It is not the query API. |
-| System of record | Superparser Postgres schema `superparser.*` (`apps/superparser-service/migrations/001_superparser_schema.sql`) plus D1 OLTP | **Dedicated Postgres warehouse** is system of record for civic datasets, documents, chunks, facts, entities, links, classifications, published views, usage, saved SQL, and dashboards |
-| Object store | Control-plane R2 bucket `ciutatis-assets` (`workers/api/wrangler.toml` `ASSETS`) for board assets; Superparser keeps `flat_text` in Postgres | Same R2 (or a dedicated `ciutatis-warehouse` bucket). Raw bytes always land in R2. **Optional Parquet** on R2 for large scans |
-| Query UI | Superparser portal is a **standalone demo** (`apps/superparser-portal`). Scrutiny page is marketing copy (`apps/landing/src/admin/pages/ScrutinyPage.tsx`). **No SQL warehouse, no Dune UI** | Superparser portal **folds into Next** (`apps/landing`). SQL users hit `published` views. Dashboards/tiles are the Dune-like UI (specified here; not built) |
-| Collaborate | `POST /api/public/collaborate` returns **503** while `SUPERPARSER_URL = ""` (`workers/api/wrangler.toml` lines 26–29; `workers/api/src/routes/collaborate.ts` lines 67–72) | Same public path stays. Worker remains a thin quota/type proxy. Superparser URL is required in production. Results are written to the warehouse, not queried from Superparser |
-| OLTP | Cloudflare D1: `geo_entities`, `public_requests`, `public_contributions`, `companies` (institutions), `cost_events` | D1 stays OLTP. Warehouse **mirrors** those IDs via ETL. Facts/entities join on those IDs. Warehouse does not become the write path for citizen requests |
-| Facts | `superparser.extractions` rows with `type` + `text` + `source_span_json` + `attributes_json` (`govops_v1`) | Typed **facts with provenance**. Every fact cites document, chunk, char span, extractor version, and optional human review |
-| Visibility | Superparser is company-scoped (`company_id` text). Collaborate hard-codes `public-contributions` | Dataset visibility: **`private` → `government` → `public`**. SQL default search_path is `published`, which only exposes rows allowed for the caller |
-| PII | Public requests run `redactPublicText` (`packages/shared/src/public-portal.ts`). Superparser stores raw `flat_text` with **no** redaction | Warehouse applies the **same redaction library** to any text that can enter `published`. Unredacted text is private-only |
+| Anonymous reader | none | `published.*` rows with `visibility = 'public'` only (`sql_public`) |
+| Signed-in contributor | Better Auth citizen/user | Public views plus their own `private` ingest jobs and unpublished documents they own |
+| Government publisher | Government `owner`/`admin` with `data:publish` | Government-visibility views for their `government_id` plus public |
+| Platform analyst | Platform `owner`/`operator`/`auditor` | All published views; private views only with `platform:audit.read` and a logged reason. **Never** Paperclip secrets |
 
-### 0.1 Runtime topology (TO-BE)
+Dataset visibility is a total order: `private` → `government` → `public`. Publishing is a one-way entitlement-gated action (`data.publish_enabled` + `data:publish`). Unpublish is allowed for `government` and `private` only; public unpublish requires platform operator and writes `audit_log`.
 
-```
-Citizen / operator / agent
-        │
-        ▼
-Next (apps/landing)  ─── folded Superparser portal UI
-        │
-        ▼
-workers/api  (Hono)
-  /api/public/collaborate   quota + type gate
-  /api/companies/:id/ingest operator ingest
-  /api/sql/*                published-only SQL (future Dune UI)
-        │
-        ├─ D1 OLTP (control plane)     geo_entities, public_requests,
-        │                              public_contributions, companies,
-        │                              cost_events, finance_events
-        │
-        ├─ R2                          raw bytes + optional Parquet
-        │
-        └─ Superparser ingest worker   Cloud Run (as-is deploy shape)
-                │                      apps/superparser-service
-                ▼
-        Postgres warehouse             system of record
-          ingest.*                     jobs, quotas, blobs
-          warehouse.*                  datasets, documents, chunks, facts, …
-          oltp.*                       mirrored D1
-          published.*                  what SQL can see by default
-```
+### 2.2 PII
 
-Superparser keeps its current process (FastAPI on Cloud Run, `apps/superparser-service/cloud-run.yaml`) but **loses public query duties**. `POST /v1/search`, `GET /v1/documents`, and MCP `search_documents` become internal debug endpoints or are removed after cutover. The worker writes warehouse rows (or a warehouse ingest API that Superparser calls). Superparser’s own `superparser.*` schema is a **legacy staging store** during migration, then retired.
+Any text that can enter `published` runs `redactPublicText` from `packages/shared/src/public-portal.ts`. `warehouse.documents.flat_text` is private. `published.documents.body` is always redacted. Contact columns on `public_requests` never ETL into `published`.
 
 ---
 
-## 1. Ingest
+## 3. Ingest
 
-### 1.1 Sources
+### 3.1 Sources
 
 Every ingest job has exactly one `source_kind`. Source kinds are closed. New kinds require a spec + extractor change.
 
@@ -91,7 +134,7 @@ Drive metadata captured today (`drive_metadata.py` `DriveSourceMetadata`) is pre
 
 Heartbeat ingest (`ciutatis-agent-template.json`, `CiutatisHeartbeatHandler.handle`) today posts a comment and a markdown issue document back to the control plane. TO-BE keeps that **notification** side-effect, but the extraction payload lives in the warehouse, not in Superparser Postgres (the current comment text in `_build_issue_document` already says this; after cutover it must be true).
 
-### 1.2 Job states
+### 3.2 Job states
 
 AS-IS check constraint (`001_superparser_schema.sql`):
 
@@ -145,11 +188,11 @@ Job persistence: table `ingest.jobs` (§3.2). The Collaborate HTTP envelope keep
 
 Map warehouse job status → Collaborate `status`: `duplicate` → `duplicate`; `succeeded` / `reviewing` → `ingested`; `failed` / `rejected` / `cancelled` → `failed`. `reviewing` is still `ingested` for the citizen (we accepted the file); the document is not in `published` until review clears.
 
-### 1.3 Quotas
+### 3.3 Quotas
 
 Quotas are enforced **before** Superparser spends embeddings or langextract. AS-IS already does a cheap hash lookup in `collaborate()` (`pipeline.py` lines 192–200) and a worker-side IP limiter.
 
-#### 1.3.1 AS-IS numbers (keep as the public floor)
+#### 3.3.1 AS-IS numbers (keep as the public floor)
 
 | Gate | Location | Limit |
 |---|---|---|
@@ -162,7 +205,7 @@ Quotas are enforced **before** Superparser spends embeddings or langextract. AS-
 
 `SUPERPARSER_URL` empty → 503 `{ error, code: "superparser_unconfigured" }`. That remains the correct undeployed behavior.
 
-#### 1.3.2 TO-BE quota table
+#### 3.3.2 TO-BE quota table
 
 Quotas are stored in `ingest.quota_policies` and counted in `ingest.quota_counters`. Missing policy → platform defaults below. Company-scoped (control-plane invariant).
 
@@ -190,7 +233,7 @@ Hard vs soft:
 
 Retry-After is set on IP rate limits (already in `collaborate.ts`). Monthly quota includes `resetAt` (UTC month boundary, same as `budget_monthly_cents`).
 
-### 1.4 Content-hash dedup
+### 3.4 Content-hash dedup
 
 AS-IS:
 
@@ -217,7 +260,7 @@ ingest/{company_id}/{yyyy}/{mm}/{sha256}/{original_filename}
 
 `assets.sha256` in D1 (`packages/db-cloudflare/src/schema/assets.ts`) is the same 64-hex form without prefix. Warehouse blobs may share the `ciutatis-assets` bucket with a distinct key prefix, or use `tenant_instances.tenant_r2_bucket_name` for tenant-isolated government uploads.
 
-### 1.5 What Superparser must stop being
+### 3.5 What Superparser must stop being
 
 After cutover, the following Superparser routes are **not** the product query surface:
 
@@ -238,9 +281,9 @@ The Superparser portal (`apps/superparser-portal/src/app.js`) calls `/v1/ingesti
 
 ---
 
-## 2. Parse pipeline
+## 4. Parse pipeline
 
-### 2.1 Steps (normative order)
+### 4.1 Steps (normative order)
 
 AS-IS order in `IngestionPipeline.ingest_upload` (`pipeline.py`):
 
@@ -274,7 +317,7 @@ Chunk identity: `(document_id, ordinal)` unique. `source_span` is `{start, end}`
 
 Token estimate stays `max(1, len(text) // 4)` unless an extractor version supplies a real tokenizer; the column is advisory.
 
-### 2.2 Extractor versioning
+### 4.2 Extractor versioning
 
 AS-IS is a single frozen schema:
 
@@ -308,7 +351,7 @@ Version bump rules:
 
 A document may have facts from multiple extractor versions. `published.facts` shows the **latest approved** version per `(document_id, fact_type, normalized_value, source_span)` unless the user queries `warehouse.facts` (not default).
 
-### 2.3 Human review
+### 4.3 Human review
 
 AS-IS: none. Classification confidence is a heuristic `min(0.98, 0.45 + best_score * 0.16)` and is stored, never gated.
 
@@ -333,7 +376,7 @@ Review actions:
 
 SLA: citizen Collaborate `reviewing` jobs must not block the HTTP response (today’s pipeline is synchronous). TO-BE Collaborate returns after step 7 with `status: ingested` and `reviewStatus: pending|cleared`. The Next UI already shows classification + extractions from the JSON envelope; it must also show “pending review” when `reviewStatus=pending`.
 
-### 2.4 PII redaction
+### 4.4 PII redaction
 
 Canonical implementation: `redactPublicText` in `packages/shared/src/public-portal.ts`. Public requests already use it in `workers/api/src/lib/public-portal.ts` (`createPublicRequest`, comment path) and `server/src/services/public-portal.ts`. The warehouse **must call the same function** (port to Python in Superparser or run a shared WASM/JS worker). Do not invent a second pattern list.
 
@@ -365,7 +408,7 @@ Citizen Collaborate files are treated like public-request bodies: scan before pu
 
 ---
 
-## 3. Full logical SQL schema
+## 5. Full logical SQL schema
 
 Postgres 16+. Required extensions: `pgcrypto`, `vector` (pgvector, 768-d, same as `001_superparser_schema.sql`). Optional: `pg_cron` for ETL ticks.
 
@@ -385,7 +428,7 @@ All warehouse-native primary keys are UUID. All mirrored D1 primary keys are `te
 
 Timestamps are `timestamptz`. Money is integer **cents** plus ISO currency, never float. Booleans are `boolean`.
 
-### 3.1 `ingest.blobs`
+### 5.1 `ingest.blobs`
 
 ```sql
 CREATE TABLE ingest.blobs (
@@ -405,7 +448,7 @@ CREATE TABLE ingest.blobs (
 );
 ```
 
-### 3.2 `ingest.jobs`
+### 5.2 `ingest.jobs`
 
 ```sql
 CREATE TABLE ingest.jobs (
@@ -446,7 +489,7 @@ CREATE INDEX ingest_jobs_dataset_created_idx ON ingest.jobs (dataset_id, created
 
 Maps from `superparser.ingestion_jobs` (`id, company_id, status, source_type, source_ref, error, created_at, updated_at`).
 
-### 3.3 `ingest.quota_policies` / `ingest.quota_counters`
+### 5.3 `ingest.quota_policies` / `ingest.quota_counters`
 
 ```sql
 CREATE TABLE ingest.quota_policies (
@@ -477,7 +520,7 @@ CREATE TABLE ingest.quota_counters (
 
 Citizen IP rate may continue to live in KV (`collab-rl:{ip}`) as the hot path; `quota_counters` is the monthly source of truth and the government/board path.
 
-### 3.4 `ingest.parquet_exports`
+### 5.4 `ingest.parquet_exports`
 
 ```sql
 CREATE TABLE ingest.parquet_exports (
@@ -488,7 +531,7 @@ CREATE TABLE ingest.parquet_exports (
                   )),
   partition_date  date NOT NULL,
   r2_bucket       text NOT NULL,
-  r2_prefix       text NOT NULL,                   -- see §3.20 path layout
+  r2_prefix       text NOT NULL,                   -- see §5.20 path layout
   row_count       bigint NOT NULL,
   byte_size       bigint NOT NULL,
   status          text NOT NULL CHECK (status IN ('running','succeeded','failed')),
@@ -506,7 +549,7 @@ R2 layout:
 r2://{bucket}/warehouse/{env}/dataset_id={uuid}/table={name}/dt={yyyy-mm-dd}/part-{nnnn}.parquet
 ```
 
-### 3.5 `warehouse.datasets`
+### 5.5 `warehouse.datasets`
 
 ```sql
 CREATE TABLE warehouse.datasets (
@@ -540,7 +583,7 @@ Seed datasets:
 | `public-contributions` | platform institution (today’s literal `"public-contributions"` until a real company row exists) | `government` until review, then `public` | Collaborate |
 | `govops-{issue_prefix}` | each institution | `private` | operator uploads / Drive / heartbeat |
 
-### 3.6 `warehouse.documents`
+### 5.6 `warehouse.documents`
 
 ```sql
 CREATE TABLE warehouse.documents (
@@ -602,7 +645,7 @@ Maps from `superparser.documents`. `kind` is today’s `source_type` after norma
 
 Published metadata drops `drive.owners`, `drive.last_modifier`, and any email/phone keys.
 
-### 3.7 `warehouse.chunks`
+### 5.7 `warehouse.chunks`
 
 ```sql
 CREATE TABLE warehouse.chunks (
@@ -624,7 +667,7 @@ CREATE INDEX chunks_embedding_hnsw_idx
 
 Maps from `superparser.document_chunks`. Embeddings are **warehouse-only**. `published.chunks` exposes `id, document_id, ordinal, text, source_span, token_estimate` — no vector.
 
-### 3.8 `warehouse.extractor_versions`
+### 5.8 `warehouse.extractor_versions`
 
 ```sql
 CREATE TABLE warehouse.extractor_versions (
@@ -647,7 +690,7 @@ CREATE TABLE warehouse.extractor_versions (
 
 Seed row: `schema_name='govops'`, `schema_version=1`, `semver='1.0.0'`, `fact_types='{money,date,ordinance,person,org,place,program}'`, `provider='deterministic_fallback'`, `model='regex'`, `prompt_hash` of the current langextract prompt string, `is_default=true` until langextract is pinned in prod.
 
-### 3.9 `warehouse.facts`
+### 5.9 `warehouse.facts`
 
 ```sql
 CREATE TABLE warehouse.facts (
@@ -687,7 +730,7 @@ Maps from `superparser.extractions` (`type` → `fact_type`, `attributes_json` �
 
 `confidence`: langextract may supply a score; fallback regex stores `0.40` and `attributes.confidence='fallback'` (today’s string). Human-approved edits set `confidence=1` and `grounding='human'` only when the reviewer typed a new value; otherwise keep extractor confidence and set `human_edited=true`.
 
-### 3.10 `warehouse.entities`
+### 5.10 `warehouse.entities`
 
 ```sql
 CREATE TABLE warehouse.entities (
@@ -716,7 +759,7 @@ CREATE INDEX entities_public_request_idx ON warehouse.entities (public_request_i
 
 `entity_kind='geo'` is a warehouse pointer at a mirrored geo row (so facts can link to `ar:30` without duplicating topography). `entity_kind='institution'` and `'public_request'` likewise. Extracted people/orgs/places/programs get warehouse-native ids and **then** link out via `entity_links`.
 
-### 3.11 `warehouse.entity_links`
+### 5.11 `warehouse.entity_links`
 
 ```sql
 CREATE TABLE warehouse.entity_links (
@@ -744,7 +787,7 @@ CREATE INDEX entity_links_fact_idx ON warehouse.entity_links (fact_id);
 
 Join strategy is §5. `evidence` examples: `{ "span": {"start":0,"end":12}, "matched": "City Council" }`, `{ "public_id": "ciu-12" }`, `{ "path_prefix": "/ar/municipio/060798-tandil" }`.
 
-### 3.12 `warehouse.classifications`
+### 5.12 `warehouse.classifications`
 
 ```sql
 CREATE TABLE warehouse.classifications (
@@ -766,7 +809,7 @@ CREATE INDEX classifications_document_idx ON warehouse.classifications (document
 
 Maps from `superparser.classifications`. Multiple rows per document are allowed (reclassify); `published.classifications` is `DISTINCT ON (document_id) … ORDER BY created_at DESC`.
 
-### 3.13 `warehouse.pii_findings` / `warehouse.review_items`
+### 5.13 `warehouse.pii_findings` / `warehouse.review_items`
 
 ```sql
 CREATE TABLE warehouse.pii_findings (
@@ -798,7 +841,7 @@ CREATE TABLE warehouse.review_items (
 );
 ```
 
-### 3.14 `warehouse.published_views` (catalog)
+### 5.14 `warehouse.published_views` (catalog)
 
 SQL users do not `SELECT` this table by default; the **views it describes** live in schema `published`. The catalog is how the Dune-like UI lists datasets and how ETL rebuilds views after visibility changes.
 
@@ -929,7 +972,7 @@ CREATE POLICY documents_gov_sql ON warehouse.documents
 
 **What SQL can see by default is `published.*`.** That sentence is the product rule. The Dune-like editor starts with `FROM facts` resolving to `published.facts`.
 
-### 3.15 `warehouse.usage_daily`
+### 5.15 `warehouse.usage_daily`
 
 Imported from the control plane (D1 `cost_events` + `finance_events` + ingest counters). Not computed from Superparser `search_queries`.
 
@@ -963,7 +1006,7 @@ Grain is one row per UTC day per company per `(provider, biller, billing_type, m
 
 `published.usage_daily` is public **aggregates at institution grain** (no agent_id, no issue_id, no heartbeat_run_id). That is intentional: token spend of a public institution is a civic fact; per-agent traces stay in D1.
 
-### 3.16 `warehouse.saved_queries`
+### 5.16 `warehouse.saved_queries`
 
 ```sql
 CREATE TABLE warehouse.saved_queries (
@@ -986,7 +1029,7 @@ CREATE TABLE warehouse.saved_queries (
 
 Execution API (not built) parses `sql_text`, rejects any identifier whose schema is not `published` (and `oltp` only for `sql_government` via the views above — actually oltp is not on the public path). This is the Dune saved-query analog.
 
-### 3.17 `warehouse.dashboards` / `warehouse.tiles`
+### 5.17 `warehouse.dashboards` / `warehouse.tiles`
 
 No Dune UI exists today (`ScrutinyPage.tsx` is static “Coming soon”). Schema is locked so the UI can land without a second migration.
 
@@ -1040,7 +1083,7 @@ CREATE INDEX tiles_dashboard_idx ON warehouse.tiles (dashboard_id);
 | `map` | `{ "geoIdColumn": "geo_entity_id", "valueColumn": "amount_cents", "join": "published.geo_entities" }` |
 | `markdown` | `{ "body": "…" }` (redactPublicText applied if visibility public) |
 
-### 3.18 OLTP mirror tables
+### 5.18 OLTP mirror tables
 
 Mirror **IDs and join columns**, not the entire control plane. Writes only from ETL (§6).
 
@@ -1159,7 +1202,7 @@ Column sources:
 - `institutions`: D1 table name `companies` (`packages/db-cloudflare/src/schema/institutions.ts`); slug is **derived**, not stored (`buildInstitutionPortalSlug` in `packages/shared/src/public-portal.ts`).
 - `cost_events`: `packages/db-cloudflare/src/schema/cost_events.ts`.
 
-### 3.19 `warehouse.source_activity`
+### 5.19 `warehouse.source_activity`
 
 Keep Drive revision/activity breadcrumbs that Superparser already modeled (`superparser.source_activity` in `001_superparser_schema.sql`) but never wrote from Python (no insert path in `postgres.py`). TO-BE: Drive fetch writes one row per revision.
 
@@ -1178,7 +1221,7 @@ CREATE TABLE warehouse.source_activity (
 
 Not published (may contain emails).
 
-### 3.20 Column map: Superparser → warehouse
+### 5.20 Column map: Superparser → warehouse
 
 | Superparser (AS-IS) | Warehouse (TO-BE) |
 |---|---|
@@ -1194,7 +1237,7 @@ Not published (may contain emails).
 
 ---
 
-## 4. Fact types
+## 5.21 Fact types
 
 Closed set. Extractor `govops` v1 emits these seven. `agency` is not a warehouse fact type.
 
@@ -1207,7 +1250,7 @@ Every fact has:
 
 Ungrounded facts are discarded before insert (`filter_grounded_extractions`).
 
-### 4.1 `money`
+### 5.21.1 `money`
 
 Surface examples (AS-IS regex): `$125,000`, `$ 125000.00`.
 
@@ -1228,7 +1271,7 @@ Rules:
 - Ranges (`$1m–$2m`) become two facts or one fact with `normalized_value.range={min_cents,max_cents}`; v1 stores a single fact with `min_cents`/`max_cents` and `amount_cents=null` when both bounds exist.
 - Fallback regex does not parse `ARS 1.250.000` or `125000` without `$`. Those wait for langextract or human edit.
 
-### 4.2 `date`
+### 5.21.2 `date`
 
 Surface examples: `2026-06-01` (AS-IS regex `\b20\d{2}-\d{2}-\d{2}\b`).
 
@@ -1242,7 +1285,7 @@ Surface examples: `2026-06-01` (AS-IS regex `\b20\d{2}-\d{2}-\d{2}\b`).
 
 `precision`: `day | month | year`. Langextract dates like `June 1, 2026` normalize to ISO. Invalid calendar dates are stored with `valid=false` and `publishable=false`.
 
-### 4.3 `ordinance`
+### 5.21.3 `ordinance`
 
 Surface examples: `Ordinance 42`, `Resolution 12-A`, `Decree 2024-1` (AS-IS regex `\b(?:Ordinance|Resolution|Decree)\s+[A-Z0-9.-]+\b`).
 
@@ -1257,7 +1300,7 @@ Surface examples: `Ordinance 42`, `Resolution 12-A`, `Decree 2024-1` (AS-IS rege
 
 `instrument` ∈ `ordinance | resolution | decree | law | other`. `identifier` is the token after the instrument word. Link to `warehouse.entities` (`entity_kind='ordinance'`, slug `{instrument}-{identifier}` lowercased) and optionally `entity_links` to `geo_entity` via the document dataset’s `geo_entity_id`.
 
-### 4.4 `person`
+### 5.21.4 `person`
 
 No deterministic fallback today. Langextract / human only until a name NER version is pinned.
 
@@ -1271,7 +1314,7 @@ No deterministic fallback today. Langextract / human only until a name NER versi
 
 PII: person facts on `public` datasets require review. `redactPublicText` self-identification patterns may already have replaced first-person names in citizen uploads; third-person officials in ordinances are **not** stripped by the current regex (by design — they are civic facts). Do not run person facts through `[identity removed]` unless the span matched `SELF_IDENTIFICATION_RE`.
 
-### 4.5 `org`
+### 5.21.5 `org`
 
 Replaces AS-IS `agency`. Fallback regex: `\b(?:City Council|Public Works|Health Department|Budget Office|Clerk Office)\b`.
 
@@ -1286,7 +1329,7 @@ Replaces AS-IS `agency`. Fallback regex: `\b(?:City Council|Public Works|Health 
 
 `org_kind` ∈ `agency | vendor | ngo | company | other`. If `name` slug-matches an `oltp.institutions.slug` or `name`, set `institution_id` and write `entity_links.target_kind='institution'`.
 
-### 4.6 `place`
+### 5.21.6 `place`
 
 No deterministic fallback today.
 
@@ -1303,7 +1346,7 @@ No deterministic fallback today.
 
 Resolution order (§5.2): exact `geo_entities.id`, then `path_prefix`, then `(country_code, search_name, level)`, then Nominatim-backed `osm_id`. Unresolved places stay with `geo_entity_id=null` and `resolution_status` in `attributes`.
 
-### 4.7 `program`
+### 5.21.7 `program`
 
 No deterministic fallback today. Schema field exists in `govops_v1`.
 
@@ -1317,7 +1360,7 @@ No deterministic fallback today. Schema field exists in `govops_v1`.
 
 Link to money facts in the same document via `entity_links.target_kind='fact'` when a money span is in the same sentence (chunk). Optional; v1 linker may skip this and still publish the program fact.
 
-### 4.8 Classification labels (document-level, not facts)
+### 5.21.8 Classification labels (document-level, not facts)
 
 From `classification.py`: `budget`, `procurement`, `ordinance`, `public_health`, `infrastructure`, plus `general_government` default and `empty` for zero-length text. These are **not** fact types. They live on `warehouse.classifications`.
 
@@ -1325,11 +1368,157 @@ Public-request categories (`PUBLIC_REQUEST_CATEGORIES` in `public-portal.ts`: in
 
 ---
 
-## 5. ID join strategy
+## 6. Query engine (Dune-like)
+
+The query engine is **read-only SQL** against the warehouse Postgres. DuckDB-WASM is not the system of record. Optional Parquet on R2 is for large scans and exports, not interactive SQL.
+
+### 6.1 Constraints (locked)
+
+| Constraint | Value |
+|---|---|
+| Statements | Single `SELECT` or `WITH … SELECT` only |
+| DDL/DML | Rejected (DROP, INSERT, UPDATE, DELETE, COPY, SET, CREATE) |
+| Search path | Default `published`. Authorized users may set `warehouse` for unpublished objects they can read |
+| Timeout | 30s interactive; 120s saved-dashboard refresh |
+| Max rows | 10_000 returned; 100_000 scanned hint then cancel |
+| Bind | Non-platform users: planner injects `government_id = $actor_government_id` on every table that has the column |
+| Schema allowlist | `published`, and `warehouse` when authorized |
+| Concurrent queries | Entitlement `data.query_concurrent` default 2 per user |
+
+Parser: reject multiple statements, `INTO`, `FOR UPDATE`, `pg_catalog` except `pg_typeof`/`current_date`, `dblink`, `file_fdw`.
+
+### 6.2 APIs
+
+Base prefix `/api/data`. Auth: session cookie. Anonymous allowed only for `POST /api/data/query` against public saved queries or ad-hoc SQL that the planner proves touches only `sql_public` objects.
+
+#### `POST /api/data/query`
+
+Request:
+
+```json
+{
+  "sql": "SELECT agency, SUM((normalized_value->>'cents')::bigint) AS cents FROM published.facts WHERE fact_type = 'money' GROUP BY 1 ORDER BY 2 DESC",
+  "params": {},
+  "maxRows": 5000,
+  "timeoutMs": 30000
+}
+```
+
+Response 200:
+
+```json
+{
+  "queryId": "uuid",
+  "status": "succeeded",
+  "columns": [{ "name": "agency", "type": "text" }, { "name": "cents", "type": "int8" }],
+  "rows": [["Public Works", 120000]],
+  "rowCount": 1,
+  "runtimeMs": 42,
+  "truncated": false,
+  "cached": false
+}
+```
+
+Errors: `400` invalid SQL, `401` unauthenticated when required, `403` cross-government, `402` query-minute quota, `408` timeout, `422` DDL/DML.
+
+#### Saved queries
+
+| Method | Path | Body / notes |
+|---|---|---|
+| `GET` | `/api/data/queries` | `?visibility=&q=` |
+| `POST` | `/api/data/queries` | `{ name, sql, paramsSchema, visibility, governmentId? }` |
+| `GET` | `/api/data/queries/:id` | |
+| `PATCH` | `/api/data/queries/:id` | Fork via `{ fork: true, name }` |
+| `POST` | `/api/data/queries/:id/run` | `{ params }` |
+| `GET` | `/api/data/queries/:id/results` | Latest cached result metadata + page |
+
+Fork copies SQL and params schema; the new row’s `parent_query_id` points at the source. Parameterized queries use named params (`{{start}}`, `{{end}}`) substituted as bind values, never string-concatenated.
+
+Result cache key: `sha256(sql + canonical_json(params) + actor_class + government_id)`. TTL 5 minutes for ad-hoc, 15 minutes for dashboard tiles.
+
+### 6.3 Query minutes
+
+`ingest.quota_counters` metric `query_ms`. Default 600_000 ms / UTC month for signed-in non-platform; 60_000 ms for anonymous IP. Platform auditor unlimited but logged.
+
+---
+
+## 7. Visualization panels
+
+A **dashboard** is an ordered list of **tiles**. Each tile binds to a saved query (or an inline SQL snapshot hashed into a hidden saved query).
+
+### 7.1 Tile types
+
+| `tile_kind` | Required result shape | Render |
+|---|---|---|
+| `table` | any columns | HTML table, 500 row cap |
+| `metric` | one row, one numeric column | Large number + optional delta |
+| `timeseries` | `t` timestamptz + numeric `v` [+ series key] | Line |
+| `bar` | category + numeric | Horizontal/vertical bar |
+| `map` | `geo_id` or `path` + numeric | CivicMap (`apps/landing/app/components/CivicMap.tsx`) |
+| `markdown` | no query | Static markdown, no raw HTML |
+
+### 7.2 Embed
+
+Dashboards with `visibility=public` embed on:
+
+- `/scrutiny` and `/es/escrutinio` (replace “Coming soon” cards in `ScrutinyPage` / Next scrutiny route)
+- `/explore`
+- Geo entity pages (`app/geo/GeoEntityPage.tsx`)
+- Government public profile (institution portal)
+
+Embed is an iframe-free server render of tile React components. Public embeds only run queries already marked public.
+
+### 7.3 Storage
+
+Tables `warehouse.dashboards` and `warehouse.tiles` (see §5). Tile `query_id` FK `saved_queries`. Layout JSON: `{ x, y, w, h }` on a 12-column grid.
+
+---
+
+## 8. UI in the one Next app
+
+### 8.1 Public / contributor routes
+
+Add to `apps/landing/lib/routes.ts`:
+
+| Route key | EN | ES | Nav |
+|---|---|---|---|
+| data | `/data` | `/es/datos` | true |
+| data-new | `/data/new` | `/es/datos/nuevo` | false |
+| data-queries | `/data/queries` | `/es/datos/consultas` | false |
+| data-query | `/data/queries/:id` | `/es/datos/consultas/:id` | false |
+| data-dashboards | `/data/dashboards` | `/es/datos/tableros` | false |
+| data-dashboard | `/data/dashboards/:id` | `/es/datos/tableros/:id` | false |
+| status | `/status` | `/es/estado` | false |
+
+`/collaborate` remains the citizen contribution entry and **enqueues the same ingest jobs** as `/data/new` (`source_kind=collaborate`).
+
+`/data/new` is the folded Superparser portal: upload, Drive (operator only), job status, extraction review.
+
+`/data/queries` is the SQL studio (editor, run, save, fork).
+
+### 8.2 Government board routes
+
+Under `/admin/:prefix/data/`:
+
+| Path | Role |
+|---|---|
+| `data` | Catalog of this government’s datasets |
+| `data/review` | Human review queue (low-confidence / PII) |
+| `data/publish` | Promote visibility; requires `data:publish` + entitlement |
+| `data/queries` | Government-scoped SQL studio |
+| `data/dashboards` | Government dashboards |
+
+### 8.3 What folds / deletes
+
+See Appendix A. Superparser portal package is not linked from production nav.
+
+---
+
+## 9. ID join strategy
 
 Three identifier families exist in the repo today. The warehouse joins them **by storing the OLTP id as text**, never by regenerating slugs at query time except for institutions (slug is derived in OLTP too).
 
-### 5.1 Identifier catalog
+### 9.1 Identifier catalog
 
 | Entity | Canonical ID | Format | Minted in | Also known as |
 |---|---|---|---|---|
@@ -1353,7 +1542,7 @@ Institution slug example: name `Tandil`, prefix `CIU` → `ciu-tandil` (`buildIn
 
 Public request public_id example: identifier `CIU-12` → `ciu-12`.
 
-### 5.2 Linking algorithm (normative)
+### 9.2 Linking algorithm (normative)
 
 Run after extraction, before review. Each fact may produce 0..n `entity_links`.
 
@@ -1388,7 +1577,7 @@ Every document gets at least:
 
 Collaborate without institution: document stays on `ds_public_contributions`; geo/institution links only if the citizen UI later sends `geo_entity_id` / `institution_slug` (TO-BE form fields; AS-IS Collaborate form is file-only in `PublicApp.tsx`).
 
-### 5.3 SQL join patterns (what published SQL authors write)
+### 9.3 SQL join patterns (what published SQL authors write)
 
 ```sql
 -- Money by municipality
@@ -1416,7 +1605,7 @@ WHERE u.day >= DATE '2026-08-01';
 
 Because `published` is the search_path, `facts` / `geo_entities` / `public_requests` / `institutions` / `usage_daily` resolve to the views in §3.14.
 
-### 5.4 Non-joins (do not)
+### 9.4 Non-joins (do not)
 
 - Do not join warehouse `documents.id` to D1 `documents.id` (control-plane markdown work products, `packages/db-cloudflare/src/schema/documents.ts`). Different tables, different meaning.
 - Do not join `public_contributions.document_id` to D1 `documents`. It is a Superparser/warehouse document uuid stored as text.
@@ -1425,11 +1614,11 @@ Because `published` is the search_path, `facts` / `geo_entities` / `public_reque
 
 ---
 
-## 6. ETL from D1 / OLTP into the warehouse
+## 9.5 ETL from D1 / OLTP into the warehouse
 
 D1 is the write path for civic **operations** (requests, geo claims, contributions attribution, token spend). The warehouse is the write path for civic **documents and facts**. ETL copies OLTP → `oltp.*` and rolls usage into `warehouse.usage_daily`. It never copies unredacted request contact fields into `published`.
 
-### 6.1 Jobs
+### 9.5.1 Jobs
 
 | Job | Cadence | Source | Destination | Mode |
 |---|---|---|---|---|
@@ -1442,7 +1631,7 @@ D1 is the write path for civic **operations** (requests, geo claims, contributio
 
 Cloudflare D1 does not speak logical replication. ETL is **pull**: a Worker cron or the ingest Cloud Run process queries D1 (or the admin API) and upserts Postgres.
 
-### 6.2 Geo upsert SQL
+### 9.5.2 Geo upsert SQL
 
 ```sql
 INSERT INTO oltp.geo_entities (
@@ -1474,7 +1663,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 `updated_at` in D1 is integer epoch-ms (`geo_entities.ts`). Convert on ingest. Preserve claimed `path_prefix` **in D1** (seed SQL already does); the warehouse copies whatever D1 currently has — it does not re-implement claim logic.
 
-### 6.3 Institutions
+### 9.5.3 Institutions
 
 ```sql
 -- slug is not a D1 column; compute in the ETL worker with the shared function
@@ -1497,13 +1686,13 @@ ON CONFLICT (id) DO UPDATE SET
 
 `geo_entity_id`: `SELECT geo_id FROM tenant_instances WHERE …` is not 1:1 with companies today (tenants are places, companies are institutions). ETL sets `geo_entity_id` when an institution is bound to a claimed tenant in instance settings; otherwise NULL. Facts still join institutions via `company_id`.
 
-### 6.4 Public requests
+### 9.5.4 Public requests
 
 OLTP text is **already redacted** (`redactPublicText` at write). ETL copies `public_title`, `public_summary`, `public_description`, `pii_detected` as-is. It does **not** copy `recovery_token_hash`. `contact_name` / `contact_email` / `owner_user_id` / `submission_mode` land in `oltp.public_requests` for government SQL only and are omitted from `published.public_requests`.
 
 Deletes: D1 `ON DELETE cascade` from `issues`. ETL treats missing rows since last cursor as deletes and `DELETE FROM oltp.public_requests WHERE id = ANY($1)`.
 
-### 6.5 Public contributions
+### 9.5.5 Public contributions
 
 ```sql
 INSERT INTO oltp.public_contributions (
@@ -1521,7 +1710,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 Anonymous uploads still create **no** D1 row (same as today).
 
-### 6.6 `usage_daily` rollup
+### 9.5.6 `usage_daily` rollup
 
 D1 grain (`cost_events`): one row per inference/ingest event with `occurred_at` text ISO.
 
@@ -1578,13 +1767,13 @@ Written as `provider='superparser'`, `biller='ciutatis'`, `billing_type='ingest'
 
 Yesterday’s row is **immutable** after the 01:10 UTC finalize. Same-day rows are rewritten every 15 minutes.
 
-### 6.7 Cursor and failure
+### 9.5.7 Cursor and failure
 
 ETL stores `ingest.etl_cursors (job_name text PK, last_success_at timestamptz, last_key text, error text)`. Geo uses `updated_at` integer watermark. Requests use `updated_at` ISO watermark. Cost events use `occurred_at`. At-least-once delivery is required; all upserts are idempotent on natural keys.
 
 On D1 timeout: skip the tick, do not partial-commit usage_daily for that day (wrap in one Postgres transaction per job). Geo/institution upserts may partial-commit per batch of 500 ids.
 
-### 6.8 Backfill from Superparser Postgres
+### 9.5.8 Backfill from Superparser Postgres
 
 Cutover job `migrate_legacy_superparser`:
 
@@ -1595,7 +1784,7 @@ Cutover job `migrate_legacy_superparser`:
 5. Copy extractions → facts with `agency`→`org`, `extractor_version_id` = seed v1, `review_status='approved'` for operator `demo-company` data, `'pending'` for `public-contributions`.
 6. Do not copy `search_queries`.
 
-### 6.9 What ETL will not do
+### 9.5.9 What ETL will not do
 
 - ETL will not move D1 `issues`, comments, agent org charts, or heartbeat transcripts into `published`. Those stay control-plane.
 - ETL will not publish `contact_email`.
@@ -1604,7 +1793,21 @@ Cutover job `migrate_legacy_superparser`:
 
 ---
 
-## 7. AS-IS file index (citations)
+## 10. Security and abuse (data platform)
+
+1. **SQL injection is not the model.** Named params only; parser allowlist; no string interpolation of user SQL into a second statement.
+2. **Cross-government leakage.** Planner fails closed if a referenced relation lacks `government_id` and the actor is not platform. Tests must include a query that names another government’s `dataset_id` and expect 403.
+3. **Malicious PDF.** Superparser already caps 50 MiB / 1000 pages (`normalization.py`). Ingest runs in Cloud Run, not in the Next isolate. Failed jobs do not write `published`.
+4. **PII.** `redactPublicText` before publish; review required when `pii_detected` on government/public visibility.
+5. **Query cost.** Query-ms quotas; timeout; kill on `statement_timeout`.
+6. **Never join to Paperclip secrets.** `published` contains no `agent_api_keys`, `company_secret_versions`, `auth_sessions`, `adapter_config`, or recovery tokens. ETL denylist is authoritative.
+7. **Collaborate 503.** Production launch of `/collaborate` and `/data/new` requires `SUPERPARSER_URL` set (`workers/api/wrangler.toml` today `""`).
+
+---
+
+## 11. Migration (data platform)
+
+## 11.1 AS-IS file index (citations)
 
 | Path | What it proves |
 |---|---|
@@ -1634,7 +1837,7 @@ Cutover job `migrate_legacy_superparser`:
 
 ---
 
-## 8. Cutover invariants (acceptance)
+## 11.2 Cutover invariants (acceptance)
 
 1. Superparser is not called for `SELECT`-shaped product traffic. `POST /v1/search` is not on the public site.
 2. Every published fact has a document, a span, an extractor version, and `review_status IN ('approved','edited')`.
@@ -1646,3 +1849,79 @@ Cutover job `migrate_legacy_superparser`:
 8. Dataset visibility `private` rows are absent from `published` even for the owning company when the role is `sql_public`.
 9. The Superparser portal package is not linked from production Next nav; its flows live under `apps/landing`.
 10. Optional Parquet failure does not fail ingest jobs.
+
+## 11.3 Migration phases (data platform)
+
+| Phase | Work |
+|---|---|
+| D0 | Set `SUPERPARSER_URL`; keep Superparser schema as staging |
+| D1 | Create warehouse schemas (`ingest`, `warehouse`, `oltp`, `published`); ETL geo/institutions/requests |
+| D2 | Superparser writes facts into `warehouse.*` instead of (or in addition to) `superparser.*` |
+| D3 | `POST /api/data/query` + `/data/queries` UI |
+| D4 | Dashboards + embed on `/scrutiny` |
+| D5 | Fold `apps/superparser-portal`; stop public `POST /v1/search` |
+| D6 | Backfill `migrate_legacy_superparser`; drop 16-d demo embeddings |
+
+Citizen portal REST (`/api/public/requests`) stays transactional on D1. Analytics copies into the warehouse; D1 remains the write path.
+
+---
+
+## 12. Implementation backlog (data platform)
+
+1. Warehouse Postgres + schemas in §5 (acceptance: empty `published.facts` selectable).
+2. ETL geo hourly and public_requests 1 min (acceptance: join `published.public_requests.geo_id` to `oltp.geo_entities.id`).
+3. Superparser worker writes `warehouse.documents` + facts; Collaborate no longer 503.
+4. Sandboxed `POST /api/data/query` with timeout and government bind (acceptance: cross-government SELECT → 403).
+5. Saved queries + SQL studio at `/data/queries`.
+6. Dashboards + tiles; `/scrutiny` renders a public dashboard instead of “Coming soon”.
+7. Fold superparser-portal into `/data/new`.
+8. `usage_daily` import from control plane (see govops-control-plane.md). Do not sum civic `money` facts with token cents.
+
+### Deferred
+
+- Natural language to SQL as the only interface (SQL studio ships first).
+- Crawling arbitrary municipal websites in v1 (`source_kind=url` is allowlisted fetch, not a crawler).
+- DuckDB-WASM as SoR.
+- Querying Paperclip OLTP.
+
+---
+
+## Appendix A — UI host (identical in both product specs)
+
+The only human product UI is Next.js `apps/landing` (`@ciutatis/landing`).
+
+### A.1 Keep
+
+| Surface | Path | Notes |
+|---|---|---|
+| Public civic site | `apps/landing/lib/routes.ts`, `app/PublicApp.tsx` | `/`, `/govops`, `/scrutiny`, `/explore`, `/portal`, `/collaborate`, `/ar`, locales |
+| Government board | `/admin/:issuePrefix/...` via `src/admin/App.tsx` `councilRoutes()` | Compacted per GovOps chapter 9 |
+| Platform admin | `/admin/instance/settings/*` | Tenants, Cloudflare, experimental, plugins |
+| Data studio (civic data platform) | `/data/*` and `/admin/:prefix/data/*` | Specified in civic-data-platform.md |
+
+### A.2 Delete as separate sites (target state, not this docs PR)
+
+| Remove | Path | Fold into |
+|---|---|---|
+| Superparser portal | `apps/superparser-portal/` | `/data/new` |
+| Status Worker HTML | `workers/status/src/index.ts` UI | `/status` in Next; cron/JSON may remain API-only |
+| Dispatcher tenant HTML | `workers/dispatcher` Tandil/`__tenant` HTML | Dispatcher becomes proxy only |
+| Tenant-runtime placeholder HTML | `workers/tenant-runtime` | Delete UI; keep health if still a dispatch template |
+| Express static UI | `SERVE_UI`, `server/ui-dist` | Self-host operators use landing or API-only |
+| SPA public clones | `src/admin/pages/PublicSite.tsx`, `GovOpsPage.tsx`, `ScrutinyPage.tsx`, `PublicPortalPage.tsx`, `PublicPortalRequestPage.tsx` and their `/admin` routes in `App.tsx` | Next `PublicApp` is canonical |
+
+Mintlify `docs/` stays **developer documentation**, not a product site.
+
+Keep as infrastructure (not sites): `workers/api`, dispatcher-as-proxy, `apps/superparser-service` (ingest worker).
+
+### A.3 Dual public implementations
+
+Next `PublicApp` is the only public renderer. Routes under `BrowserRouter` basename `/admin` must not re-serve marketing/portal/govops/scrutiny. `admin.ciutatis.com` continues to rewrite into `/admin` (`apps/landing/next.config.ts`).
+
+### A.4 Status
+
+Add public route `/status` (and `/es/estado`) in `lib/routes.ts`, fed by existing health JSON (`GET /api/health` and the status worker’s snapshot if retained as API). Retire `status.ciutatis.com` as a separate HTML Worker.
+
+### A.5 Keyboard, empty, error (board)
+
+Keep: Cmd/Ctrl+K, `C` new request, `[` / `]` sidebar/panel (`src/admin/hooks/useKeyboardShortcuts.ts`). Empty states use `EmptyState`; lists use `PageSkeleton`; mutations toast `ApiError`. Civic copy: Institution / Request / Objective / Channel. HTTP clients stay on Paperclip paths (`issuesApi`, `companiesApi`).

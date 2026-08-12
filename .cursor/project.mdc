@@ -1,0 +1,87 @@
+# Ciutatis — project handbook
+
+Ciutatis is a civic fork of Paperclip. Humans (the board) enroll **governments**, operate **institutions**, hire **channels** (agents), assign **requests**, approve governed actions, and enforce budgets. A second product system loads civic documents into an analytics warehouse and exposes Dune-like SQL.
+
+## Forward product contracts
+
+These two specs are the build contract for the civic product line. They do **not** rewrite `doc/SPEC-implementation.md` in this pass; where they conflict with V1 “single board / RBAC out of scope,” **the GovOps spec wins for GovOps**.
+
+| Product | Spec | Owns |
+|---|---|---|
+| GovOps Control Plane | `doc/spec/govops-control-plane.md` | Enrollment, tenancy (`governments` table), RBAC, entitlements, Paperclip OLTP, usage meter |
+| Civic Data Platform | `doc/spec/civic-data-platform.md` | Ingest, parse, warehouse, sandboxed SQL, dashboards |
+
+Pointers: `.cursor/feature/govops-control-plane.mdc`, `.cursor/feature/civic-data-platform.mdc`.
+
+## Locked architecture
+
+1. **One human product UI:** `apps/landing` (Next.js). Public site, government board (`/admin`), platform admin, and data studio (`/data/*`) share that host.
+2. **Two data planes, never mixed:** Paperclip OLTP (agents, keys, memberships, runs) is not ad-hoc SQL. The Dune surface queries `published.*` in the analytics warehouse. Usage is exported as `usage_daily` aggregates only.
+3. **Enrolled government is the tenant.** `governments.id` is `government_id`. `tenant_instances` is the Cloudflare deploy/routing unit (`governments.tenant_instance_id`, nullable on self-host).
+4. **Real RBAC.** `grantsForHumanRole()` must not return `[]`.
+5. **Superparser is a backend**, not a site. Fold `apps/superparser-portal` into `/data/new`. Keep `apps/superparser-service` as the ingest worker.
+
+## Do not trust these maps
+
+- There is no top-level `ui/` package. The board UI is `apps/landing/src/admin` (React Router basename `/admin`).
+- Default DB is embedded PostgreSQL, not PGlite. Data: `~/.paperclip/instances/default/`.
+- Root package name is `paperclip`. CLI is `ciutatis` / `paperclipai`.
+- GitHub Actions in `.github/workflows` trigger on `master`. Default branch here is `main`.
+- `pnpm lint` is a no-op.
+- `grantsForHumanRole()` currently returns `[]`. Express `POST /issues/:id/checkout` skips `assertCompanyAccess` and is not atomic.
+
+## Vocabulary
+
+| UI / civic docs | HTTP / SQL | Meaning |
+|---|---|---|
+| Government | **new** `governments` / `government_id` | Billing, RBAC, entitlements, usage parent |
+| Tenant instance | `tenant_instances` | Cloudflare D1/KV/R2 + hostname/path |
+| Institution | `companies` / `/api/companies` | Operating unit inside a government |
+| Request | `issues` / `/api/issues` | Work item |
+| Objective | `goals` / `/api/goals` | Goal |
+| Channel | `agents` | AI employee |
+
+Physical tables were not renamed. TypeScript has civic aliases (`institutions`, `requests`, `objectives`).
+
+## Day-one commands
+
+```sh
+pnpm install
+pnpm dev                 # API :3100
+pnpm dev:landing         # public + admin :3000
+pnpm paperclipai run     # onboard + doctor + server
+pnpm -r typecheck
+pnpm test:run
+pnpm build
+```
+
+Do not start long-lived `pnpm dev` from unattended agent sessions.
+
+## Where to change what
+
+| Change | Touch |
+|---|---|
+| API / orchestration | `server/src/` |
+| Schema | `packages/db/src/schema/` then `pnpm db:generate` |
+| Types / validators / paths | `packages/shared/` |
+| Board UI | `apps/landing/src/admin/` |
+| Public site | `apps/landing/app/` |
+| Hosted API | `workers/api/` + `packages/db-cloudflare/` |
+| Ingest/parse worker | `apps/superparser-service/` |
+| Adapters | `packages/adapters/*` + `server/src/adapters/registry.ts` |
+
+Keep company (institution) scoping. Log mutations. Sync db → shared → server → UI (and Workers if the feature is hosted).
+
+## Two production stacks
+
+1. Self-host: Express + Postgres. Env prefix `PAPERCLIP_DEPLOYMENT_MODE`.
+2. Hosted: Cloudflare Workers + D1 + OpenNext. Env `DEPLOYMENT_MODE`. Shared contract in `packages/shared`; unimplemented paths return **501** with `availability`, never a silent empty list.
+
+## Read next
+
+- GovOps spec: `doc/spec/govops-control-plane.md`
+- Data platform spec: `doc/spec/civic-data-platform.md`
+- V1 implementation contract: `doc/SPEC-implementation.md`
+- Product pointer: `doc/PRODUCT.md`
+- Ops: `doc/DEVELOPING.md`, `doc/DATABASE.md`, `doc/DEPLOYMENT-MODES.md`
+- Inherited audit (if present on the branch): `doc/plans/2026-08-12-inherited-codebase-audit.md`

@@ -1,0 +1,53 @@
+# Feature: control plane (server, db, adapters, plugins)
+
+## Layout
+
+- `server/src/index.ts` — start: config, embedded Postgres, migrate, HTTP, websocket, heartbeat, plugins
+- `server/src/app.ts` — Express factory, `/api`, optional `server/ui-dist`
+- `server/src/middleware/auth.ts` — `actorMiddleware` (board | agent | none)
+- `server/src/routes/authz.ts` — `assertCompanyAccess`, `assertBoard`, `assertInstanceAdmin`
+- `server/src/services/heartbeat.ts` — 9720-line orchestration hub; change with extreme care
+- `server/src/services/requestService.ts` — issues/requests
+- `server/src/services/budgets.ts` — policies, incidents, pause, `getInvocationBlock`
+- `server/src/adapters/registry.ts` — adapter type map
+- `packages/db/src/schema/` — Drizzle; civic names alias Paperclip tables
+- `packages/shared/` — types, Zod, `API_PREFIX = "/api"`
+
+## Auth
+
+- `local_trusted`: loopback, implicit board user in `authUsers`
+- `authenticated`: Better Auth sessions; bootstrap invite; council/board claim
+- Agents: hashed `agent_api_keys` or local JWT; must not cross `companyId`
+
+## Checkout (known defect)
+
+`POST /issues/:id/checkout` (`server/src/routes/issues.ts`) does not call `assertCompanyAccess`.  
+`requestService.checkout` updates by id only; ignores expected statuses.  
+`assertCheckoutOwner` returns `{ adoptedFromRunId: null }`.
+
+Any fix must: gate company access, conditional UPDATE, 409 on conflict, activity log, tests for races and cross-company keys.
+
+## Adapters
+
+Registered: process, http, claude_local, codex_local, cursor, gemini_local, opencode_local, pi_local, openclaw_gateway, cloudflare_workers_ai.  
+Stub: acpx_local (throws). Listed but unregistered: hermes_local.  
+Unknown types fall back to process.
+
+New adapter: follow `.agents/skills/create-agent-adapter/SKILL.md` and register in `registry.ts` + `AGENT_ADAPTER_TYPES`.
+
+## Plugins
+
+Full host despite V1 spec “out of scope”: `packages/plugins/sdk`, server `plugin-*.ts` services, UI slots in Sidebar. Spec: `doc/plugins/PLUGIN_SPEC.md`.
+
+## Workers parity
+
+`workers/api` is a Hono subset. Missing vs Express includes routines, adapters, environments, issue-tree-control, instance DB backups. Hosted-only: collaborate, public-auth, me.
+
+## Change checklist
+
+1. Schema in `packages/db` (+ `packages/db-cloudflare` if hosted)
+2. `pnpm db:generate`
+3. Shared types/validators/API paths
+4. Service + route + `assertCompanyAccess` + activity log
+5. UI client in `apps/landing/src/admin/api/`
+6. Tests under `server/src/__tests__/` (and landing if UI)

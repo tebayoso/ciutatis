@@ -1,0 +1,43 @@
+# Feature: deployment
+
+Two stacks. Never apply a Postgres runbook to D1 or a wrangler runbook to ECS.
+
+## A. Self-hosted (Node + Postgres)
+
+- Runtime: `server/` Express, port 3100
+- DB: embedded Postgres if `DATABASE_URL` unset; else Postgres
+- UI: `apps/landing` in dev; optional `SERVE_UI` static `server/ui-dist` in images
+- Env: `PAPERCLIP_DEPLOYMENT_MODE`, `PAPERCLIP_DEPLOYMENT_EXPOSURE`, `PAPERCLIP_PUBLIC_URL`, `BETTER_AUTH_SECRET`
+- Docker: `Dockerfile`, `docker-compose.yml`, `docker-compose.quickstart.yml`
+- Release: npm canary/stable via `.github/workflows/release.yml` (triggers on **`master`**, not `main`)
+- Health: `GET /api/health`
+- Docs: `doc/DEVELOPING.md`, `doc/DOCKER.md`, `doc/RELEASING.md`, `doc/DEPLOYMENT-MODES.md`
+
+**Broken as of 2026-08-12:** Dockerfile copies missing `scripts/docker-entrypoint.sh`, `packages/mcp-server/package.json`, `packages/adapters/acpx-local/package.json`.
+
+## B. Hosted Cloudflare (`ciutatis.com`)
+
+| Worker | Path | Role |
+|---|---|---|
+| dispatcher | `workers/dispatcher` | apex/www → `LANDING_ORIGIN` |
+| ciutatis-web | `apps/landing` OpenNext | public site + `/admin` |
+| ciutatis-admin-api | `workers/api` | `admin.ciutatis.com/api/*` |
+| status | `workers/status` | `status.ciutatis.com` |
+
+- DB: D1 via `packages/db-cloudflare`
+- Env: `DEPLOYMENT_MODE` (not `PAPERCLIP_*`)
+- Deploy: manual `wrangler deploy` / `pnpm --filter @ciutatis/landing deploy`
+- npm release does **not** deploy this stack
+- `SUPERPARSER_URL` is empty → collaborate 503
+- `LANDING_ORIGIN` in dispatcher wrangler points at `ciutatis-web.jorge-b9f.workers.dev`
+- Account, D1, KV, R2 ids are committed in wrangler tomls
+- Rollback: `doc/ROLLBACK-PLAN.md` (no automated Worker rollback)
+
+## Modes
+
+`local_trusted` | `authenticated` + `private` | `authenticated` + `public`  
+See `doc/DEPLOYMENT-MODES.md`.
+
+## CI landmine
+
+`pr-verify.yml`, `pr-policy.yml`, `refresh-lockfile.yml`, `release.yml` all filter `branches: [master]`. This fork’s default branch is `main`.

@@ -1,0 +1,30 @@
+# Feature: Sentry ciutatis-admin
+
+## Scope
+
+End-to-end Sentry for the Ciutatis admin control plane:
+
+| Surface | SDK | Project |
+|---------|-----|---------|
+| Express API (`server/`, :3100) | `@sentry/node` | `ciutatis-admin` |
+| Admin browser (`admin.ciutatis.com`) | `@sentry/nextjs` client | `ciutatis-admin` via `NEXT_PUBLIC_SENTRY_ADMIN_DSN` |
+| Public site (`ciutatis.com`) | `@sentry/nextjs` | `ciutatis-public` (unchanged) |
+
+## Server wiring
+
+1. `server/src/instrument.ts` — `Sentry.init` with admin DSN
+2. First import in `server/src/index.ts` + `--import` on `dev`/`start` scripts
+3. `Sentry.setupExpressErrorHandler(app)` before `errorHandler`
+4. `errorHandler` captures 500s via `Sentry.captureException`
+5. `Sentry.flush` on shutdown
+6. Opt-in `GET /api/debug-sentry` when `SENTRY_DEBUG_ROUTE=1`
+
+## Verification
+
+```sh
+# Start API with verify route enabled
+SENTRY_DEBUG_ROUTE=1 pnpm --filter @paperclipai/server dev
+curl -i http://localhost:3100/api/debug-sentry
+```
+
+Then confirm the event appears in Sentry project `ciutatis-admin`.

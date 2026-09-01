@@ -1,4 +1,7 @@
 /// <reference path="./types/express.d.ts" />
+// IMPORTANT: Sentry must initialize before any other app modules.
+import "./instrument.js";
+import * as Sentry from "@sentry/node";
 // Kicks off the OTel bootstrap as early as possible (no-op unless
 // OTEL_EXPORTER_OTLP_ENDPOINT is set). startServer() awaits
 // instrumentationReady before opening DB connections or constructing the
@@ -1179,6 +1182,7 @@ export async function startServer(): Promise<StartedServer> {
       // Flush buffered OTel spans before the process goes away; without this
       // await the exporter's final batch is dropped on exit.
       await shutdownInstrumentation();
+      await Sentry.flush(2_000);
 
       process.exit(0);
     };

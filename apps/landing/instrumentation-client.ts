@@ -1,12 +1,26 @@
 import * as Sentry from "@sentry/nextjs";
 
-const dsn =
-  process.env.NEXT_PUBLIC_SENTRY_DSN ??
-  process.env.SENTRY_DSN ??
+const PUBLIC_DSN =
   "https://dbe2a85e0768cbf6427765b62a2a920c@o4510991955263488.ingest.us.sentry.io/4511718039289856";
+const ADMIN_DSN =
+  "https://8308468049519770565f0442f19a7862@o4510991955263488.ingest.us.sentry.io/4511718399541253";
+
+function resolveClientDsn(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname.toLowerCase();
+    if (host === "admin.ciutatis.com" || host.startsWith("admin.")) {
+      return process.env.NEXT_PUBLIC_SENTRY_ADMIN_DSN ?? ADMIN_DSN;
+    }
+  }
+  return (
+    process.env.NEXT_PUBLIC_SENTRY_DSN ??
+    process.env.SENTRY_DSN ??
+    PUBLIC_DSN
+  );
+}
 
 Sentry.init({
-  dsn,
+  dsn: resolveClientDsn(),
   environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV,
   sendDefaultPii: true,
   enableLogs: true,

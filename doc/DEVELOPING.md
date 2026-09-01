@@ -53,6 +53,7 @@ Current public-site note:
 - topbar uses Product / Public dropdown groups defined in `apps/landing/lib/routes.ts`
 - local landing proxies `/api/*` to `API_INTERNAL_BASE` (default `https://admin.ciutatis.com`; set `API_INTERNAL_BASE=http://localhost:3100` when running the local API)
 - Sentry: public site reports to org `thcargentina` project `ciutatis-public` via `@sentry/nextjs` (see `apps/landing/.env.example`)
+- Sentry admin: Express API (`server/`, port 3100) reports to project `ciutatis-admin` via `@sentry/node` (`server/src/instrument.ts`). Admin browser host `admin.ciutatis.com` uses `NEXT_PUBLIC_SENTRY_ADMIN_DSN`. Opt-in verify: `SENTRY_DEBUG_ROUTE=1` then `GET /api/debug-sentry`.
 
 Default ports:
 

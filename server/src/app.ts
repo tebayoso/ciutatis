@@ -2,6 +2,7 @@ import express, { Router, type Request as ExpressRequest } from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import * as Sentry from "@sentry/node";
 import type { Db } from "@paperclipai/db";
 import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
 import type { InspectDatabaseBackupHealthOptions } from "./services/database-backup-health.js";
@@ -9,10 +10,9 @@ import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
-import { privateHostnameGuard } from "./middleware/private-hostname-guard.js";
+import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { healthRoutes } from "./routes/health.js";
 import { companyRoutes } from "./routes/companies.js";
-import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { applyTrustProxy, parseTrustProxyEnv } from "./middleware/trust-proxy.js";
 import { builtInAgentRoutes } from "./routes/built-in-agents.js";
 import { teamsCatalogRoutes } from "./routes/teams-catalog.js";
@@ -73,8 +73,26 @@ import { DEFAULT_JSON_BODY_LIMIT, PORTABLE_JSON_BODY_LIMIT } from "./http/body-l
 import { COMPANY_IMPORT_API_PATH } from "./routes/company-import-paths.js";
 import { apiCompression } from "./middleware/api-compression.js";
 
-type UiMode = "none" | "static";
+type UiMode = "none" | "static" | "vite-dev";
 const FEEDBACK_EXPORT_FLUSH_INTERVAL_MS = 5_000;
+const VITE_DEV_ASSET_PREFIXES = [
+  "/@fs/",
+  "/@id/",
+  "/@react-refresh",
+  "/@vite/",
+  "/assets/",
+  "/node_modules/",
+  "/src/",
+];
+const VITE_DEV_STATIC_PATHS = new Set([
+  "/apple-touch-icon.png",
+  "/favicon-16x16.png",
+  "/favicon-32x32.png",
+  "/favicon.ico",
+  "/favicon.svg",
+  "/site.webmanifest",
+  "/sw.js",
+]);
 
 export function isStaticUiAssetPath(pathname: string): boolean {
   return pathname === "/assets" || pathname.startsWith("/assets/");
@@ -86,21 +104,28 @@ export function resolveStaticUiCacheControl(filePath: string, indexHtmlPath: str
   }
   if (filePath.split(path.sep).join("/").includes("/assets/")) {
     return "public, max-age=31536000, immutable";
+  }
   return "public, max-age=3600";
+}
+
 export function isDatabaseConnectionUnavailableError(err: unknown): boolean {
   const error = err as { code?: unknown; message?: unknown; cause?: unknown };
   if (error?.code === "ECONNREFUSED") return true;
   return Boolean(error?.cause && isDatabaseConnectionUnavailableError(error.cause));
+}
 
 export function resolveViteHmrPort(serverPort: number): number {
   if (serverPort <= 55_535) {
     return serverPort + 10_000;
+  }
   return Math.max(1_024, serverPort - 10_000);
+}
 
 export function resolveViteHmrHost(bindHost: string): string | undefined {
   const normalized = bindHost.trim().toLowerCase();
   if (normalized === "0.0.0.0" || normalized === "::") return undefined;
   return bindHost;
+}
 
 export function shouldServeViteDevHtml(req: ExpressRequest): boolean {
   const pathname = req.path;
@@ -230,6 +255,20 @@ export async function createApp(
       databaseBackupHealth: opts.databaseBackupHealth,
     }),
   );
+  if (process.env.SENTRY_DEBUG_ROUTE === "1") {
+    api.get("/debug-sentry", async (_req, _res) => {
+      await Sentry.startSpan(
+        {
+          op: "test",
+          name: "Ciutatis admin Sentry verify",
+        },
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          throw new Error("Ciutatis admin Sentry test error");
+        },
+      );
+    });
+  }
   api.use("/companies", companyRoutes(db));
   api.use(agentRoutes(db, { pluginWorkerManager: workerManager }));
   api.use(assetRoutes(db, opts.storageService));
@@ -456,6 +495,9 @@ export async function createApp(
     app.use(vite.middlewares);
   }
 
+  // Sentry Express error handler must run after all routes/controllers and
+  // before any other error middleware.
+  Sentry.setupExpressErrorHandler(app);
   app.use(errorHandler);
 
   jobCoordinator.start();
@@ -501,11 +543,6 @@ export async function createApp(
       async (pluginId) => (await pluginRegistry.getById(pluginId))?.packagePath ?? null,
     )
     : null;
-  void loader.loadAll().then((result) => {
-  const devWatcher = createPluginDevWatcher(
-    lifecycle,
-    async (pluginId) => (await pluginRegistry.getById(pluginId))?.packagePath ?? null,
-  );
   // Auto-install the bundled kubernetes sandbox-provider plugin so the
   // "kubernetes" sandbox provider is registered for agent runs. The plugin is
   // excluded from the pnpm workspace and built standalone into the image (see
@@ -567,15 +604,15 @@ export async function createApp(
   void ensureBundledKubernetesPlugin()
     .then(() => loader.loadAll())
     .then((result) => {
-    if (!result) return;
-    for (const loaded of result.results) {
-      if (devWatcher && loaded.success && loaded.plugin.packagePath) {
-        devWatcher.watch(loaded.plugin.id, loaded.plugin.packagePath);
+      if (!result) return;
+      for (const loaded of result.results) {
+        if (devWatcher && loaded.success && loaded.plugin.packagePath) {
+          devWatcher.watch(loaded.plugin.id, loaded.plugin.packagePath);
+        }
       }
-    }
-  }).catch((err) => {
-    logger.error({ err }, "Failed to load ready plugins on startup");
-  });
+    }).catch((err) => {
+      logger.error({ err }, "Failed to load ready plugins on startup");
+    });
   let appServicesShutdown = false;
   const shutdownAppServices = () => {
     if (appServicesShutdown) return;

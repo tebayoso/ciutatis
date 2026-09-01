@@ -1,19 +1,10 @@
+import os from "node:os";
 import path from "node:path";
+
+const DEFAULT_INSTANCE_ID = "default";
+const INSTANCE_ID_RE = /^[a-zA-Z0-9_-]+$/;
 const PATH_SEGMENT_RE = /^[a-zA-Z0-9_-]+$/;
 const FRIENDLY_PATH_SEGMENT_RE = /[^a-zA-Z0-9._-]+/g;
-import {
-  expandHomePrefix,
-  resolveDefaultBackupDir as resolveSharedDefaultBackupDir,
-  resolveDefaultEmbeddedPostgresDir as resolveSharedDefaultEmbeddedPostgresDir,
-  resolveDefaultLogsDir as resolveSharedDefaultLogsDir,
-  resolveDefaultSecretsKeyFilePath as resolveSharedDefaultSecretsKeyFilePath,
-  resolveDefaultStorageDir as resolveSharedDefaultStorageDir,
-  resolveHomeAwarePath,
-  resolvePaperclipConfigPathForInstance,
-  resolvePaperclipHomeDir,
-  resolvePaperclipInstanceId,
-  resolvePaperclipInstanceRoot,
-} from "@paperclipai/shared/home-paths";
 
 function expandHomePrefix(value: string): string {
   if (value === "~") return os.homedir();
@@ -25,6 +16,7 @@ export function resolveCiutatisHomeDir(): string {
   const envHome = process.env.PAPERCLIP_HOME?.trim();
   if (envHome) return path.resolve(expandHomePrefix(envHome));
   return path.resolve(os.homedir(), ".paperclip");
+}
 
 export function resolveCiutatisInstanceId(): string {
   const raw = process.env.PAPERCLIP_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
@@ -32,46 +24,34 @@ export function resolveCiutatisInstanceId(): string {
     throw new Error(`Invalid PAPERCLIP_INSTANCE_ID '${raw}'.`);
   }
   return raw;
+}
 
 export function resolveCiutatisInstanceRoot(): string {
   return path.resolve(resolveCiutatisHomeDir(), "instances", resolveCiutatisInstanceId());
+}
 
 export function resolveDefaultConfigPath(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "config.json");
+}
 
 export function resolveDefaultEmbeddedPostgresDir(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "db");
+}
 
 export function resolveDefaultLogsDir(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "logs");
+}
 
 export function resolveDefaultSecretsKeyFilePath(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "secrets", "master.key");
+}
 
 export function resolveDefaultStorageDir(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "data", "storage");
+}
 
 export function resolveDefaultBackupDir(): string {
   return path.resolve(resolveCiutatisInstanceRoot(), "data", "backups");
-export {
-  expandHomePrefix,
-  resolveHomeAwarePath,
-  resolvePaperclipHomeDir,
-  resolvePaperclipInstanceId,
-  resolvePaperclipInstanceRoot,
-};
-
-  return resolvePaperclipConfigPathForInstance();
-
-  return resolveSharedDefaultEmbeddedPostgresDir();
-
-  return resolveSharedDefaultLogsDir();
-
-  return resolveSharedDefaultSecretsKeyFilePath();
-
-  return resolveSharedDefaultStorageDir();
-
-  return resolveSharedDefaultBackupDir();
 }
 
 export function resolveDefaultAgentWorkspaceDir(agentId: string): string {
@@ -108,4 +88,8 @@ export function resolveManagedProjectWorkspaceDir(input: {
     sanitizeFriendlyPathSegment(projectId, "project"),
     sanitizeFriendlyPathSegment(input.repoName, "_default"),
   );
+}
+
+export function resolveHomeAwarePath(value: string): string {
+  return path.resolve(expandHomePrefix(value));
 }

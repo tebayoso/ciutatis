@@ -68,3 +68,18 @@ tests/storybook-visual/playwright-report/
 .superpowers/
 .claude/worktrees/
 .herenow
+
+# Local secrets (never commit)
+doc/SEED-CREDENTIALS.md
+**/.dev.vars
+
+# Local runtime / build artifacts
+.omo/
+.paperclip-local-dev/
+apps/landing/.open-next/
+apps/landing/.wrangler/
+apps/landing/out/
+**/.venv/
+**/__pycache__/
+server/ui-dist/
+**/.wrangler/

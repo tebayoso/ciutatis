@@ -11,6 +11,8 @@ Source inputs: `GOAL.md`, `PRODUCT.md`, `SPEC.md`, `DATABASE.md`, current monore
 This document is the concrete, build-ready V1 contract.
 When there is a conflict, `SPEC-implementation.md` controls V1 behavior.
 
+GovOps civic vocabulary, government-scoped usage metering, dual-runtime contract (Workers+D1 vs Express), and board vs platform page map are specified in `doc/plans/2026-08-12-govops-domain-and-usage-metering.md`. That plan is additive: control-plane invariants in §3, §8, §10.4.1, §13, and §16 remain REQUIRED.
+
 ## 2. V1 Outcomes
 
 Ciutatis V1 must provide a full control-plane loop for autonomous agents:

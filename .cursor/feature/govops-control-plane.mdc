@@ -1,0 +1,40 @@
+# Feature: GovOps Control Plane
+
+Full spec: `doc/spec/govops-control-plane.md`
+
+Companion: `doc/spec/civic-data-platform.md` (warehouse + SQL). This control plane **exports** `usage_daily` aggregates and **gates** `data:publish` via entitlements. It never exposes Paperclip OLTP to ad-hoc SQL.
+
+## What it is
+
+Ciutatis enrolls governments. Each government operates Paperclip: institutions (`companies`), channels (`agents`), requests (`issues`), objectives (`goals`), approvals, heartbeats, budgets. Platform staff set entitlements and meter usage. Government staff operate only their government.
+
+## Identity lock
+
+- `governments.id` **is** `government_id` (billing, RBAC, entitlements, usage).
+- `tenant_instances` is the Cloudflare deploy/routing unit. `governments.tenant_instance_id` unique when hosted, null on self-host.
+- Do not treat `tenant_instances.id` as `government_id`.
+
+## RBAC lock
+
+- Roles: government/institution `owner | admin | operator | viewer | auditor`. Platform: `platform_owner | platform_operator | platform_support | platform_auditor`.
+- `grantsForHumanRole()` in `server/src/services/company-member-roles.ts` must **not** return `[]`.
+- `assertCompanyAccess` is too coarse; mutating routes need `assertCompanyPermission` plus entitlement checks.
+- Matrices live in the spec §5.
+
+## Invariants (required behavior)
+
+Single assignee, **atomic checkout** (code currently fails: Express `requestService.checkout` is an unconditional UPDATE and the route skips `assertCompanyAccess`), approval gates, heartbeat invoke/status/cancel, budget hard-stop, activity log on mutations.
+
+Workers budget overview currently returns empty arrays — silent subset. Hosted must evaluate policies or fail closed.
+
+## UI
+
+One Next.js app: `apps/landing`. Government board under `/admin/:prefix/...`. Platform under `/admin/instance/settings/*`. Compact the board (drop `MyIssues`, orphan `IssueDetail`, UX labs). Shared host appendix: spec Appendix A.
+
+## Dual runtime
+
+Hosted civic SaaS = Workers + D1. Self-host = Express + Postgres. Contract in `packages/shared`. Unimplemented paths: **501** `{ error, availability }`, never `200 []`.
+
+## Do not in this docs-only pass
+
+Do not delete apps, implement RBAC enforcement, or add the `governments` table until a follow-up implementation PR.

@@ -95,6 +95,13 @@ Canonical mode design and command expectations live in `doc/DEPLOYMENT-MODES.md`
 
 See [SPEC.md](./SPEC.md) for the full technical specification and [TASKS.md](./TASKS.md) for the task management data model.
 
+Forward civic product contracts (documentation; not a rewrite of this page or of [SPEC-implementation.md](./SPEC-implementation.md)):
+
+- **[GovOps Control Plane](./spec/govops-control-plane.md)** — enroll governments, enforce RBAC and entitlements, operate Paperclip (channels/requests/budgets), and meter usage. This is the forward contract that supersedes V1 “single human board / RBAC out of scope” for the civic product line.
+- **[Civic Data Platform](./spec/civic-data-platform.md)** — ingest and parse civic information into a Dune-like SQL warehouse with saved queries and visualization panels. Paperclip OLTP is never ad-hoc SQL; usage is exported as aggregates only.
+
+Both products share one Next.js host (`apps/landing`).
+
 ---
 
 Ciutatis’s core identity is a **control plane for autonomous AI companies**, centered on **companies, org charts, goals, issues/comments, heartbeats, budgets, approvals, and board governance**. The public docs are also explicit about the current boundaries: **tasks/comments are the built-in communication model**, Ciutatis is **not a chatbot**, and it is **not a code review tool**. The roadmap already points toward **easier onboarding, cloud agents, easier agent configuration, plugins, better docs, and ClipMart/ClipHub-style reusable companies/templates**.

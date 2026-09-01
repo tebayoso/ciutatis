@@ -1,0 +1,48 @@
+# Spec: test map
+
+## Default gate (`pnpm test:run`)
+
+`scripts/run-vitest-stable.mjs` + `vitest.config.ts` projects:
+
+- packages/shared, db, adapter-utils
+- adapters: claude, codex, cursor, gemini, opencode, pi
+- server (general then serialized route/authz files)
+- cli
+
+This is what `pr-verify.yml` would run **if** PRs targeted `master`.
+
+## On disk but not in the default gate
+
+| Area | Approx files | How to run |
+|---|---|---|
+| `apps/landing` | 60 | no package script; not in vitest projects |
+| `workers/api` | 2 | not in root projects |
+| Playwright e2e | 3 | `pnpm test:e2e` (workflow_dispatch only) |
+| Release smoke | 1 | `pnpm test:release-smoke` (not called from release.yml) |
+| Plugin examples | few | local vitest in those packages |
+
+## Missing files still named in the serialized allowlist
+
+`scripts/run-vitest-stable.mjs`:
+
+- authz-company-access.test.ts
+- company-portability.test.ts
+- express5-auth-wildcard.test.ts
+- heartbeat-process-recovery.test.ts
+- invite-accept-existing-member.test.ts
+- issues-service.test.ts
+- project-routes-env.test.ts
+- routines-e2e.test.ts
+
+## Invariant tests to add first
+
+1. Checkout: conditional update, 409 on conflict, cross-company 403
+2. `assertCompanyAccess` for board membership vs agent key
+3. Landing: RequestDetail load, onboarding lock, company prefix links
+4. Docker image build (entrypoint + workspace COPY)
+
+## Quality scripts
+
+- Real: `pnpm -r typecheck`, `pnpm test:run`, `pnpm build`
+- Stub: `pnpm lint`
+- Not in PR CI: `pnpm check:tokens`, `typecheck:build-gaps`, Docker deps check

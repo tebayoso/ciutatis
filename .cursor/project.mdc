@@ -1,4 +1,83 @@
-# Project notes (Ciutatis)
+# Ciutatis — inherited project handbook
+
+Use this file when opening the repo cold. The full audit is `doc/plans/2026-08-12-inherited-codebase-audit.md`. HTML: `reports/inherited-codebase-audit.html`.
+
+## What this is
+
+Ciutatis is a civic fork of Paperclip: a control plane for AI agents organized as institutions. Humans (the board) create institutions, hire agents, assign requests, approve governed actions, and enforce budgets. Agents run outside the control plane via adapters and phone home on heartbeats.
+
+## Do not trust these maps
+
+- There is no top-level `ui/` package. The board UI is `apps/landing/src/admin` (Next.js host, React Router basename `/admin`).
+- Default DB is embedded PostgreSQL, not PGlite. Data: `~/.paperclip/instances/default/`.
+- Root package name is `paperclip`. CLI is `ciutatis` / `paperclipai`.
+- GitHub Actions in `.github/workflows` trigger on `master`. Default branch here is `main`.
+- `pnpm lint` is a no-op.
+
+## Vocabulary
+
+| UI / civic docs | HTTP / SQL | Meaning |
+|---|---|---|
+| Institution | `companies` / `/api/companies` | Tenant |
+| Request | `issues` / `/api/issues` | Work item |
+| Objective | `goals` / `/api/goals` | Goal |
+| Channel | `agents` | AI employee |
+
+Physical tables were not renamed. TypeScript has civic aliases (`institutions`, `requests`, `objectives`).
+
+## Day-one commands
+
+```sh
+pnpm install
+pnpm dev                 # API :3100
+pnpm dev:landing         # public + admin :3000
+pnpm paperclipai run     # onboard + doctor + server
+pnpm -r typecheck
+pnpm test:run
+pnpm build
+```
+
+Admin: `http://localhost:3000/admin`. Health: `http://localhost:3100/api/health`.
+
+Do not start long-lived `pnpm dev` from unattended agent sessions.
+
+## Where to change what
+
+| Change | Touch |
+|---|---|
+| API / orchestration | `server/src/` |
+| Schema | `packages/db/src/schema/` then `pnpm db:generate` |
+| Types / validators / paths | `packages/shared/` |
+| Board UI | `apps/landing/src/admin/` |
+| Public site | `apps/landing/app/` + `src/admin/pages/Public*.tsx` |
+| Hosted API | `workers/api/` + `packages/db-cloudflare/` |
+| Adapters | `packages/adapters/*` + `server/src/adapters/registry.ts` |
+| CLI | `cli/src/` |
+
+Keep company scoping. Log mutations. Sync db → shared → server → UI (and Workers if the feature is hosted).
+
+## Two production stacks
+
+1. Self-host: Express + Postgres (Docker/ECS/npm). Env prefix `PAPERCLIP_DEPLOYMENT_MODE`.
+2. Hosted: Cloudflare Workers + D1 + OpenNext. Env `DEPLOYMENT_MODE`. Manual wrangler deploy. npm release does not ship `ciutatis.com`.
+
+## Invariants (spec vs code)
+
+- Single assignee: one `assigneeAgentId` column. True.
+- Atomic checkout: **not true**. `requestService.checkout` is an unconditional update; the route skips `assertCompanyAccess`.
+- Budget hard-stop: true (`budgets.ts` + heartbeat `getInvocationBlock`).
+- Approval gates: true for hire/strategy paths.
+- Activity log: true on many mutations, not checkout.
+
+## Read next
+
+- Control plane: `.cursor/feature/control-plane.mdc`
+- Admin UI: `.cursor/feature/admin-ui.mdc`
+- Deploy: `.cursor/feature/deployment.mdc`
+- UX flows: `.cursor/specs/ux-flows.mdc`
+- Tests: `.cursor/specs/test-map.mdc`
+- Product contract: `doc/SPEC-implementation.md` (V1 intent; plugins/adapters have drifted)
+- Closer-to-truth ops: `doc/DEVELOPING.md`, `doc/DATABASE.md`, `doc/DEPLOYMENT-MODES.md`
 
 ## Public site Sentry (2026-07-11)
 
@@ -18,9 +97,9 @@ Local landing proxies `/api/*` via `API_INTERNAL_BASE` (default
 JSON instead of the catch-all HTML page. Override to `http://localhost:3100`
 when running the local API.
 
-## Upstream merge branch (`merge/upstream-master-2026-07-11`)
+## Upstream merge (`merge/upstream-master-2026-07-11`)
 
-- Merged `upstream/master` conservatively; `main` left untouched.
+- Merged `upstream/master` into `main`.
 - Plugin extension breakage after merge came from hunk-union corruption in `@paperclipai/shared` (validators/types mashed with civic aliases).
 
 ## Sentry (2026-07-11)

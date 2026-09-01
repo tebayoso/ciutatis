@@ -1,0 +1,57 @@
+# Feature: admin UI (board)
+
+## Location
+
+`apps/landing` (`@ciutatis/landing`). Next.js 16 hosts a client-only React Router SPA.
+
+- Mount: `app/admin/[[...slug]]/page.tsx` → `AdminApp` (`ssr: false`)
+- Basename: `/admin`
+- Router: `src/admin/App.tsx`
+- Shell: `src/admin/components/Layout.tsx`
+- Alias `@/*` → `src/admin/*`
+
+There is no `ui/` workspace. `AdminApp.tsx` comments still mention `apps/ui/src/main.tsx`.
+
+## Stack
+
+React 19, react-router-dom 7, TanStack Query 5, Tailwind 4, Radix, CVA, cmdk, dnd-kit, lucide-react.
+
+Tokens: `src/admin/index.css` (OKLCH, light `:root`, `.dark`). Theme: `context/ThemeContext.tsx` (`ciutatis.theme`). Spec (`doc/spec/ui.md`) wanted dark-default HSL; shipped is light-first civic sharp radius (`--radius: 0`).
+
+## Routing rules
+
+- Company board URLs: `/admin/:issuePrefix/...` (e.g. `/admin/PAP/requests`)
+- Use `Link` / `Navigate` from `src/admin/lib/router.tsx` so the prefix is preserved
+- Company state: `context/CompanyContext.tsx` (`paperclip.selectedCompanyId`)
+- Live issue detail is `pages/RequestDetail.tsx`, not `pages/IssueDetail.tsx` (unrouted)
+
+## File conventions
+
+| Kind | Path |
+|---|---|
+| Pages | `src/admin/pages/PageName.tsx` |
+| Composites | `src/admin/components/Name.tsx` |
+| shadcn primitives | `src/admin/components/ui/` |
+| API | `src/admin/api/` (HTTP still `/api/issues`, `/api/companies`) |
+| Hooks | `src/admin/hooks/useName.ts` |
+| Context | `src/admin/context/` |
+
+Copy says Institution / Request / Objective. Clients stay on Paperclip path names.
+
+## Design guide
+
+Route: `/admin/:prefix/design-guide` → `pages/DesignGuide.tsx`.  
+When adding a reusable component, add a DesignGuide section. Skill: `.claude/skills/design-guide/SKILL.md`.
+
+Not yet in the guide: KanbanBoard, CompanyRail, OnboardingWizard, LiveRunWidget, IssueChatThread, budget cards, plugin slots. `toggle-switch` is used (`RoutineList`) but omitted from coverage badges.
+
+## Do not
+
+- Add features only to unrouted `IssueDetail` / `MyIssues` / `Org`
+- Import `createIssueDetailPath` from `lib/issueDetailBreadcrumb.ts` (not exported; `IssueBlockedNotice` and `ProductivityReviewBadge` currently do)
+- Assume onboarding can pick Claude/Codex; wizard locks `cloudflare_workers_ai`
+- Mix public-site Fraunces marketing chrome into the dense board without an explicit decision
+
+## Keyboard
+
+Cmd/Ctrl+K palette, C new request, `[` sidebar, `]` properties panel. Implemented in `hooks/useKeyboardShortcuts.ts` and `components/CommandPalette.tsx`.

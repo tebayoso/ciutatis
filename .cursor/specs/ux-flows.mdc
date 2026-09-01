@@ -1,0 +1,51 @@
+# Spec: UX flows and page inventory
+
+Full tables: `doc/plans/2026-08-12-inherited-codebase-audit.md` §9.
+
+## Products
+
+1. Public civic site (`/`, `/portal`, `/govops`, `/scrutiny`, `en`/`es`)
+2. Board SPA (`/admin/:prefix/...`)
+
+## Happy paths
+
+### Local first institution
+
+1. `pnpm paperclipai run` + landing on :3000
+2. `/admin` in `local_trusted` auto-opens OnboardingWizard
+3. Institution → agent (Workers AI only) → starter task → launch
+4. `/:prefix/dashboard`
+
+### Authenticated first admin
+
+1. Health `bootstrap_pending` → `pnpm ciutatis auth bootstrap-ceo`
+2. `/invite/:token` then session
+3. Claim: `/council-claim/:token` if migrating from local-board
+
+### Daily board loop
+
+1. Inbox (approvals, failed runs)
+2. Requests list/kanban (`C` to create)
+3. RequestDetail: comments, documents, live run, properties panel
+4. Agents / Org / Costs as needed
+5. Approvals at `/approvals/pending` (not in sidebar)
+
+## Live vs dead pages
+
+Live detail: `RequestDetail`.  
+Unrouted: `IssueDetail` (chat thread), `MyIssues`, `Org`, several UX labs.  
+Legacy redirects: `/issues` → `/requests`, `/company/settings` → `/institution/settings`.
+
+## Sidebar (shipped)
+
+New Request, Dashboard, Inbox, Requests, Objectives, optional Workspaces, Projects, Agents, Org, Costs, Activity, Settings.
+
+Missing vs `doc/spec/ui.md`: My Issues, Views, Approvals nav, spec company-switcher chrome (CompanyRail instead).
+
+## Expected UI behaviors
+
+- Company prefix always in board URLs
+- Empty states via `EmptyState`; lists via `PageSkeleton`
+- Mutations toast on failure; do not swallow `ApiError`
+- Experimental workspaces hidden unless instance flag `enableIsolatedWorkspaces`
+- DesignGuide updated when adding reusable components

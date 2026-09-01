@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ciutatis inherited codebase audit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f4efe5;
+        --paper: rgba(255, 251, 244, 0.88);
+        --paper-strong: #fffaf1;
+        --ink: #1f1b17;
+        --muted: #6a6257;
+        --line: rgba(31, 27, 23, 0.12);
+        --accent: #9c4729;
+        --accent-soft: rgba(156, 71, 41, 0.1);
+        --good: #2f6a42;
+        --warn: #946200;
+        --bad: #8c2f25;
+        --shadow: 0 22px 60px rgba(52, 37, 19, 0.1);
+        --radius: 20px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(156, 71, 41, 0.08), transparent 28%),
+          linear-gradient(180deg, #f7f1e6 0%, var(--bg) 100%);
+        font-family: "IBM Plex Sans", sans-serif;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 28px;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 32px 24px 80px;
+      }
+
+      .panel {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .nav {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+        padding: 24px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .hero h1,
+      h2,
+      h3 {
+        font-family: "Newsreader", serif;
+        line-height: 0.96;
+        margin: 0;
+      }
+
+      .nav h1 {
+        font-size: 2rem;
+        margin-top: 10px;
+      }
+
+      .nav p {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 18px 0 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav a {
+        display: block;
+        color: var(--ink);
+        text-decoration: none;
+        padding: 9px 12px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.35);
+        font-size: 0.92rem;
+      }
+
+      .nav a:hover {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.75);
+      }
+
+      .meta-block {
+        margin-top: 20px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      main {
+        display: grid;
+        gap: 24px;
+      }
+
+      section {
+        padding: 26px 28px 28px;
+      }
+
+      .hero {
+        padding: 28px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -3rem -6rem auto;
+        width: 18rem;
+        height: 18rem;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(156, 71, 41, 0.14), transparent 68%);
+        pointer-events: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.6rem, 5vw, 4.4rem);
+        max-width: 16ch;
+        margin-top: 12px;
+      }
+
+      .lede {
+        margin-top: 16px;
+        max-width: 70ch;
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: #2b2723;
+      }
+
+      .hero-grid,
+      .card-grid,
+      .two-col {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero-grid {
+        margin-top: 24px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric,
+      .card,
+      .finding {
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.68);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+      }
+
+      .metric .label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric .value {
+        margin-top: 8px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      h2 {
+        font-size: 2rem;
+        margin-bottom: 16px;
+      }
+
+      h3 {
+        font-size: 1.3rem;
+        margin-bottom: 10px;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0 0 14px;
+        line-height: 1.65;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 14px;
+        padding-left: 20px;
+        line-height: 1.65;
+      }
+
+      li + li {
+        margin-top: 8px;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 18px 0 8px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.68);
+      }
+
+      .badge.good {
+        color: var(--good);
+      }
+
+      .badge.warn {
+        color: var(--warn);
+      }
+
+      .badge.bad {
+        color: var(--bad);
+      }
+
+      .quote {
+        margin-top: 18px;
+        padding: 18px;
+        border-left: 4px solid var(--accent);
+        border-radius: 14px;
+        background: var(--accent-soft);
+      }
+
+      .severity {
+        display: inline-flex;
+        margin-bottom: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .severity.high {
+        background: rgba(140, 47, 37, 0.12);
+        color: var(--bad);
+      }
+
+      .severity.medium {
+        background: rgba(148, 98, 0, 0.12);
+        color: var(--warn);
+      }
+
+      .severity.low {
+        background: rgba(47, 106, 66, 0.12);
+        color: var(--good);
+      }
+
+      .ref {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+        margin: 0 0 16px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      code,
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.86em;
+      }
+
+      pre {
+        overflow-x: auto;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #1f1b17;
+        color: #f7f1e6;
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+
+      .finding + .finding {
+        margin-top: 12px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      @media (max-width: 980px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          position: static;
+        }
+
+        .hero-grid,
+        .card-grid,
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+
+        .hero h1 {
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="panel nav">
+        <div class="eyebrow">Inherited codebase</div>
+        <h1>Ciutatis audit</h1>
+        <p>Architecture, tests, deployment, and a full board UX handbook for a team that did not write this fork.</p>
+        <ul>
+          <li><a href="#summary">Summary</a></li>
+          <li><a href="#runbook">Day-one runbook</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#findings">Findings</a></li>
+          <li><a href="#tests">Tests and CI</a></li>
+          <li><a href="#deploy">Deployment</a></li>
+          <li><a href="#ux">UX / UI handbook</a></li>
+          <li><a href="#docs">Doc drift</a></li>
+          <li><a href="#recommendation">Backlog</a></li>
+        </ul>
+        <div class="meta-block">
+          12 Aug 2026<br />
+          Static review only — no <code>pnpm dev</code>, no test rerun<br />
+          Source: <code>doc/plans/2026-08-12-inherited-codebase-audit.md</code>
+        </div>
+      </aside>
+
+      <main>
+        <section class="panel hero" id="summary">
+          <div class="eyebrow">Executive summary</div>
+          <h1>A capable control plane in mid-migration. Do not trust the repo map.</h1>
+          <p class="lede">
+            Ciutatis is a civic fork of Paperclip. The V1 docs describe a small Express + Vite + PGlite board.
+            The tree is a dual-stack product: Node/Postgres self-host plus Cloudflare Workers/D1 for
+            <code>ciutatis.com</code>, with the operator UI living inside Next.js at <code>/admin</code>.
+          </p>
+          <div class="badge-row">
+            <span class="badge good">Budget hard-stop is real</span>
+            <span class="badge warn">Civic labels, Paperclip APIs</span>
+            <span class="badge bad">CI listens to master</span>
+            <span class="badge bad">Checkout is not atomic</span>
+          </div>
+          <div class="hero-grid">
+            <div class="metric">
+              <div class="label">Overall call</div>
+              <div class="value">Inherit, then freeze the map</div>
+            </div>
+            <div class="metric">
+              <div class="label">Main concern</div>
+              <div class="value">Wrong-branch CI + checkout</div>
+            </div>
+            <div class="metric">
+              <div class="label">Best part</div>
+              <div class="value">Company-scoped control loop</div>
+            </div>
+            <div class="metric">
+              <div class="label">Weakest part</div>
+              <div class="value">Docs, Docker, UI test gate</div>
+            </div>
+          </div>
+          <div class="quote">
+            Treat <code>AGENTS.md</code> as historical. There is no <code>ui/</code> package. Default DB is
+            embedded PostgreSQL under <code>~/.paperclip</code>. GitHub workflows target <code>master</code>
+            while this fork’s default branch is <code>main</code>.
+          </div>
+        </section>
+
+        <section class="panel" id="runbook">
+          <h2>Day-one runbook</h2>
+          <div class="two-col">
+            <div class="card">
+              <h3>Start</h3>
+              <pre>pnpm install
+pnpm dev                 # API :3100
+pnpm dev:landing         # site + admin :3000
+pnpm paperclipai run     # onboard + doctor + server</pre>
+              <p class="ref">Leave DATABASE_URL unset. Reset ~/.paperclip/instances/default/ — not data/pglite.</p>
+            </div>
+            <div class="card">
+              <h3>Modes</h3>
+              <p><code>local_trusted</code> — loopback, no login.</p>
+              <p><code>authenticated</code> + <code>private</code> or <code>public</code> — Better Auth. Node env uses <code>PAPERCLIP_DEPLOYMENT_MODE</code>; Workers use <code>DEPLOYMENT_MODE</code>.</p>
+              <p class="ref">doc/DEPLOYMENT-MODES.md · packages/shared/src/constants.ts</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Surface</th>
+                <th>URL</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>API</td>
+                <td><code>localhost:3100</code></td>
+                <td><code>/api/health</code></td>
+              </tr>
+              <tr>
+                <td>Board</td>
+                <td><code>localhost:3000/admin</code></td>
+                <td>Next host, React Router basename <code>/admin</code></td>
+              </tr>
+              <tr>
+                <td>Public site</td>
+                <td><code>localhost:3000</code></td>
+                <td>Portal, GovOps, Scrutiny, locales</td>
+              </tr>
+              <tr>
+                <td>Vite <code>ui/</code></td>
+                <td>gone</td>
+                <td><code>dev:admin</code> and <code>dev:ui</code> both start landing</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel" id="architecture">
+          <h2>Architecture</h2>
+          <p>
+            One monorepo, two production runtimes, one civic vocabulary layered on Paperclip tables.
+            Heartbeat orchestration still lives in a 9,720-line server module.
+          </p>
+          <div class="two-col">
+            <div class="card">
+              <h3>Self-host</h3>
+              <p>CLI → Express <code>server/</code> → <code>packages/db</code> (Postgres / embedded-postgres). Adapters and plugin host run in-process. Optional static UI from <code>server/ui-dist</code>.</p>
+              <div class="ref">server/src/index.ts · server/src/app.ts</div>
+            </div>
+            <div class="card">
+              <h3>Hosted ciutatis.com</h3>
+              <p>Dispatcher → OpenNext <code>ciutatis-web</code> (landing + admin). <code>admin.ciutatis.com/api/*</code> → <code>workers/api</code> → D1. Manual wrangler deploy. npm release does not ship this stack.</p>
+              <div class="ref">workers/dispatcher/wrangler.toml · workers/api/wrangler.toml</div>
+            </div>
+          </div>
+          <h3>Vocabulary</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Civic UI</th>
+                <th>HTTP / SQL</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Institution</td>
+                <td><code>companies</code> / <code>/api/companies</code></td>
+                <td>First-order tenant</td>
+              </tr>
+              <tr>
+                <td>Request</td>
+                <td><code>issues</code> / <code>/api/issues</code></td>
+                <td>Work item</td>
+              </tr>
+              <tr>
+                <td>Objective</td>
+                <td><code>goals</code> / <code>/api/goals</code></td>
+                <td>Goal hierarchy</td>
+              </tr>
+              <tr>
+                <td>Channel</td>
+                <td><code>agents</code></td>
+                <td>AI employee</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="ref">packages/db/src/schema/institutions.ts exports institutions as pgTable("companies", …)</p>
+          <div class="card-grid">
+            <div class="card">
+              <h3>UI is landing, not ui/</h3>
+              <p><code>apps/landing/src/admin</code> is the board. Public civic pages share the Next app. Superparser portal/service are side demos.</p>
+              <div class="ref">apps/landing/src/admin/AdminApp.tsx · app/admin/[[...slug]]/page.tsx</div>
+            </div>
+            <div class="card">
+              <h3>Spec vs tree</h3>
+              <p>V1 spec still marks plugins out of scope and adapters as process/http. The repo has a plugin host, SDK, UI slots, and eight packaged adapters plus a Cloudflare Workers AI adapter.</p>
+              <div class="ref">doc/SPEC-implementation.md §5.2 · server/src/adapters/registry.ts</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="findings">
+          <h2>Findings</h2>
+          <p>Ordered by severity. Objection type is named so architecture is not filed as a docs nit.</p>
+
+          <article class="finding">
+            <div class="severity high">P0 · rollout</div>
+            <h3>CI and release listen to master; default branch is main</h3>
+            <p>
+              <code>pr-verify.yml</code>, <code>pr-policy.yml</code>, <code>refresh-lockfile.yml</code>, and
+              <code>release.yml</code> filter <code>branches: [master]</code>. This environment’s default branch
+              is <code>main</code>. Unless a leftover <code>master</code> still receives PRs, verification and
+              canary publish do not run on this fork.
+            </p>
+            <div class="ref">.github/workflows/pr-verify.yml:5 · release.yml:5</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity high">P0 · trust / implementation</div>
+            <h3>Issue checkout is not atomic and skips company access</h3>
+            <p>
+              Spec requires conflict-safe single-assignee checkout. <code>requestService.checkout</code> updates
+              by id only and ignores expected statuses. <code>assertCheckoutOwner</code> is a no-op.
+              <code>POST /issues/:id/checkout</code> does not call <code>assertCompanyAccess</code>, unlike
+              <code>GET /issues/:id</code> and release.
+            </p>
+            <div class="ref">server/src/services/requestService.ts:254 · server/src/routes/issues.ts:712</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity high">P0 · ops</div>
+            <h3>Dockerfile copies files that are not in the repository</h3>
+            <p>
+              Missing: <code>scripts/docker-entrypoint.sh</code>, <code>packages/mcp-server/package.json</code>,
+              <code>packages/adapters/acpx-local/package.json</code>. The image still sets
+              <code>ENTRYPOINT ["docker-entrypoint.sh"]</code>. Quickstart and ECS docs assume this build.
+            </p>
+            <div class="ref">Dockerfile:23 · Dockerfile:59</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity medium">P1 · architecture</div>
+            <h3>Heartbeat is a 9.7k-line god module</h3>
+            <p>
+              Run lifecycle, adapter execute, liveness, continuations, and budget invocation checks meet in
+              <code>server/src/services/heartbeat.ts</code>. Recovery is partially split; this file remains the
+              highest change-risk hotspot.
+            </p>
+            <div class="ref">server/src/services/heartbeat.ts (9720 lines)</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity medium">P1 · architecture</div>
+            <h3>Postgres and D1 schemas must be maintained in parallel</h3>
+            <p>
+              ~66 Drizzle SQL migrations vs ~10 D1 migrations. Hosted apply is manual. No scheduled D1 backup.
+              Workers API is a subset of Express (no routines, adapters, environments, issue-tree-control, …).
+            </p>
+            <div class="ref">packages/db · packages/db-cloudflare · workers/api/src/routes/index.ts</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity medium">P1 · product</div>
+            <h3>Adapter story is inconsistent</h3>
+            <p>
+              <code>hermes_local</code> is in <code>AGENT_ADAPTER_TYPES</code> but unregistered.
+              <code>acpx_local</code> is registered and always throws. Onboarding locks new agents to
+              <code>cloudflare_workers_ai</code>, contrary to PRODUCT.md’s unopinionated runtime stance.
+            </p>
+            <div class="ref">packages/shared/src/constants.ts:58 · OnboardingWizard.tsx:50</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity medium">P1 · quality</div>
+            <h3>Sixty landing tests and all e2e sit outside the default gate</h3>
+            <p>
+              <code>vitest.config.ts</code> does not include <code>apps/landing</code>. Playwright e2e is
+              dispatch-only. Release smoke is not called from <code>release.yml</code>. The serialized runner
+              still names eight test files that do not exist, including <code>issues-service.test.ts</code>.
+            </p>
+            <div class="ref">vitest.config.ts · scripts/run-vitest-stable.mjs:23</div>
+          </article>
+
+          <article class="finding">
+            <div class="severity low">P2 · quality</div>
+            <h3>pnpm lint is a stub; dual naming tax is permanent until a rename</h3>
+            <p>
+              Root lint exits 0. Civic TypeScript names alias Paperclip tables. Activity logging is real on many
+              mutations, not on checkout. <code>createIssueDetailPath</code> is imported but not exported.
+            </p>
+            <div class="ref">package.json lint script · issueDetailBreadcrumb.ts</div>
+          </article>
+        </section>
+
+        <section class="panel" id="tests">
+          <h2>Tests and CI</h2>
+          <div class="hero-grid">
+            <div class="metric">
+              <div class="label">Server tests</div>
+              <div class="value">132 files</div>
+            </div>
+            <div class="metric">
+              <div class="label">Landing tests</div>
+              <div class="value">60, not in CI</div>
+            </div>
+            <div class="metric">
+              <div class="label">E2E specs</div>
+              <div class="value">3, dispatch only</div>
+            </div>
+            <div class="metric">
+              <div class="label">Lint</div>
+              <div class="value">No-op</div>
+            </div>
+          </div>
+          <p>
+            Default <code>pnpm test:run</code> covers shared, db, adapter-utils, six local adapters, server, and CLI.
+            Budget and approval unit tests are relatively strong. Checkout concurrency and cross-company keys are not.
+          </p>
+          <p class="ref">What CI would run on master: typecheck + test:run + build. E2E Node 20 vs PR Node 24.</p>
+        </section>
+
+        <section class="panel" id="deploy">
+          <h2>Deployment</h2>
+          <div class="two-col">
+            <div class="card">
+              <h3>Stack A — Node / Postgres</h3>
+              <p>Docker, Compose, ECS, npm CLI. Env prefix <code>PAPERCLIP_*</code>. Embedded or external Postgres. Health on <code>/api/health</code>. Canary npm on push to <code>master</code> — does not deploy the public site.</p>
+              <div class="ref">Dockerfile · doc/RELEASING.md · docker/ecs-task-definition.json</div>
+            </div>
+            <div class="card">
+              <h3>Stack B — Cloudflare</h3>
+              <p>Dispatcher <code>LANDING_ORIGIN</code> currently points at <code>ciutatis-web.jorge-b9f.workers.dev</code>. D1 id and account id are in git. Signup disabled. Superparser URL empty → collaborate 503. Rollback is manual wrangler.</p>
+              <div class="ref">doc/ROLLBACK-PLAN.md · workers/api/wrangler.toml</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="ux">
+          <h2>UX / UI handbook</h2>
+          <p>
+            Two products share <code>@ciutatis/landing</code>: a bilingual civic public site and a dense operator board.
+            The live work object is <strong>RequestDetail</strong>, not the unrouted IssueDetail chat thread.
+          </p>
+          <div class="two-col">
+            <div class="card">
+              <h3>Shipped sidebar</h3>
+              <p>New Request, Dashboard, Inbox, Requests, Objectives, optional Workspaces, Projects, Agents, Org, Costs, Activity, Settings. Company switching is the left rail, not the spec’s dropdown header.</p>
+              <div class="ref">apps/landing/src/admin/components/Sidebar.tsx</div>
+            </div>
+            <div class="card">
+              <h3>Spec gaps</h3>
+              <p>No My Issues (file exists, unrouted), no Views, no notification bell. Light-first OKLCH tokens vs spec dark HSL. Onboarding cannot pick Claude/Codex. Keyboard: Cmd+K, C, [ / ].</p>
+              <div class="ref">doc/spec/ui.md · OnboardingWizard.tsx · useKeyboardShortcuts.ts</div>
+            </div>
+          </div>
+          <h3>Operator loop</h3>
+          <ol>
+            <li>Inbox for approvals and failed runs.</li>
+            <li><code>C</code> or New Request → list/kanban → <code>/requests/:id</code>.</li>
+            <li>Comments and documents on RequestDetail; live run widget for execution.</li>
+            <li>Costs for budget policies and incidents; AgentDetail for per-channel budget.</li>
+            <li>Instance admin under <code>/instance/settings</code> for tenants, Cloudflare, plugins.</li>
+          </ol>
+          <h3>Orphans</h3>
+          <p>
+            Unrouted: <code>MyIssues.tsx</code>, <code>Org.tsx</code>, <code>IssueDetail.tsx</code> +
+            <code>IssueChatThread</code>, several UX labs. Scrutiny is routed with “Coming soon” sections.
+            <code>IssueBlockedNotice</code> and <code>ProductivityReviewBadge</code> import a missing
+            <code>createIssueDetailPath</code> export.
+          </p>
+          <p class="ref">Continue UI work in apps/landing/src/admin/. Use company-aware Link. Update DesignGuide when adding composites.</p>
+        </section>
+
+        <section class="panel" id="docs">
+          <h2>Doc drift</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Stale claim</th>
+                <th>Reality</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>AGENTS.md</code></td>
+                <td><code>ui/</code>, PGlite, <code>data/pglite</code></td>
+                <td>landing admin, embedded-postgres, <code>~/.paperclip</code></td>
+              </tr>
+              <tr>
+                <td><code>README.md</code></td>
+                <td><code>ui/</code> is the admin shell</td>
+                <td><code>apps/landing/src/admin</code></td>
+              </tr>
+              <tr>
+                <td>SPEC-implementation §5.2</td>
+                <td>Plugins out of scope</td>
+                <td>Host + SDK + UI slots exist</td>
+              </tr>
+              <tr>
+                <td>CLOUDFLARE-ROUTING…</td>
+                <td>Public site from main <code>ui</code> app</td>
+                <td>Dispatcher → OpenNext landing worker</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>Closer to truth: <code>doc/DEVELOPING.md</code>, <code>doc/DATABASE.md</code>, <code>doc/DEPLOYMENT-MODES.md</code>. This audit does not rewrite strategic specs.</p>
+        </section>
+
+        <section class="panel" id="recommendation">
+          <h2>Recommendation</h2>
+          <div class="card-grid">
+            <div class="card">
+              <h3>Path forward</h3>
+              <p>Keep the control-plane model. Do not add features until CI points at the real default branch, checkout is gated and atomic, and Docker COPY/ENTRYPOINT match the tree. Then wire landing tests into <code>pnpm test:run</code>.</p>
+            </div>
+            <div class="card">
+              <h3>What to keep</h3>
+              <p>Company scoping, budget hard-stop, Better Auth modes, adapter registry, plugin slot model, RequestDetail as the work surface, civic public site as a separate visual language.</p>
+            </div>
+          </div>
+          <div class="stack" style="margin-top: 16px">
+            <div class="card">
+              <h3>P0 this week</h3>
+              <ul>
+                <li>Align <code>main</code> vs <code>master</code> in GitHub workflows.</li>
+                <li>Fix checkout authz + conditional update + tests.</li>
+                <li>Repair or delete broken Dockerfile paths.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>P1 next</h3>
+              <ul>
+                <li>Landing tests in Vitest projects; scheduled e2e; smoke before npm publish.</li>
+                <li>Delete or restore the eight missing serialized test files.</li>
+                <li>Workers ↔ Express parity list before adding hosted-only or self-host-only features.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>P2 when breathing</h3>
+              <ul>
+                <li>Refresh AGENTS.md. Decide plugins/Cloudflare/Superparser scope.</li>
+                <li>Merge or delete IssueDetail vs RequestDetail. Route or delete MyIssues.</li>
+                <li>Unlock onboarding adapters or document Cloudflare-only as intentional.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="quote">
+            Full citations live in <code>doc/plans/2026-08-12-inherited-codebase-audit.md</code>.
+            Day-one handbook: <code>.cursor/project.mdc</code>.
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

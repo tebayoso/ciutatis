@@ -1,7 +1,6 @@
 export const ISSUE_OVERRIDE_ADAPTER_TYPES = new Set([
   "claude_local",
   "codex_local",
-  "opencode_local",
 ]);
 
 export type IssueModelLane = "primary" | "cheap" | "custom";
@@ -45,8 +44,6 @@ export function buildAssigneeAdapterOverrides(
   if (input.thinkingEffortOverride) {
     if (adapterType === "codex_local") {
       adapterConfig.modelReasoningEffort = input.thinkingEffortOverride;
-    } else if (adapterType === "opencode_local") {
-      adapterConfig.variant = input.thinkingEffortOverride;
     } else if (adapterType === "claude_local") {
       adapterConfig.effort = input.thinkingEffortOverride;
     }

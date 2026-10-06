@@ -13,7 +13,6 @@ export default defineConfig({
       "packages/adapters/cursor-local",
       "packages/adapters/gemini-local",
       "packages/adapters/grok-local",
-      "packages/adapters/opencode-local",
       "packages/adapters/pi-local",
       "packages/plugins/sdk",
       "packages/plugins/create-paperclip-plugin",

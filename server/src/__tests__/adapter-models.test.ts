@@ -3,8 +3,6 @@ import { models as claudeFallbackModels } from "@paperclipai/adapter-claude-loca
 import { resetClaudeModelsCacheForTests } from "@paperclipai/adapter-claude-local/server";
 import { models as codexFallbackModels } from "@paperclipai/adapter-codex-local";
 import { models as cursorFallbackModels } from "@paperclipai/adapter-cursor-local";
-import { models as opencodeFallbackModels } from "@paperclipai/adapter-opencode-local";
-import { resetOpenCodeModelsCacheForTests } from "@paperclipai/adapter-opencode-local/server";
 import { listAdapterModels, listServerAdapters, refreshAdapterModels } from "../adapters/index.js";
 import { resetCodexModelsCacheForTests } from "../adapters/codex-models.js";
 import { resetCursorModelsCacheForTests, setCursorModelsRunnerForTests } from "../adapters/cursor-models.js";
@@ -23,12 +21,10 @@ describe("adapter model listing", () => {
     delete process.env.ANTHROPIC_BASE_URL;
     delete process.env.ANTHROPIC_BEDROCK_BASE_URL;
     delete process.env.CLAUDE_CODE_USE_BEDROCK;
-    delete process.env.PAPERCLIP_OPENCODE_COMMAND;
     resetClaudeModelsCacheForTests();
     resetCodexModelsCacheForTests();
     resetCursorModelsCacheForTests();
     setCursorModelsRunnerForTests(null);
-    resetOpenCodeModelsCacheForTests();
     vi.restoreAllMocks();
   });
 
@@ -196,14 +192,6 @@ describe("adapter model listing", () => {
     expect(models).toEqual(cursorFallbackModels);
   });
 
-  it("returns opencode fallback models including gpt-5.4", async () => {
-    process.env.PAPERCLIP_OPENCODE_COMMAND = "__paperclip_missing_opencode_command__";
-
-    const models = await listAdapterModels("opencode_local");
-
-    expect(models).toEqual(opencodeFallbackModels);
-  });
-
   it("loads cursor models dynamically and caches them", async () => {
     const runner = vi.fn(() => ({
       status: 0,
@@ -230,13 +218,13 @@ describe("adapter model listing", () => {
 
     it("prefers declared env models over adapter discovery", async () => {
       process.env.PAPERCLIP_ADAPTER_MODELS = JSON.stringify({
-        opencode_local: [
+        claude_local: [
           { id: "tensorix/deepseek/deepseek-chat-v3.1", label: "DeepSeek v3.1" },
           { id: "tensorix/z-ai/glm-4.7" },
         ],
       });
 
-      const models = await listAdapterModels("opencode_local");
+      const models = await listAdapterModels("claude_local");
 
       expect(models).toEqual([
         { id: "tensorix/deepseek/deepseek-chat-v3.1", label: "DeepSeek v3.1" },
@@ -246,38 +234,37 @@ describe("adapter model listing", () => {
 
     it("observes env changes between calls (memo keyed by raw env value)", async () => {
       process.env.PAPERCLIP_ADAPTER_MODELS = JSON.stringify({
-        opencode_local: [{ id: "model-a" }],
+        claude_local: [{ id: "model-a" }],
       });
-      expect(await listAdapterModels("opencode_local")).toEqual([
+      expect(await listAdapterModels("claude_local")).toEqual([
         { id: "model-a", label: "model-a" },
       ]);
 
       process.env.PAPERCLIP_ADAPTER_MODELS = JSON.stringify({
-        opencode_local: [{ id: "model-b" }],
+        claude_local: [{ id: "model-b" }],
       });
-      expect(await listAdapterModels("opencode_local")).toEqual([
+      expect(await listAdapterModels("claude_local")).toEqual([
         { id: "model-b", label: "model-b" },
       ]);
     });
 
     it("fails soft on malformed values: falls back to adapter models instead of throwing", async () => {
       process.env.PAPERCLIP_ADAPTER_MODELS = "{not json";
-      process.env.PAPERCLIP_OPENCODE_COMMAND = "__paperclip_missing_opencode_command__";
       const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      const models = await listAdapterModels("opencode_local");
-      expect(models).toEqual(opencodeFallbackModels);
+      const models = await listAdapterModels("claude_local");
+      expect(models).toEqual(claudeFallbackModels);
 
       // Parsing is memoized per raw value: a second call must not re-log.
       const callsAfterFirst = errorSpy.mock.calls.length;
       expect(callsAfterFirst).toBeGreaterThan(0);
-      await listAdapterModels("opencode_local");
+      await listAdapterModels("claude_local");
       expect(errorSpy.mock.calls.length).toBe(callsAfterFirst);
     });
 
     it("ignores declared models for adapters not in the map", async () => {
       process.env.PAPERCLIP_ADAPTER_MODELS = JSON.stringify({
-        opencode_local: [{ id: "model-a" }],
+        claude_local: [{ id: "model-a" }],
       });
       const models = await listAdapterModels("codex_local");
       expect(models).toEqual(codexFallbackModels);

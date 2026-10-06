@@ -80,17 +80,6 @@ import {
   createHermesLocalServerAdapter,
 } from "@paperclipai/hermes-paperclip-adapter";
 import {
-  execute as openCodeExecute,
-  testEnvironment as openCodeTestEnvironment,
-  sessionCodec as openCodeSessionCodec,
-  listOpenCodeModels,
-} from "@paperclipai/adapter-opencode-local/server";
-import {
-  agentConfigurationDoc as openCodeAgentConfigurationDoc,
-  models as openCodeModels,
-  modelProfiles as openCodeModelProfiles,
-} from "@paperclipai/adapter-opencode-local";
-import {
   execute as openclawGatewayExecute,
   testEnvironment as openclawGatewayTestEnvironment,
 } from "@paperclipai/adapter-openclaw-gateway/server";
@@ -159,10 +148,6 @@ function buildCursorRuntimeCommandSpec(config: Record<string, unknown>): Adapter
   return { command, detectCommand: command, installCommand: null };
 }
 
-async function listOpenCodeModelsWithFallback(): Promise<AdapterModel[]> {
-  const discovered = await listOpenCodeModels();
-  return discovered.length > 0 ? dedupeAdapterModels(discovered) : openCodeModels;
-}
 import { BUILTIN_ADAPTER_TYPES } from "./builtin-adapter-types.js";
 import { buildExternalAdapters } from "./plugin-loader.js";
 import { getDisabledAdapterTypes } from "../services/adapter-plugin-store.js";
@@ -389,23 +374,6 @@ const openclawGatewayAdapter: ServerAdapterModule = {
   agentConfigurationDoc: openclawGatewayAgentConfigurationDoc,
 };
 
-const openCodeLocalAdapter: ServerAdapterModule = {
-  type: "opencode_local",
-  execute: openCodeExecute,
-  testEnvironment: openCodeTestEnvironment,
-  sessionCodec: openCodeSessionCodec,
-  models: openCodeModels,
-  modelProfiles: openCodeModelProfiles,
-  sessionManagement: getAdapterSessionManagement("opencode_local") ?? undefined,
-  listModels: listOpenCodeModelsWithFallback,
-  supportsLocalAgentJwt: true,
-  supportsInstructionsBundle: true,
-  instructionsPathKey: "instructionsFilePath",
-  requiresMaterializedRuntimeSkills: true,
-  getRuntimeCommandSpec: (config) => buildNpmRuntimeCommandSpec(config, "opencode", "opencode-ai"),
-  agentConfigurationDoc: openCodeAgentConfigurationDoc,
-};
-
 const acpxLocalAdapter: ServerAdapterModule = {
   type: "acpx_local",
   execute: async () => {
@@ -471,7 +439,6 @@ for (const adapter of [
   cursorLocalAdapter,
   geminiLocalAdapter,
   acpxLocalAdapter,
-  openCodeLocalAdapter,
   piLocalAdapter,
   openclawGatewayAdapter,
   cloudflareWorkersAiAdapter,
@@ -493,7 +460,6 @@ function registerBuiltInAdapters() {
     acpxLocalAdapter,
     claudeLocalAdapter,
     codexLocalAdapter,
-    openCodeLocalAdapter,
     piLocalAdapter,
     cursorCloudAdapter,
     cursorLocalAdapter,
